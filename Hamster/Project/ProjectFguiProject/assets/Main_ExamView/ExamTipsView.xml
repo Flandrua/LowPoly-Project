@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1920,1080">
+  <displayList>
+    <image id="n0_moj9" name="n0" src="moj94" fileName="image/背景.png" xy="0,0">
+      <relation target="" sidePair="width-width,height-height"/>
+    </image>
+    <image id="n1_moj9" name="n1" src="moj93" fileName="image/Group 443.png" xy="116,115"/>
+    <component id="n2_moj9" name="btnYes" src="moj96" fileName="BtnYes.xml" xy="770,826"/>
+  </displayList>
+</component>

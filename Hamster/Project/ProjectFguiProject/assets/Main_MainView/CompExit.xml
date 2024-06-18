@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="730,410">
+  <displayList>
+    <image id="n1_y8x6" name="n1" src="k1k2l" fileName="image/home_close_dete.png" xy="0,0"/>
+    <component id="n3_y8x6" name="btnNo" src="k1k2m" fileName="BtnNo.xml" xy="92,265" group="n4_y8x6"/>
+    <component id="n2_y8x6" name="btnYes" src="ixu8g" fileName="BtnYes.xml" xy="397,265" group="n4_y8x6"/>
+    <group id="n4_y8x6" name="n4" xy="92,265" size="545,92"/>
+  </displayList>
+</component>

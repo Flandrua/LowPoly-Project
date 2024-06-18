@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<packageDescription id="230f4ld9">
+  <resources>
+    <component id="moj90" name="ExamView.xml" path="/" exported="true"/>
+    <image id="moj91" name="btn-c.png" path="/image/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj92" name="btn-n.png" path="/image/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj93" name="Group 443.png" path="/image/" smoothing="false" duplicatePadding="true"/>
+    <component id="moj95" name="ExamTipsView.xml" path="/" exported="true"/>
+    <component id="moj96" name="BtnYes.xml" path="/"/>
+    <image id="moj97" name="Group 464.png" path="/image/错题查看/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj98" name="zswd-icon-error.png" path="/image/答题页面/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj99" name="zswd-bg-right.png" path="/image/答题页面/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj9a" name="Vector.png" path="/image/答题页面/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj9b" name="Group 64.png" path="/image/答题页面/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj9c" name="Group 467.png" path="/image/答题页面/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj9d" name="Group 466.png" path="/image/答题页面/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj9e" name="Group 465.png" path="/image/答题页面/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj9f" name="Group 39.png" path="/image/答题页面/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj9g" name="倒计时底框.png" path="/image/答题页面/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj9h" name="Group 38.png" path="/image/答题页面/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj9i" name="Group 36.png" path="/image/答题页面/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj9j" name="Group 35.png" path="/image/答题页面/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj9k" name="Group 450.png" path="/image/答题完成分数/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj9l" name="背景.png" path="/image/错题查看/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj9o" name="Group 472.png" path="/image/错题查看/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj9p" name="Group 470.png" path="/image/错题查看/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj9q" name="Group 37.png" path="/image/答题页面/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj9r" name="得分底框.png" path="/image/答题页面/" smoothing="false" duplicatePadding="true"/>
+    <component id="moj9s" name="AnswerItem.xml" path="/"/>
+    <component id="moj9t" name="BtnAnswerA.xml" path="/"/>
+    <component id="moj9u" name="BtnAnswerB.xml" path="/"/>
+    <component id="moj9v" name="BtnAnswerC.xml" path="/"/>
+    <component id="moj9w" name="BtnAnswerD.xml" path="/"/>
+    <component id="moj9x" name="ResultView.xml" path="/" exported="true"/>
+    <component id="moj9y" name="CompResult.xml" path="/"/>
+    <component id="moj9z" name="ErrorView.xml" path="/" exported="true"/>
+    <image id="moj910" name="icon-cuo.png" path="/image/错题查看/"/>
+    <image id="moj911" name="icon-dui.png" path="/image/错题查看/"/>
+    <component id="moj912" name="BtnNext.xml" path="/"/>
+    <image id="moj913" name="Group 452.png" path="/image/答题完成分数/" smoothing="false" duplicatePadding="true"/>
+    <image id="moj914" name="Group 453.png" path="/image/答题完成分数/" smoothing="false" duplicatePadding="true"/>
+    <component id="moj915" name="BtnCheck.xml" path="/"/>
+    <component id="moj916" name="BtnAgain.xml" path="/"/>
+    <image id="moj917" name="Group 454.png" path="/image/答题完成分数/" smoothing="false" duplicatePadding="true"/>
+    <component id="moj918" name="BtnBack.xml" path="/"/>
+    <image id="uo0319" name="image 1.png" path="/image/"/>
+  </resources>
+  <publish name=""/>
+</packageDescription>
