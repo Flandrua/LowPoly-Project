@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="242,36" extention="Label">
+  <displayList>
+    <text id="n17_moj9" name="title" xy="0,0" size="242,36" fontSize="26" color="#222222" vAlign="middle" text="A. 这是答案这是答案"/>
+  </displayList>
+  <relation target="n17_moj9" sidePair="width-width"/>
+</component>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<packageDescription id="nejrx0e0">
+  <resources>
+    <component id="keig1" name="MainView.xml" path="/" exported="true"/>
+    <component id="ixu8g" name="BtnYes.xml" path="/"/>
+    <component id="ixu8h" name="CompQuit.xml" path="/"/>
+    <component id="k1k2i" name="ExitView.xml" path="/" exported="true"/>
+    <image id="k1k2j" name="white.png" path="/image/" exported="true" scale="9grid" scale9grid="9,9,18,18"/>
+    <component id="k1k2k" name="CompExit.xml" path="/"/>
+    <image id="k1k2l" name="home_close_dete.png" path="/main/"/>
+    <component id="k1k2m" name="BtnNo.xml" path="/"/>
+    <image id="k1k2n" name="home_btn_close_cancel_n.png" path="/main/"/>
+    <image id="k1k2o" name="home_btn_close_cancel_pre.png" path="/main/"/>
+    <image id="k1k2p" name="home_btn_close_dete_pre.png" path="/main/"/>
+    <image id="k1k2q" name="home_btn_close_dete_n.png" path="/main/"/>
+  </resources>
+  <publish name=""/>
+</packageDescription>

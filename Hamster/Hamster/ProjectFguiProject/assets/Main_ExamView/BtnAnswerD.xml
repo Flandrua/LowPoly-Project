@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="192,88" extention="Button">
+  <controller name="button" pages="0,up,1,down" selected="0"/>
+  <controller name="ctr_state" pages="0,,1,,2," selected="2"/>
+  <displayList>
+    <image id="n4_moj9" name="n4" src="moj9h" fileName="image/答题页面/Group 38.png" xy="0,0">
+      <gearDisplay controller="button" pages="0"/>
+    </image>
+    <image id="n6_moj9" name="n6" src="moj9c" fileName="image/答题页面/Group 467.png" xy="0,0">
+      <gearDisplay controller="button" pages="1"/>
+    </image>
+    <loader id="n7_moj9" name="n7" xy="159,-22" size="52,52" url="ui://230f4ld9moj910" autoSize="true">
+      <gearDisplay controller="ctr_state" pages="1,2"/>
+      <gearIcon controller="ctr_state" pages="2" values="ui://230f4ld9moj910" default="ui://230f4ld9moj911"/>
+    </loader>
+  </displayList>
+  <Button/>
+</component>
