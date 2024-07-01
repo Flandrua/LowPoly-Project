@@ -2,7 +2,6 @@
   "dependencies": {
     "com.unity.collab-proxy": "2.3.1",
     "com.unity.feature.development": "1.0.1",
-    "com.unity.pico.livepreview": "file:C:/Users/Administrator/AppData/Roaming/PICO_Developer_Center_Downloads/cn/sdk_id_7207372244664713222/PICO%20Unity%20Live%20Preview%20Plugin-101%20",
     "com.unity.textmeshpro": "3.0.6",
     "com.unity.timeline": "1.7.6",
     "com.unity.ugui": "1.0.0",
