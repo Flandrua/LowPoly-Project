@@ -11,6 +11,7 @@ public class PlayerManager : MonoBehaviour
     private CharacterController characterController;
     private XROrigin xrOrign;
     private CustomCharacterControllerDriver ccd;
+    public GameObject cameraOffset;
     // Start is called before the first frame update
     private void Awake()
     {
@@ -39,6 +40,7 @@ public class PlayerManager : MonoBehaviour
     {
        characterController.height = height;
         xrOrign.CameraYOffset = height;
+        cameraOffset.transform.position = cameraOffset.transform.parent.TransformPoint(new Vector3(0,height,0));
         ccd.UpdateHeight();
        //DebugHelper.Instance.DebugMsg($"{xrOrign.CameraYOffset},{characterController.height}");
     }

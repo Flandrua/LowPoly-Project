@@ -83,6 +83,15 @@
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
+    "com.unity.pico.livepreview": {
+      "version": "file:C:/Users/Administrator/AppData/Roaming/PICO_Developer_Center_Downloads/cn/sdk_id_7207372244664713222/PICO%20Unity%20Live%20Preview%20Plugin-101%20",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.unity.xr.management": "4.0.0",
+        "com.unity.xr.interaction.toolkit": "2.0.0"
+      }
+    },
     "com.unity.settings-manager": {
       "version": "2.0.1",
       "depth": 2,

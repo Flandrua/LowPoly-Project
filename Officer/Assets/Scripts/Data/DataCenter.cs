@@ -11,7 +11,7 @@ public class GameData
     public long SaveTime { get => _saveTime; set => _saveTime = value; }
 
     private PlayerData _playerData = new PlayerData();
-    public PlayerData PlayerData { get => _playerData; set => _playerData = value; }   
+    public PlayerData PlayerData { get => _playerData; set => _playerData = value; }
 
     private HamsterData _hamsterData = new HamsterData();
     public HamsterData HamsterData { get => _hamsterData; set => _hamsterData = value; }
@@ -21,13 +21,16 @@ public class GameData
 
 public class HamsterData
 {
-    public int hp = 1;
-    public int hunger=0;
+    public int hp = 10;
+    public int favorability = 0;
 }
 public class PlayerData
 {
-    public int workProgress=0;
-    public int days=1;
+    public int workProgress = 0;
+    public int days = 0;
+    public int workEfficiency = 1;
+    public int favorabilityAbility = 1;
+    public List<ItemData> ownedItem = new List<ItemData>();
 }
 public class DataCenter : Singleton<DataCenter>
 {
