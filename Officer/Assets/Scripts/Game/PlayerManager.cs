@@ -19,7 +19,7 @@ public class PlayerManager : MonoBehaviour
     }
     void Start()
     {
-        //DataCenter.Instance.NewData();
+        DataCenter.Instance.NewData();
 
         characterController =xr.GetComponent<CharacterController>();
         xrOrign= xr.GetComponent<XROrigin>();

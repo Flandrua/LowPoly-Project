@@ -36,7 +36,9 @@ public class DataCenter : Singleton<DataCenter>
 {
     GameData _gameData;
     public GameData GameData { get => _gameData; set => _gameData = value; }
-    //在PlayerManager初始化
+    /// <summary>
+    /// 在PlayerManager初始化
+    /// </summary>
     public void InitData()
     {
 
@@ -52,6 +54,9 @@ public class DataCenter : Singleton<DataCenter>
         }
     }
 
+    /// <summary>
+    /// 储存数据
+    /// </summary>
     public void SaveData()
     {
         _gameData.SaveTime = GetTimeStamp();
@@ -61,6 +66,9 @@ public class DataCenter : Singleton<DataCenter>
         ;
     }
 
+    /// <summary>
+    /// 建立新的游戏数据
+    /// </summary>
     public void NewData()
     {
         _gameData = new GameData();

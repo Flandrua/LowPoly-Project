@@ -59,9 +59,11 @@ public class HamsterController : MonoBehaviour
 
     private Animator _animator;
     private Collider _col;
-   [SerializeField] private bool onTrigger = false;
+    [SerializeField] private bool onTrigger = false;
     [SerializeField] private bool isDead = false;
     [SerializeField] private bool isDamage = false;
+    [SerializeField] private bool isPlay = false;
+    [SerializeField] private bool isEating = false;
 
     public float stayTime = 3;//互动停留时间
 
@@ -70,21 +72,40 @@ public class HamsterController : MonoBehaviour
     void Start()
     {
         EventManager.AddListener(EventCommon.DAMAGE, DamageFlag);
+        EventManager.AddListener(EventCommon.HAMSTER_TRIGGER, TriggerFlag);
+        EventManager.AddListener(EventCommon.HAMSTER_FINISH_EATING, HamsterFinishEating);
         _animator = GetComponent<Animator>();
         _col = GetComponent<Collider>();
 
 
     }
+    private void OnDestroy()
+    {
+        EventManager.RemoveListener(EventCommon.DAMAGE, DamageFlag);
+        EventManager.RemoveListener(EventCommon.HAMSTER_TRIGGER, TriggerFlag);
+        EventManager.RemoveListener(EventCommon.HAMSTER_FINISH_EATING, HamsterFinishEating);
+    }
 
     // Update is called once per frame
     void Update()
     {
-
+        if (isPlay)
+        {
+            stayTime -= (float)Time.deltaTime;
+            if (stayTime <= 0)
+            {
+                GetFavorability(1);//此处不应该是1，后续需要读玩家的数据
+                isPlay = false;
+                Debug.Log("get favor");
+                //通知GM切换时间
+                EventManager.DispatchEvent(EventCommon.CHANGE_TIME);
+            }
+        }
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
+        if (other.CompareTag("Player") && !isEating)
         {
             onTrigger = true;
             InstantaneousSpeedCalculator calculator = other.GetComponent<InstantaneousSpeedCalculator>();
@@ -92,9 +113,24 @@ public class HamsterController : MonoBehaviour
             {
                 // 获取速度并输出
                 Vector3 velocity = calculator.InstantaneousSpeed;
-                Debug.Log("Player velocity: " + velocity);
-                DebugHelper.Instance.DebugMsg("Player velocity: " + velocity);
+                float mag = velocity.magnitude;
+                if (mag > 3)//打击行为
+                {
+                    GetDamage(-2);
+                    Debug.Log("hit");
+                }
+                else //触摸行为
+                    isPlay = true;
+
+                Debug.Log("Player velocity: " + mag);
             }
+        }
+        else if (other.CompareTag("Snack") && !isPlay)
+        {
+            onTrigger = true;
+            isEating = true;
+            EventManager.DispatchEvent(EventCommon.HAMSTER_EATING, true);//给SnackManager发送开始吃的通知
+
         }
     }
     private void OnTriggerExit(Collider other)
@@ -102,7 +138,14 @@ public class HamsterController : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             onTrigger = false;
+            isPlay = false;
             Debug.Log("player exit ");
+        }
+        else if (other.CompareTag("Snack"))
+        {
+            onTrigger = false;
+            isEating = false;
+            EventManager.DispatchEvent(EventCommon.HAMSTER_EATING, false);//给SnackManager发送中断吃的通知
         }
     }
 
@@ -136,10 +179,10 @@ public class HamsterController : MonoBehaviour
 
     public void ChangeBehaviorAnimationByStr(string animationName)
     {
-        if (!onTrigger&&!isDead&&!isDamage)
+        if (!onTrigger && !isDead && !isDamage && !isPlay)
         {
             _animator.Play(animationName);
-            Debug.Log(animationName);
+            //Debug.Log(animationName);
         }
 
     }
@@ -149,7 +192,7 @@ public class HamsterController : MonoBehaviour
     /// <param name="animationName"></param>
     public void ChangeEyesAnimationByStr(string animationName)
     {
-        if (!onTrigger && !isDead && !isDamage)
+        if (!onTrigger && !isDead && !isDamage && !isPlay)
         {
             _animator.Play(animationName, _animator.GetLayerIndex("Shapekey"));
         }
@@ -179,34 +222,47 @@ public class HamsterController : MonoBehaviour
     public void GetFavorability(int value)
     {
         DataCenter.Instance.GameData.HamsterData.favorability += value;
+        Debug.Log("favorability:" + DataCenter.Instance.GameData.HamsterData.favorability);
     }
     /// <summary>
-    /// 减仓鼠HP,玩家伤害仓鼠的话，需要握拳
+    /// 减仓鼠HP,公式是+=value，所以扣血的value需要是负数
     /// </summary>
-    /// <param name="value">公式是+=value，所以扣血的value需要是负数</param>
+    /// <param name="value"></param>
     public void GetDamage(int value)
     {
+        //减仓鼠的血，检测是否死亡，是否播放被打动画
         DataCenter.Instance.GameData.HamsterData.hp += value;
+        Debug.Log("hp:"+DataCenter.Instance.GameData.HamsterData.hp);
         if (DataCenter.Instance.GameData.HamsterData.hp <= 0)
             Death();
         else
         {
             isDamage = true;
             _animator.SetTrigger("damage");
-            
+
         }
     }
-    public void DamageFlag()
+    public void Death()
     {
-        isDamage = false;
-        Debug.Log("damage exit");
-    }
-   public void Death()
-    {
+        //死亡，播放死亡动画
         DataCenter.Instance.GameData.HamsterData.hp = 0;
         _animator.Play("Eyes_Dead", _animator.GetLayerIndex("Shapekey"));
         _animator.Play("Death");
         isDead = true;
     }
-
+    public void DamageFlag()
+    {
+        isDamage = false;
+        //Debug.Log("damage false");
+    }
+    public void TriggerFlag()
+    {
+        onTrigger = false;
+        //Debug.Log("trigger false");
+    }
+    public void HamsterFinishEating()
+    {
+        onTrigger = false;
+        GetFavorability(1);
+    }
 }
