@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UI;
 
 public enum HamsterBehavior
 {
@@ -59,13 +60,17 @@ public class HamsterController : MonoBehaviour
 
     private Animator _animator;
     private Collider _col;
+    private GameObject _fav;
+    private Scrollbar _bar;//交互停留时间条
+    private ParticleSystem _heart;
     [SerializeField] private bool onTrigger = false;
     [SerializeField] private bool isDead = false;
     [SerializeField] private bool isDamage = false;
     [SerializeField] private bool isPlay = false;
     [SerializeField] private bool isEating = false;
 
-    public float stayTime = 3;//互动停留时间
+    public float stayRequireTime = 3;//互动需求停留时间
+    private float stayTime = 0;//停留时间
 
 
 
@@ -76,6 +81,9 @@ public class HamsterController : MonoBehaviour
         EventManager.AddListener(EventCommon.HAMSTER_FINISH_EATING, HamsterFinishEating);
         _animator = GetComponent<Animator>();
         _col = GetComponent<Collider>();
+        _fav = transform.Find("Favorability").gameObject;
+        _heart = transform.Find("Favorability").Find("heart").GetComponent<ParticleSystem>();
+        _bar = transform.Find("Favorability").Find("Canvas").Find("Scrollbar").GetComponent<Scrollbar>();
 
 
     }
@@ -91,11 +99,16 @@ public class HamsterController : MonoBehaviour
     {
         if (isPlay)
         {
-            stayTime -= (float)Time.deltaTime;
-            if (stayTime <= 0)
+            stayTime += (float)Time.deltaTime;
+            _bar.size = (stayTime / stayRequireTime);
+            if (stayTime >= stayRequireTime)
             {
-                GetFavorability(1);//此处不应该是1，后续需要读玩家的数据
+                GetFavorability(DataCenter.Instance.GetTotalFavorabilityAbility());//此处不应该是1，后续需要读玩家的数据
                 isPlay = false;
+                _animator.Play("Sit");
+                _animator.Play("Eyes_Normal", _animator.GetLayerIndex("Shapekey"));
+                _heart.Play();
+                _bar.size = 1;
                 Debug.Log("get favor");
                 //通知GM切换时间
                 EventManager.DispatchEvent(EventCommon.CHANGE_TIME);
@@ -119,8 +132,13 @@ public class HamsterController : MonoBehaviour
                     GetDamage(-2);
                     Debug.Log("hit");
                 }
-                else //触摸行为
+                else if (stayTime < stayRequireTime)//触摸行为
+                {
                     isPlay = true;
+                    _animator.Play("Idle_A");
+                    _animator.Play("Eyes_Happy", _animator.GetLayerIndex("Shapekey"));
+                    _fav.SetActive(true);
+                }
 
                 Debug.Log("Player velocity: " + mag);
             }
@@ -139,6 +157,11 @@ public class HamsterController : MonoBehaviour
         {
             onTrigger = false;
             isPlay = false;
+            if (stayTime < stayRequireTime)//如果停留时间没有到3秒，重置时间
+            {
+                stayTime= 0;
+                _fav.SetActive(false);
+            }
             Debug.Log("player exit ");
         }
         else if (other.CompareTag("Snack"))
@@ -173,7 +196,7 @@ public class HamsterController : MonoBehaviour
     //    }
     //}
     /// <summary>
-    /// 更换仓鼠动作动画
+    /// 给外部hover用的更换仓鼠动作动画
     /// </summary>
     /// <param name="animationName"></param>
 
@@ -187,7 +210,7 @@ public class HamsterController : MonoBehaviour
 
     }
     /// <summary>
-    /// 更换仓鼠眼睛动画
+    /// 给外部hover用的更换仓鼠眼睛动画
     /// </summary>
     /// <param name="animationName"></param>
     public void ChangeEyesAnimationByStr(string animationName)
@@ -232,7 +255,7 @@ public class HamsterController : MonoBehaviour
     {
         //减仓鼠的血，检测是否死亡，是否播放被打动画
         DataCenter.Instance.GameData.HamsterData.hp += value;
-        Debug.Log("hp:"+DataCenter.Instance.GameData.HamsterData.hp);
+        Debug.Log("hp:" + DataCenter.Instance.GameData.HamsterData.hp);
         if (DataCenter.Instance.GameData.HamsterData.hp <= 0)
             Death();
         else

@@ -26,7 +26,7 @@ public class HamsterData
 }
 public class PlayerData
 {
-    public int workProgress = 0;
+    public int workProgress = 0; 
     public int days = 0;
     public int workEfficiency = 1;
     public int favorabilityAbility = 1;
@@ -86,6 +86,32 @@ public class DataCenter : Singleton<DataCenter>
         Color nowColor;
         ColorUtility.TryParseHtmlString(hex, out nowColor);
         return nowColor;
+    }
+
+    public int GetTotalWorkEfficiency()
+    {
+        int totalWork = GameData.PlayerData.workEfficiency;
+        if (GameData.PlayerData.ownedItem.Count > 0)
+        {
+            foreach (ItemData item in GameData.PlayerData.ownedItem)
+            {
+                totalWork += item.workEfficiency;
+            }
+        }
+        return totalWork;
+    }   
+    
+    public int GetTotalFavorabilityAbility()
+    {
+        int totalFav=GameData.PlayerData.favorabilityAbility;
+        if (GameData.PlayerData.ownedItem.Count > 0)
+        {
+            foreach (ItemData item in GameData.PlayerData.ownedItem)
+            {
+                totalFav += item.extraFavorability;
+            }
+        }
+        return totalFav;
     }
 
 }
