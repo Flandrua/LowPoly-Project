@@ -60,7 +60,7 @@ public class HamsterController : MonoBehaviour
 
     private Animator _animator;
     private Collider _col;
-    private GameObject _fav;
+    private GameObject _particle;
     private Scrollbar _bar;//交互停留时间条
     private ParticleSystem _heart;
     [SerializeField] private bool onTrigger = false;
@@ -79,11 +79,11 @@ public class HamsterController : MonoBehaviour
         EventManager.AddListener(EventCommon.DAMAGE, DamageFlag);
         EventManager.AddListener(EventCommon.HAMSTER_TRIGGER, TriggerFlag);
         EventManager.AddListener(EventCommon.HAMSTER_FINISH_EATING, HamsterFinishEating);
-        _animator = GetComponent<Animator>();
+        _animator = transform.parent.GetComponent<Animator>();
         _col = GetComponent<Collider>();
-        _fav = transform.Find("Favorability").gameObject;
-        _heart = transform.Find("Favorability").Find("heart").GetComponent<ParticleSystem>();
-        _bar = transform.Find("Favorability").Find("Canvas").Find("Scrollbar").GetComponent<Scrollbar>();
+        _particle = transform.parent.Find("Favorability").gameObject;
+        _heart = transform.parent.Find("Favorability").Find("heart").GetComponent<ParticleSystem>();
+        _bar = transform.parent.Find("Favorability").Find("Canvas").Find("Scrollbar").GetComponent<Scrollbar>();
 
 
     }
@@ -103,7 +103,7 @@ public class HamsterController : MonoBehaviour
             _bar.size = (stayTime / stayRequireTime);
             if (stayTime >= stayRequireTime)
             {
-                GetFavorability(DataCenter.Instance.GetTotalFavorabilityAbility());//此处不应该是1，后续需要读玩家的数据
+                GetFavorability(DataCenter.Instance.GetTotalFavorabilityAbility());//从数据中心读取玩家数据
                 isPlay = false;
                 _animator.Play("Sit");
                 _animator.Play("Eyes_Normal", _animator.GetLayerIndex("Shapekey"));
@@ -127,7 +127,7 @@ public class HamsterController : MonoBehaviour
                 // 获取速度并输出
                 Vector3 velocity = calculator.InstantaneousSpeed;
                 float mag = velocity.magnitude;
-                if (mag > 3)//打击行为
+                if (mag > 2.5)//打击行为
                 {
                     GetDamage(-2);
                     Debug.Log("hit");
@@ -137,7 +137,7 @@ public class HamsterController : MonoBehaviour
                     isPlay = true;
                     _animator.Play("Idle_A");
                     _animator.Play("Eyes_Happy", _animator.GetLayerIndex("Shapekey"));
-                    _fav.SetActive(true);
+                    _particle.SetActive(true);
                 }
 
                 Debug.Log("Player velocity: " + mag);
@@ -160,7 +160,7 @@ public class HamsterController : MonoBehaviour
             if (stayTime < stayRequireTime)//如果停留时间没有到3秒，重置时间
             {
                 stayTime= 0;
-                _fav.SetActive(false);
+                _particle.SetActive(false);
             }
             Debug.Log("player exit ");
         }
