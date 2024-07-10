@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SnackManager : MonoBehaviour
+public class SnackManager : MonoSingleton<SnackManager>
 {
     //随机零食功能；不做对象池，直接固定死
     //零食被吃动画处理
@@ -12,8 +12,8 @@ public class SnackManager : MonoBehaviour
     [SerializeField] private List<GameObject> _snacks = new List<GameObject>();
     [SerializeField] private GameObject _curSnacks;
     private bool isEating = false;
-    private bool isPlayer = false;
-    private bool isHamster = false;
+    public bool isPlayer = false;
+    public bool isHamster = false;
     void Start()
     {
         EventManager.AddListener<bool>(EventCommon.HAMSTER_EATING, HamsterEating);
@@ -131,7 +131,7 @@ public class SnackManager : MonoBehaviour
         }
         if (isPlayer)
         {
-
+            EventManager.DispatchEvent(EventCommon.PLAYER_FINISH_EATING);
         }
     }
 

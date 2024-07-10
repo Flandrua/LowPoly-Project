@@ -5,7 +5,7 @@ using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 
-public class PlayerManager : MonoBehaviour
+public class PlayerManager :MonoSingleton<PlayerManager>
 {
     public GameObject xr;
     private CharacterController characterController;
@@ -20,10 +20,14 @@ public class PlayerManager : MonoBehaviour
     void Start()
     {
         DataCenter.Instance.NewData();
-
-        characterController =xr.GetComponent<CharacterController>();
-        xrOrign= xr.GetComponent<XROrigin>();
+        EventManager.AddListener(EventCommon.PLAYER_FINISH_EATING, PlayerFinishEating);
+        characterController = xr.GetComponent<CharacterController>();
+        xrOrign = xr.GetComponent<XROrigin>();
         ccd = xr.GetComponent<CustomCharacterControllerDriver>();
+    }
+    private void OnDestroy()
+    {
+        EventManager.RemoveListener(EventCommon.PLAYER_FINISH_EATING, PlayerFinishEating);
     }
 
     // Update is called once per frame
@@ -38,16 +42,31 @@ public class PlayerManager : MonoBehaviour
     /// <param name="height"></param>
     public void OnHeightChange(float height)
     {
-       characterController.height = height;
+        characterController.height = height;
         xrOrign.CameraYOffset = height;
-        cameraOffset.transform.position = cameraOffset.transform.parent.TransformPoint(new Vector3(0,height,0));
+        cameraOffset.transform.position = cameraOffset.transform.parent.TransformPoint(new Vector3(0, height, 0));
         ccd.UpdateHeight();
-       //DebugHelper.Instance.DebugMsg($"{xrOrign.CameraYOffset},{characterController.height}");
+        //DebugHelper.Instance.DebugMsg($"{xrOrign.CameraYOffset},{characterController.height}");
+    }
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Snack"))
+        {
+            EventManager.DispatchEvent(EventCommon.PLAYER_EATING, true);//给SnackManager发送开始吃的通知
+
+        }
     }
 
-
-    public void OnBtnTest()
+    private void OnTriggerExit(Collider other)
     {
-        Debug.Log("press");
+        if (other.CompareTag("Snack"))
+        {
+
+            EventManager.DispatchEvent(EventCommon.PLAYER_EATING, false);//给SnackManager发送中断吃的通知
+        }
+    }
+    private void PlayerFinishEating()
+    {
+        DataCenter.Instance.GetWorkEfficiency(1);
     }
 }

@@ -114,4 +114,21 @@ public class DataCenter : Singleton<DataCenter>
         return totalFav;
     }
 
+    public void GetFavorability(int value)
+    {
+    GameData.HamsterData.favorability += value;
+    }
+
+    public void GetDamage(int value)
+    {
+        GameData.HamsterData.hp += value;
+    }
+    public void GetWorkEfficiency(int value)
+    {
+        GameData.PlayerData.workEfficiency += value;
+    }  
+    public void GetWorkProgress(int value)
+    {
+        GameData.PlayerData.workProgress += value;
+    }
 }

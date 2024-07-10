@@ -11,8 +11,8 @@ public class EventCommon
     public static string HAMSTER_TRIGGER = "HamsterTrigger";
     public static string HAMSTER_EATING = "HamsterEating";
     public static string PLAYER_EATING = "PlayerEating";
+    public static string PREPARE_CHANGE_TIME = "PrepareChangeTime";
     public static string CHANGE_TIME = "ChangeTime";
     public static string HAMSTER_FINISH_EATING = "HamsterFinishEating";
     public static string PLAYER_FINISH_EATING = "PlayerFinishEating";
-    
 }

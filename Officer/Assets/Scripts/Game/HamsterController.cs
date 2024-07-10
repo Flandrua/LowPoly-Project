@@ -60,7 +60,7 @@ public class HamsterController : MonoBehaviour
 
     private Animator _animator;
     private Collider _col;
-    private GameObject _particle;
+    private GameObject _favEffect;
     private Scrollbar _bar;//交互停留时间条
     private ParticleSystem _heart;
     [SerializeField] private bool onTrigger = false;
@@ -81,7 +81,7 @@ public class HamsterController : MonoBehaviour
         EventManager.AddListener(EventCommon.HAMSTER_FINISH_EATING, HamsterFinishEating);
         _animator = transform.parent.GetComponent<Animator>();
         _col = GetComponent<Collider>();
-        _particle = transform.parent.Find("Favorability").gameObject;
+        _favEffect = transform.parent.Find("Favorability").gameObject;
         _heart = transform.parent.Find("Favorability").Find("heart").GetComponent<ParticleSystem>();
         _bar = transform.parent.Find("Favorability").Find("Canvas").Find("Scrollbar").GetComponent<Scrollbar>();
 
@@ -110,8 +110,8 @@ public class HamsterController : MonoBehaviour
                 _heart.Play();
                 _bar.size = 1;
                 Debug.Log("get favor");
-                //通知GM切换时间
-                EventManager.DispatchEvent(EventCommon.CHANGE_TIME);
+                //通知GM互动完成
+                EventManager.DispatchEvent(EventCommon.PREPARE_CHANGE_TIME,"play");
             }
         }
     }
@@ -132,12 +132,14 @@ public class HamsterController : MonoBehaviour
                     GetDamage(-2);
                     Debug.Log("hit");
                 }
-                else if (stayTime < stayRequireTime)//触摸行为
+                else if (stayTime < stayRequireTime&&MouseManager.Instance.canSwitchTime==false)//触摸行为,并且判断今天行动是否结束
                 {
                     isPlay = true;
                     _animator.Play("Idle_A");
                     _animator.Play("Eyes_Happy", _animator.GetLayerIndex("Shapekey"));
-                    _particle.SetActive(true);
+                    TimeManager.Instance.RemoveTask(BarHide, this);//移除该类计时器
+                    _favEffect.SetActive(true);
+                    TimeManager.Instance.AddTask(5,false, BarHide, this);//5秒后隐藏Bar
                 }
 
                 Debug.Log("Player velocity: " + mag);
@@ -151,6 +153,10 @@ public class HamsterController : MonoBehaviour
 
         }
     }
+    private void BarHide()
+    {
+        _favEffect.SetActive(false);
+    }
     private void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Player"))
@@ -160,7 +166,7 @@ public class HamsterController : MonoBehaviour
             if (stayTime < stayRequireTime)//如果停留时间没有到3秒，重置时间
             {
                 stayTime= 0;
-                _particle.SetActive(false);
+                //_favEffect.SetActive(false);
             }
             Debug.Log("player exit ");
         }
@@ -244,8 +250,7 @@ public class HamsterController : MonoBehaviour
     /// <param name="value"></param>
     public void GetFavorability(int value)
     {
-        DataCenter.Instance.GameData.HamsterData.favorability += value;
-        Debug.Log("favorability:" + DataCenter.Instance.GameData.HamsterData.favorability);
+        DataCenter.Instance.GetFavorability(value);
     }
     /// <summary>
     /// 减仓鼠HP,公式是+=value，所以扣血的value需要是负数
@@ -254,8 +259,7 @@ public class HamsterController : MonoBehaviour
     public void GetDamage(int value)
     {
         //减仓鼠的血，检测是否死亡，是否播放被打动画
-        DataCenter.Instance.GameData.HamsterData.hp += value;
-        Debug.Log("hp:" + DataCenter.Instance.GameData.HamsterData.hp);
+        DataCenter.Instance.GetDamage(value);
         if (DataCenter.Instance.GameData.HamsterData.hp <= 0)
             Death();
         else
