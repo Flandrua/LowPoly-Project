@@ -12,18 +12,25 @@ public class SnackManager : MonoSingleton<SnackManager>
     [SerializeField] private List<GameObject> _snacks = new List<GameObject>();
     [SerializeField] private GameObject _curSnacks;
     private bool isEating = false;
+    private Vector3 initialPosition;
+    private Quaternion initialRotation;
     public bool isPlayer = false;
     public bool isHamster = false;
+
     void Start()
     {
         EventManager.AddListener<bool>(EventCommon.HAMSTER_EATING, HamsterEating);
         EventManager.AddListener<bool>(EventCommon.PLAYER_EATING, PlayerEating);
+        EventManager.AddListener(EventCommon.NEXT_STAGE, ResetToDefault);
+        initialPosition = transform.position;
+        initialRotation = transform.rotation;
         _animation = GetComponent<Animation>();
         _animation.enabled = false;
         _animationName = "VanishEffect";
         _col = GetComponent<Collider>();
         _snacks = GetChildren(transform.Find("Container"));
-        RandomSnack();//注意，此处测试用，后续此处删除
+        RandomSnack();
+
     }
     private List<GameObject> GetChildren(Transform parent)
     {
@@ -38,9 +45,17 @@ public class SnackManager : MonoSingleton<SnackManager>
     {
         EventManager.RemoveListener<bool>(EventCommon.HAMSTER_EATING, HamsterEating);
         EventManager.RemoveListener<bool>(EventCommon.PLAYER_EATING, PlayerEating);
+        EventManager.RemoveListener(EventCommon.NEXT_STAGE, ResetToDefault);
     }
     public void RandomSnack()
     {
+        if (_curSnacks != null)
+        {
+            if (_curSnacks.activeInHierarchy)//如果是没有吃的零食，就隐藏掉
+            {
+                _curSnacks.SetActive(false);
+            }
+        }
         if (_snacks.Count == 0)
         {
             Debug.LogWarning("snacks已用完");
@@ -52,7 +67,18 @@ public class SnackManager : MonoSingleton<SnackManager>
         _snacks.RemoveAt(randomIndex);
         _col.enabled = true;
     }
-    // Update is called once per frame
+    private void ResetToDefault()
+    {
+        if (!_curSnacks.activeInHierarchy)
+        {
+            _animation.enabled = false;
+            //_curSnacks.SetActive(false);
+        }
+        transform.position = initialPosition;
+        transform.rotation = Quaternion.identity;
+        //RandomSnack();
+
+    }
     void Update()
     {
 
@@ -120,13 +146,14 @@ public class SnackManager : MonoSingleton<SnackManager>
         state.enabled = false;
     }
 
-    public void FinishEating()
+    public void FinishEating()//动画事件
     {
         _col.enabled = false;
         _curSnacks.SetActive(false);
-        RandomSnack();//注意，目前测试用，后续此处的random要删除
+        //RandomSnack();//注意，目前测试用，后续此处的random要删除
         if (isHamster)
         {
+            HamsterController.Instance.isEating = false;
             EventManager.DispatchEvent(EventCommon.HAMSTER_FINISH_EATING);
         }
         if (isPlayer)

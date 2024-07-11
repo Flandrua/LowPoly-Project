@@ -12,6 +12,8 @@ public class PlayerManager :MonoSingleton<PlayerManager>
     private XROrigin xrOrign;
     private CustomCharacterControllerDriver ccd;
     public GameObject cameraOffset;
+    private Vector3 initialPosition;
+    private Quaternion initialRotation;
     // Start is called before the first frame update
     private void Awake()
     {
@@ -24,10 +26,17 @@ public class PlayerManager :MonoSingleton<PlayerManager>
         characterController = xr.GetComponent<CharacterController>();
         xrOrign = xr.GetComponent<XROrigin>();
         ccd = xr.GetComponent<CustomCharacterControllerDriver>();
+        initialPosition = xr.transform.position;
+        initialRotation = xr.transform.rotation;
     }
     private void OnDestroy()
     {
         EventManager.RemoveListener(EventCommon.PLAYER_FINISH_EATING, PlayerFinishEating);
+    }
+    public void ResetLocation()
+    {
+        xr.transform.position = initialPosition;
+        xr.transform.rotation = initialRotation;
     }
 
     // Update is called once per frame

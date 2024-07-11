@@ -117,18 +117,22 @@ public class DataCenter : Singleton<DataCenter>
     public void GetFavorability(int value)
     {
     GameData.HamsterData.favorability += value;
+        Debug.Log($"Favorability:{value}");
     }
 
     public void GetDamage(int value)
     {
         GameData.HamsterData.hp += value;
+        Debug.Log($"Damage:{value}");
     }
     public void GetWorkEfficiency(int value)
     {
         GameData.PlayerData.workEfficiency += value;
+        Debug.Log($"Efficiency:{value}");
     }  
     public void GetWorkProgress(int value)
     {
         GameData.PlayerData.workProgress += value;
+        Debug.Log($"Progress:{value}");
     }
 }

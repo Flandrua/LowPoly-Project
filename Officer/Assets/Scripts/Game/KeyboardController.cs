@@ -16,8 +16,17 @@ public class KeyboardController : MonoSingleton<KeyboardController>
         _workEffect = transform.parent.Find("Work").gameObject;
         _star = transform.parent.Find("Work").Find("Star").GetComponent<ParticleSystem>();
         _bar = transform.parent.Find("Work").Find("Canvas").Find("Scrollbar").GetComponent<Scrollbar>();
+        EventManager.AddListener(EventCommon.NEXT_STAGE, ResetToDefault);
     }
-
+    private void OnDestroy()
+    {
+        EventManager.RemoveListener(EventCommon.NEXT_STAGE, ResetToDefault);
+    }
+    public void ResetToDefault()
+    {
+        actualHit = 0;
+        _bar.size= 0;
+    }
     // Update is called once per frame
     void Update()
     {
@@ -60,11 +69,13 @@ public class KeyboardController : MonoSingleton<KeyboardController>
     {
         if (actualHit < requireHit)
         {
+            actualHit++;
             _bar.size = ((float)actualHit / (float)requireHit);
-            actualHit++;         
+            Debug.Log(actualHit);
         }
         else if(actualHit == requireHit)
         {
+            actualHit++;//让再次打击键盘的时候，不触发这个if
             _star.Play();
             //发送工作完成通知
             EventManager.DispatchEvent<string>(EventCommon.PREPARE_CHANGE_TIME,"work");

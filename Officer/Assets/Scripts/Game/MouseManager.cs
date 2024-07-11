@@ -10,17 +10,23 @@ public class MouseManager : MonoSingleton<MouseManager>
     void Start()
     {
         EventManager.AddListener<string>(EventCommon.PREPARE_CHANGE_TIME, CanSwitchTime);
+        EventManager.AddListener(EventCommon.NEXT_STAGE, ResetToDefault);
     }
     private void OnDestroy()
     {
         EventManager.RemoveListener<string>(EventCommon.PREPARE_CHANGE_TIME, CanSwitchTime);
+        EventManager.RemoveListener(EventCommon.NEXT_STAGE, ResetToDefault);
     }
 
 
     // Update is called once per frame
     void Update()
     {
-        
+
+    }
+    public void ResetToDefault()
+    {
+        canSwitchTime = false;
     }
     private void CanSwitchTime(string str)
     {
@@ -31,12 +37,18 @@ public class MouseManager : MonoSingleton<MouseManager>
     {
         if (other.CompareTag("Player"))
         {
-            if(canSwitchTime)
+            InstantaneousSpeedCalculator calculator = other.GetComponent<InstantaneousSpeedCalculator>();
+            if (calculator != null)
             {
-                
-                EventManager.DispatchEvent(EventCommon.CHANGE_TIME);
+                // 获取速度并输出
+                Vector3 velocity = calculator.InstantaneousSpeed;
+                float mag = velocity.magnitude;
+                if (mag > 2.5 && canSwitchTime)//打击行为
+                    EventManager.DispatchEvent<bool>(EventCommon.CHANGE_TIME, true);
             }
         }
-    }
 
+    }
 }
+
+

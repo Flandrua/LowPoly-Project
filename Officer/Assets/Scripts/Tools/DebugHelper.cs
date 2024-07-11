@@ -17,7 +17,7 @@ public class DebugHelper : MonoSingleton<DebugHelper>
     // Update is called once per frame
     void Update()
     {
-        
+        debugText.text = $"Progress{DataCenter.Instance.GameData.PlayerData.workProgress},Fav {DataCenter.Instance.GameData.HamsterData.favorability}";
     }
     public void DebugMsg(string msg)
     {

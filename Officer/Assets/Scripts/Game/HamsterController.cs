@@ -50,7 +50,7 @@ public enum HamsterEyes
     Teardrop_L,
     Teardrop_R
 };
-public class HamsterController : MonoBehaviour
+public class HamsterController : MonoSingleton<HamsterController>
 {
 
     //切换动画
@@ -67,7 +67,7 @@ public class HamsterController : MonoBehaviour
     [SerializeField] private bool isDead = false;
     [SerializeField] private bool isDamage = false;
     [SerializeField] private bool isPlay = false;
-    [SerializeField] private bool isEating = false;
+    [SerializeField] public bool isEating = false;
 
     public float stayRequireTime = 3;//互动需求停留时间
     private float stayTime = 0;//停留时间
@@ -79,6 +79,7 @@ public class HamsterController : MonoBehaviour
         EventManager.AddListener(EventCommon.DAMAGE, DamageFlag);
         EventManager.AddListener(EventCommon.HAMSTER_TRIGGER, TriggerFlag);
         EventManager.AddListener(EventCommon.HAMSTER_FINISH_EATING, HamsterFinishEating);
+        EventManager.AddListener(EventCommon.NEXT_STAGE, ResetToDefault);
         _animator = transform.parent.GetComponent<Animator>();
         _col = GetComponent<Collider>();
         _favEffect = transform.parent.Find("Favorability").gameObject;
@@ -92,8 +93,13 @@ public class HamsterController : MonoBehaviour
         EventManager.RemoveListener(EventCommon.DAMAGE, DamageFlag);
         EventManager.RemoveListener(EventCommon.HAMSTER_TRIGGER, TriggerFlag);
         EventManager.RemoveListener(EventCommon.HAMSTER_FINISH_EATING, HamsterFinishEating);
+        EventManager.RemoveListener(EventCommon.NEXT_STAGE, ResetToDefault);
     }
-
+    private void ResetToDefault()
+    {
+        stayTime = 0;
+        _bar.size = 0;
+    }
     // Update is called once per frame
     void Update()
     {
@@ -103,7 +109,6 @@ public class HamsterController : MonoBehaviour
             _bar.size = (stayTime / stayRequireTime);
             if (stayTime >= stayRequireTime)
             {
-                GetFavorability(DataCenter.Instance.GetTotalFavorabilityAbility());//从数据中心读取玩家数据
                 isPlay = false;
                 _animator.Play("Sit");
                 _animator.Play("Eyes_Normal", _animator.GetLayerIndex("Shapekey"));
@@ -115,6 +120,7 @@ public class HamsterController : MonoBehaviour
             }
         }
     }
+
 
     private void OnTriggerEnter(Collider other)
     {
@@ -142,7 +148,7 @@ public class HamsterController : MonoBehaviour
                     TimeManager.Instance.AddTask(5,false, BarHide, this);//5秒后隐藏Bar
                 }
 
-                Debug.Log("Player velocity: " + mag);
+                //Debug.Log("Player velocity: " + mag);
             }
         }
         else if (other.CompareTag("Snack") && !isPlay)
