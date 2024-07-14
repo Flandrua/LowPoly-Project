@@ -65,6 +65,7 @@ public class HamsterController : MonoSingleton<HamsterController>
     private ParticleSystem _heart;
     [SerializeField] private bool onTrigger = false;
     [SerializeField] private bool isDead = false;
+    [SerializeField] private bool isOut = false;
     [SerializeField] private bool isDamage = false;
     [SerializeField] private bool isPlay = false;
     [SerializeField] public bool isEating = false;
@@ -88,8 +89,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
 
     }
-    private void OnDestroy()
-    {
+    private void OnDestroy()    {
         EventManager.RemoveListener(EventCommon.DAMAGE, DamageFlag);
         EventManager.RemoveListener(EventCommon.HAMSTER_TRIGGER, TriggerFlag);
         EventManager.RemoveListener(EventCommon.HAMSTER_FINISH_EATING, HamsterFinishEating);
@@ -99,6 +99,16 @@ public class HamsterController : MonoSingleton<HamsterController>
     {
         stayTime = 0;
         _bar.size = 0;
+        isPlay = false;
+        onTrigger = false;
+        _animator.Play("Sit");
+        _animator.Play("Eyes_Normal", _animator.GetLayerIndex("Shapekey"));
+    }
+    public void ResetMoveAnimation()
+    {
+        isOut=false; ;
+        _animator.Play("Sit");
+        _animator.Play("Eyes_Normal", _animator.GetLayerIndex("Shapekey"));
     }
     // Update is called once per frame
     void Update()
@@ -124,6 +134,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
     private void OnTriggerEnter(Collider other)
     {
+        if(isDead|| isOut) return;
         if (other.CompareTag("Player") && !isEating)
         {
             onTrigger = true;
@@ -136,7 +147,11 @@ public class HamsterController : MonoSingleton<HamsterController>
                 if (mag > 2.5)//打击行为
                 {
                     GetDamage(-2);
-                    Debug.Log("hit");
+                    GetFavorability(-1);
+                    if (DataCenter.Instance.GameData.HamsterData.hp < 5)
+                    {
+                        _animator.Play("Eyes_Cry", _animator.GetLayerIndex("Shapekey"));
+                    }
                 }
                 else if (stayTime < stayRequireTime&&MouseManager.Instance.canSwitchTime==false)//触摸行为,并且判断今天行动是否结束
                 {
@@ -155,6 +170,7 @@ public class HamsterController : MonoSingleton<HamsterController>
         {
             onTrigger = true;
             isEating = true;
+            _animator.Play("Eyes_Excited", _animator.GetLayerIndex("Shapekey"));
             EventManager.DispatchEvent(EventCommon.HAMSTER_EATING, true);//给SnackManager发送开始吃的通知
 
         }
@@ -184,29 +200,7 @@ public class HamsterController : MonoSingleton<HamsterController>
         }
     }
 
-    //private void OnCollisionEnter(Collision other)
-    //{
-    //    if (other.gameObject.CompareTag("Player"))
-    //    {
-    //        onTrigger = true;
-    //        Rigidbody rb = other.gameObject.GetComponent<Rigidbody>();
-    //        if (rb != null)
-    //        {
-    //            // 获取速度并输出
-    //            Vector3 velocity = rb.velocity;
-    //            Debug.Log("Player velocity: " + velocity);
-    //            DebugHelper.Instance.DebugMsg("Player velocity: " + velocity);
-    //        }
-    //    }
-    //}
-    //private void OnCollisionExit(Collision other)
-    //{
-    //    if (other.gameObject.CompareTag("Player"))
-    //    {
-    //        onTrigger = false;
-    //        Debug.Log("player exit ");
-    //    }
-    //}
+
     /// <summary>
     /// 给外部hover用的更换仓鼠动作动画
     /// </summary>
@@ -295,7 +289,13 @@ public class HamsterController : MonoSingleton<HamsterController>
     }
     public void HamsterFinishEating()
     {
+        isOut = true;
         onTrigger = false;
         GetFavorability(1);
+        //录制一个走开的动画
+        _animator.Play("Walk");
+        _animator.SetBool("Move",true);
+        TimeManager.Instance.AddTask(3, false, () => { _animator.Play("Jump"); }, this);
+        TimeManager.Instance.AddTask(4.1f, false, () => { _animator.Play("Walk"); }, this);
     }
 }
