@@ -14,7 +14,8 @@ public class GameManager : MonoSingleton<GameManager>
     public LightingDataAsset afternoonDataAsset;
     public Material night;
     public LightingDataAsset nightDataAsset;
-
+    public int totaldays = 10;
+    public int goalWorkPrgoress = 50;
     
     void Start()
     {
@@ -37,7 +38,7 @@ public class GameManager : MonoSingleton<GameManager>
         else if (type == "work")
         {
             DataCenter.Instance.GetWorkProgress(DataCenter.Instance.GetTotalWorkEfficiency());
-
+            EventManager.DispatchEvent(EventCommon.UPDATE_MONITOR);
         }
 
     }
@@ -78,9 +79,12 @@ public class GameManager : MonoSingleton<GameManager>
             //玩家需要在床边醒来
             PlayerManager.Instance.ResetLocation();
             //随机新的零食
+            SnackManager.Instance.RandomSnack();
         }
+        EventManager.DispatchEvent(EventCommon.UPDATE_MONITOR);
         EventManager.DispatchEvent(EventCommon.NEXT_STAGE);
         TimeManager.Instance.AddTask(1, false, () => { SendAnimatorPostSignal(false); }, this);
+
     }
 
 
