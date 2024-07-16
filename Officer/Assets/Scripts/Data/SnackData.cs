@@ -11,6 +11,7 @@ public class SnackData : MonoBehaviour
     public bool isPoisonous = false;
     public bool isWine = false;
     public bool isSpicy = false;
+    public bool isSour = false;
     // Start is called before the first frame update
     void Start()
     {

@@ -12,6 +12,7 @@ public class ItemData : MonoBehaviour
 
     private TextMeshProUGUI _content = null;
     private TextMeshProUGUI _name = null;
+    private Outline _outline = null;
     private Vector3 initialPosition;
     private Quaternion initialRotation;
     // Start is called before the first frame update
@@ -20,6 +21,8 @@ public class ItemData : MonoBehaviour
         EventManager.AddListener(EventCommon.NEXT_STAGE, ResetToDefault);
         _content = UIMonitorController.Instance.content;
         _name = UIMonitorController.Instance.name;
+        _outline = GetComponent<Outline>();
+        _outline.enabled = false;
         //_content.text = desc;
         //_name.text = itemName;
         initialPosition = transform.position;
@@ -33,6 +36,7 @@ public class ItemData : MonoBehaviour
     {
         _content.text = desc;
         _name.text = itemName;
+        _outline.enabled = flag;
         UIMonitorController.Instance.Show(flag);
     }
 

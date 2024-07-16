@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 public class SnackManager : MonoSingleton<SnackManager>
@@ -11,6 +12,11 @@ public class SnackManager : MonoSingleton<SnackManager>
     private Collider _col;
     [SerializeField] private List<GameObject> _snacks = new List<GameObject>();
     [SerializeField] private GameObject _curSnacks;
+    private string _snackName;
+    private string _desc;
+    private Outline _outline;
+    private TextMeshProUGUI _content = null;
+    private TextMeshProUGUI _name = null;
     private bool isEating = false;
     private Vector3 initialPosition;
     private Quaternion initialRotation;
@@ -29,9 +35,19 @@ public class SnackManager : MonoSingleton<SnackManager>
         _animationName = "VanishEffect";
         _col = GetComponent<Collider>();
         _snacks = GetChildren(transform.Find("Container"));
+        _content = UIMonitorController.Instance.content;
+        _name = UIMonitorController.Instance.name;
         RandomSnack();
 
     }
+    public void ShowUIDec(bool flag)
+    {
+        _content.text = _desc;
+        _name.text = _snackName;
+        _outline.enabled = flag;
+        UIMonitorController.Instance.Show(flag);
+    }
+
     private List<GameObject> GetChildren(Transform parent)
     {
         List<GameObject> children = new List<GameObject>();
@@ -66,6 +82,10 @@ public class SnackManager : MonoSingleton<SnackManager>
         _curSnacks.SetActive(true);
         _snacks.RemoveAt(randomIndex);
         _col.enabled = true;
+        SnackData snackData = _curSnacks.GetComponent<SnackData>();
+        _snackName = snackData.name;
+        _desc = snackData.desc;
+        _outline=_curSnacks.GetComponent<Outline>();
     }
     private void ResetToDefault()
     {

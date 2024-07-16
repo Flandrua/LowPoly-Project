@@ -70,6 +70,9 @@ public class GameManager : MonoSingleton<GameManager>
             Lightmapping.lightingDataAsset = morningDataAsset;
             //小鼠回复血量
             DataCenter.Instance.GameData.HamsterData.hp = 10;
+            //如果吃过零食了，随机道具
+            if (HamsterController.Instance.isOut) { MainItemManager.Instance.RandomItem(); }
+            //重置小鼠状态
             HamsterController.Instance.ResetMoveAnimation();
             curTimeStage = 0;
             if (SnackManager.Instance.isPlayer)            //玩家如果吃了零食，减去1点工作效率

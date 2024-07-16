@@ -65,7 +65,7 @@ public class HamsterController : MonoSingleton<HamsterController>
     private ParticleSystem _heart;
     [SerializeField] private bool onTrigger = false;
     [SerializeField] private bool isDead = false;
-    [SerializeField] private bool isOut = false;
+    [SerializeField] public bool isOut = false;
     [SerializeField] private bool isDamage = false;
     [SerializeField] private bool isPlay = false;
     [SerializeField] public bool isEating = false;
