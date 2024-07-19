@@ -63,6 +63,7 @@ public class HamsterController : MonoSingleton<HamsterController>
     private GameObject _favEffect;
     private Scrollbar _bar;//交互停留时间条
     private ParticleSystem _heart;
+    private ParticleSystem _flame;
     [SerializeField] private bool onTrigger = false;
     [SerializeField] private bool isDead = false;
     [SerializeField] public bool isOut = false;
@@ -79,20 +80,20 @@ public class HamsterController : MonoSingleton<HamsterController>
     {
         EventManager.AddListener(EventCommon.DAMAGE, DamageFlag);
         EventManager.AddListener(EventCommon.HAMSTER_TRIGGER, TriggerFlag);
-        EventManager.AddListener(EventCommon.HAMSTER_FINISH_EATING, HamsterFinishEating);
+        EventManager.AddListener<SnackData>(EventCommon.HAMSTER_FINISH_EATING, HamsterFinishEating);
         EventManager.AddListener(EventCommon.NEXT_STAGE, ResetToDefault);
         _animator = transform.parent.GetComponent<Animator>();
         _col = GetComponent<Collider>();
         _favEffect = transform.parent.Find("Favorability").gameObject;
         _heart = transform.parent.Find("Favorability").Find("heart").GetComponent<ParticleSystem>();
         _bar = transform.parent.Find("Favorability").Find("Canvas").Find("Scrollbar").GetComponent<Scrollbar>();
-
+        _flame = transform.parent.Find("Flame").GetComponent<ParticleSystem>();
 
     }
     private void OnDestroy()    {
         EventManager.RemoveListener(EventCommon.DAMAGE, DamageFlag);
         EventManager.RemoveListener(EventCommon.HAMSTER_TRIGGER, TriggerFlag);
-        EventManager.RemoveListener(EventCommon.HAMSTER_FINISH_EATING, HamsterFinishEating);
+        EventManager.RemoveListener<SnackData>(EventCommon.HAMSTER_FINISH_EATING, HamsterFinishEating);
         EventManager.RemoveListener(EventCommon.NEXT_STAGE, ResetToDefault);
     }
     private void ResetToDefault()
@@ -103,6 +104,9 @@ public class HamsterController : MonoSingleton<HamsterController>
         onTrigger = false;
         _animator.Play("Sit");
         _animator.Play("Eyes_Normal", _animator.GetLayerIndex("Shapekey"));
+        _animator.SetBool("Move", false);
+        _animator.SetBool("Sour", false);
+
     }
     public void ResetMoveAnimation()
     {
@@ -287,14 +291,35 @@ public class HamsterController : MonoSingleton<HamsterController>
         onTrigger = false;
         //Debug.Log("trigger false");
     }
-    public void HamsterFinishEating()
+    public void HamsterFinishEating(SnackData snack)
     {
         isOut = true;
         onTrigger = false;
-        GetFavorability(1);
+        GetFavorability(snack.extraFavorability);
+        //需要判断是否吃了特殊食物
+        if(snack.isPoisonous)
+        {
+            Death();
+            return;
+        }
+        else if (snack.isSour)
+        {
+            _animator.SetBool("Sour", true);
+            _animator.Play("Eyes_Trauma", _animator.GetLayerIndex("Shapekey"));
+        }
+        else if (snack.isWine)
+        {
+            _animator.Play("Eyes_Spin", _animator.GetLayerIndex("Shapekey"));
+        }
+        else if (snack.isSpicy)
+        {
+            _animator.Play("Eyes_Shrink", _animator.GetLayerIndex("Shapekey"));
+            _flame.Play();
+        }
         //录制一个走开的动画
         _animator.Play("Walk");
         _animator.SetBool("Move",true);
+        
         TimeManager.Instance.AddTask(3, false, () => { _animator.Play("Jump"); }, this);
         TimeManager.Instance.AddTask(4.1f, false, () => { _animator.Play("Walk"); }, this);
     }

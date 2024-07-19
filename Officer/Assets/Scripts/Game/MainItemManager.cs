@@ -34,6 +34,10 @@ public class MainItemManager : MonoSingleton<MainItemManager>
         _nextItem.SetActive(true);
         _item.RemoveAt(randomIndex);
         ItemData itemData = _nextItem.GetComponent<ItemData>();
+        if (itemData.isPad) {
+            //如果是鼠标垫，就让实际需要工作的次数除以2
+            KeyboardController.Instance.requireHit = (KeyboardController.Instance.requireHit / 2);
+        }
     }
 
     // Update is called once per frame

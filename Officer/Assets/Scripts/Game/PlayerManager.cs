@@ -8,12 +8,14 @@ using UnityEngine.XR.Interaction.Toolkit;
 public class PlayerManager :MonoSingleton<PlayerManager>
 {
     public GameObject xr;
+    public int tempEfficiency = 0;
     private CharacterController characterController;
     private XROrigin xrOrign;
     private CustomCharacterControllerDriver ccd;
     public GameObject cameraOffset;
     private Vector3 initialPosition;
     private Quaternion initialRotation;
+    private ParticleSystem _flame;
     // Start is called before the first frame update
     private void Awake()
     {
@@ -22,19 +24,23 @@ public class PlayerManager :MonoSingleton<PlayerManager>
     void Start()
     {
         DataCenter.Instance.NewData();
-        EventManager.AddListener(EventCommon.PLAYER_FINISH_EATING, PlayerFinishEating);
+        EventManager.AddListener<SnackData>(EventCommon.PLAYER_FINISH_EATING, PlayerFinishEating);
         characterController = xr.GetComponent<CharacterController>();
         xrOrign = xr.GetComponent<XROrigin>();
         ccd = xr.GetComponent<CustomCharacterControllerDriver>();
         initialPosition = xr.transform.position;
         initialRotation = xr.transform.rotation;
+        _flame = GetComponentInChildren<ParticleSystem>();
     }
     private void OnDestroy()
     {
-        EventManager.RemoveListener(EventCommon.PLAYER_FINISH_EATING, PlayerFinishEating);
+        EventManager.RemoveListener<SnackData>(EventCommon.PLAYER_FINISH_EATING, PlayerFinishEating);
     }
     public void ResetLocation()
     {
+        DataCenter.Instance.GetWorkEfficiency(-tempEfficiency);
+        _flame.Stop();
+        tempEfficiency = 0;
         xr.transform.position = initialPosition;
         xr.transform.rotation = initialRotation;
     }
@@ -74,8 +80,12 @@ public class PlayerManager :MonoSingleton<PlayerManager>
             EventManager.DispatchEvent(EventCommon.PLAYER_EATING, false);//给SnackManager发送中断吃的通知
         }
     }
-    private void PlayerFinishEating()
+    private void PlayerFinishEating(SnackData snack)
     {
-        DataCenter.Instance.GetWorkEfficiency(1);
+        tempEfficiency = snack.workEfficiency;
+        DataCenter.Instance.GetWorkEfficiency(snack.workEfficiency);
+        //判断是否吃了特殊零食
+
+
     }
 }

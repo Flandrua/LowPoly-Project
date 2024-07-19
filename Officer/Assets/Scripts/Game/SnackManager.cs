@@ -170,15 +170,16 @@ public class SnackManager : MonoSingleton<SnackManager>
     {
         _col.enabled = false;
         _curSnacks.SetActive(false);
+        SnackData snack= _curSnacks.GetComponent<SnackData>();
         //RandomSnack();//注意，目前测试用，后续此处的random要删除
         if (isHamster)
         {
             HamsterController.Instance.isEating = false;
-            EventManager.DispatchEvent(EventCommon.HAMSTER_FINISH_EATING);
+            EventManager.DispatchEvent<SnackData>(EventCommon.HAMSTER_FINISH_EATING, snack);
         }
         if (isPlayer)
         {
-            EventManager.DispatchEvent(EventCommon.PLAYER_FINISH_EATING);
+            EventManager.DispatchEvent<SnackData>(EventCommon.PLAYER_FINISH_EATING, snack);
         }
     }
 

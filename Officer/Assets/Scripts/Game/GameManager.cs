@@ -75,11 +75,7 @@ public class GameManager : MonoSingleton<GameManager>
             //重置小鼠状态
             HamsterController.Instance.ResetMoveAnimation();
             curTimeStage = 0;
-            if (SnackManager.Instance.isPlayer)            //玩家如果吃了零食，减去1点工作效率
-            {
-                DataCenter.Instance.GetWorkEfficiency(-1);
-            }
-            //玩家需要在床边醒来
+            //玩家需要在床边醒来,如果吃了零食还要减去临时工作效率
             PlayerManager.Instance.ResetLocation();
             //随机新的零食
             SnackManager.Instance.RandomSnack();

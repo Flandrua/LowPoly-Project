@@ -7,6 +7,7 @@ public class ItemData : MonoBehaviour
 {
     public string itemName;
     public string desc;
+    public bool isPad= false;
     public int workEfficiency = 0;
     public int extraFavorability = 0;
 
