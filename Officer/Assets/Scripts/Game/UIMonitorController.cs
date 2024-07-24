@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using static UnityEditor.Timeline.TimelinePlaybackControls;
 
 public class UIMonitorController : MonoSingleton<UIMonitorController>
 {
@@ -10,6 +9,7 @@ public class UIMonitorController : MonoSingleton<UIMonitorController>
     private Animator _animator;
     public TextMeshProUGUI content = null;
     public TextMeshProUGUI name = null;
+   
     void Start()
     {
         _animator = GetComponent<Animator>();
@@ -24,6 +24,6 @@ public class UIMonitorController : MonoSingleton<UIMonitorController>
     }
     public void Show(bool flag)
     {
-        _animator.SetBool("Show", flag);
+        //_animator.SetBool("Show", flag);
     }
 }

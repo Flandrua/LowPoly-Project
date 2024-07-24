@@ -13,9 +13,11 @@ public class PlayerManager :MonoSingleton<PlayerManager>
     private XROrigin xrOrign;
     private CustomCharacterControllerDriver ccd;
     public GameObject cameraOffset;
+    public Vector3 initCameraOffset;
     private Vector3 initialPosition;
     private Quaternion initialRotation;
     private ParticleSystem _flame;
+    private AudioSource _as;
     // Start is called before the first frame update
     private void Awake()
     {
@@ -31,6 +33,8 @@ public class PlayerManager :MonoSingleton<PlayerManager>
         initialPosition = xr.transform.position;
         initialRotation = xr.transform.rotation;
         _flame = GetComponentInChildren<ParticleSystem>();
+        _as = GetComponent<AudioSource>();
+        cameraOffset.transform.localPosition = initCameraOffset;
     }
     private void OnDestroy()
     {
@@ -67,6 +71,7 @@ public class PlayerManager :MonoSingleton<PlayerManager>
     {
         if (other.CompareTag("Snack"))
         {
+            _as.Play();
             EventManager.DispatchEvent(EventCommon.PLAYER_EATING, true);//给SnackManager发送开始吃的通知
 
         }
@@ -85,7 +90,10 @@ public class PlayerManager :MonoSingleton<PlayerManager>
         tempEfficiency = snack.workEfficiency;
         DataCenter.Instance.GetWorkEfficiency(snack.workEfficiency);
         //判断是否吃了特殊零食
-
+        if (snack.isSpicy)
+        {
+            _flame.Play();
+        }
 
     }
 }

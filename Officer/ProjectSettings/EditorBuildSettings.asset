@@ -5,12 +5,15 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Lowpoly Models/PolygonOffice/Scene/DemoAfternoon.unity
     guid: 5363c4650c006d0469bf3eacd9da8533
   - enabled: 0
     path: Assets/Samples/XR Interaction Toolkit/2.5.4/Starter Assets/DemoScene.unity
     guid: 319dafa5c80f29f428dc1e0d03f04177
+  - enabled: 1
+    path: Assets/Lowpoly Models/PolygonOffice/Scene/Demo.unity
+    guid: 8836cd99fdf7b0847a3fa7a46e495b1f
   m_configObjects:
     Unity.XR.PICO.LivePreview.Settings: {fileID: 11400000, guid: c42b6dde2a48f1b4e918cdf33dfd381a, type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 2d41dc75540949f458d40c4f9bee4ad8, type: 2}
