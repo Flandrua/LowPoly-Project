@@ -14,7 +14,7 @@ public class GameManager : MonoSingleton<GameManager>
     public Material night;
     public int totaldays = 10;
     public int goalWorkPrgoress = 50;
-
+    public GameObject ending;
     void Start()
     {
         EventManager.AddListener<string>(EventCommon.PREPARE_CHANGE_TIME, PrepareChangeTime);
@@ -63,6 +63,7 @@ public class GameManager : MonoSingleton<GameManager>
         }
         else if (curTimeStage == 2)//一天过去了
         {
+
             RenderSettings.skybox = morning;
             //小鼠回复血量
             DataCenter.Instance.GameData.HamsterData.hp = 10;
@@ -75,7 +76,14 @@ public class GameManager : MonoSingleton<GameManager>
             PlayerManager.Instance.ResetLocation();
             //随机新的零食
             SnackManager.Instance.RandomSnack();
-            DataCenter.Instance.GameData.PlayerData.days++;
+            if (DataCenter.Instance.GameData.PlayerData.days == 10)
+            {
+                ending.SetActive(true);
+            }
+            else
+            {
+                DataCenter.Instance.GameData.PlayerData.days++;
+            }
         }
         EventManager.DispatchEvent(EventCommon.UPDATE_MONITOR);
         EventManager.DispatchEvent(EventCommon.NEXT_STAGE);

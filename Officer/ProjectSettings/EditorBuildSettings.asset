@@ -15,6 +15,7 @@ EditorBuildSettings:
     path: Assets/Lowpoly Models/PolygonOffice/Scene/Demo.unity
     guid: 8836cd99fdf7b0847a3fa7a46e495b1f
   m_configObjects:
+    Unity.XR.OpenVR.Settings: {fileID: 11400000, guid: aaf3067f901a6cf49bb2fa8b8c135f45, type: 2}
     Unity.XR.PICO.LivePreview.Settings: {fileID: 11400000, guid: c42b6dde2a48f1b4e918cdf33dfd381a, type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 2d41dc75540949f458d40c4f9bee4ad8, type: 2}
     com.unity.xr.openxr.settings4: {fileID: 11400000, guid: f7ce2185f9260354c9419d3fe0531552, type: 2}
