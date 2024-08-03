@@ -10,6 +10,7 @@ public class MainItemManager : MonoSingleton<MainItemManager>
     // Start is called before the first frame update
     void Start()
     {
+
         _item = GetChildren(this.transform);
     }
     private List<GameObject> GetChildren(Transform parent)

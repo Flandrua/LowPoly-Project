@@ -73,6 +73,9 @@ public class HamsterController : MonoSingleton<HamsterController>
 
     public float stayRequireTime = 3;//互动需求停留时间
     private float stayTime = 0;//停留时间
+    private AudioSource _as;
+    public AudioClip hit;
+    public AudioClip eat;
 
 
 
@@ -88,6 +91,7 @@ public class HamsterController : MonoSingleton<HamsterController>
         _heart = transform.parent.Find("Favorability").Find("heart").GetComponent<ParticleSystem>();
         _bar = transform.parent.Find("Favorability").Find("Canvas").Find("Scrollbar").GetComponent<Scrollbar>();
         _flame = transform.parent.Find("Flame").GetComponent<ParticleSystem>();
+        _as = GetComponent<AudioSource>();
 
     }
     private void OnDestroy()    {
@@ -102,17 +106,27 @@ public class HamsterController : MonoSingleton<HamsterController>
         _bar.size = 0;
         isPlay = false;
         onTrigger = false;
-        _animator.Play("Sit");
-        _animator.Play("Eyes_Normal", _animator.GetLayerIndex("Shapekey"));
-        _animator.SetBool("Move", false);
-        _animator.SetBool("Sour", false);
+        if (!isDead)
+        {
+            _animator.Play("Sit");
+            _animator.Play("Eyes_Normal", _animator.GetLayerIndex("Shapekey"));
+            _animator.SetBool("Sour", false);
+        }
+        if (!isOut)
+        {
+            _animator.SetBool("Move", false);
+        }
+        _flame.Stop();
 
     }
     public void ResetMoveAnimation()
     {
-        isOut=false; ;
-        _animator.Play("Sit");
-        _animator.Play("Eyes_Normal", _animator.GetLayerIndex("Shapekey"));
+        isOut=false;
+        if (!isDead)
+        {
+            _animator.Play("Sit");
+            _animator.Play("Eyes_Normal", _animator.GetLayerIndex("Shapekey"));
+        }
     }
     // Update is called once per frame
     void Update()
@@ -175,6 +189,8 @@ public class HamsterController : MonoSingleton<HamsterController>
             onTrigger = true;
             isEating = true;
             _animator.Play("Eyes_Excited", _animator.GetLayerIndex("Shapekey"));
+            _as.clip = eat;
+            _as.Play();
             EventManager.DispatchEvent(EventCommon.HAMSTER_EATING, true);//给SnackManager发送开始吃的通知
 
         }
@@ -212,7 +228,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
     public void ChangeBehaviorAnimationByStr(string animationName)
     {
-        if (!onTrigger && !isDead && !isDamage && !isPlay)
+        if (!onTrigger && !isDead && !isDamage && !isPlay&&!isOut)
         {
             _animator.Play(animationName);
             //Debug.Log(animationName);
@@ -225,7 +241,7 @@ public class HamsterController : MonoSingleton<HamsterController>
     /// <param name="animationName"></param>
     public void ChangeEyesAnimationByStr(string animationName)
     {
-        if (!onTrigger && !isDead && !isDamage && !isPlay)
+        if (!onTrigger && !isDead && !isDamage && !isPlay&&!isOut)
         {
             _animator.Play(animationName, _animator.GetLayerIndex("Shapekey"));
         }
@@ -263,6 +279,8 @@ public class HamsterController : MonoSingleton<HamsterController>
     public void GetDamage(int value)
     {
         //减仓鼠的血，检测是否死亡，是否播放被打动画
+        _as.clip = hit;
+        _as.Play();
         DataCenter.Instance.GetDamage(value);
         if (DataCenter.Instance.GameData.HamsterData.hp <= 0)
             Death();
@@ -306,6 +324,12 @@ public class HamsterController : MonoSingleton<HamsterController>
         {
             _animator.SetBool("Sour", true);
             _animator.Play("Eyes_Trauma", _animator.GetLayerIndex("Shapekey"));
+            _animator.Play("Walk");
+            _animator.SetBool("Move", true);
+
+            TimeManager.Instance.AddTask(8, false, () => { _animator.Play("Jump"); }, this);
+            TimeManager.Instance.AddTask(9.1f, false, () => { _animator.Play("Walk"); }, this);
+            return;
         }
         else if (snack.isWine)
         {

@@ -5,12 +5,14 @@ using UnityEngine;
 public class MouseManager : MonoSingleton<MouseManager>
 {
     public bool canSwitchTime = false;
+    private AudioSource _as;
 
     // Start is called before the first frame update
     void Start()
     {
         EventManager.AddListener<string>(EventCommon.PREPARE_CHANGE_TIME, CanSwitchTime);
         EventManager.AddListener(EventCommon.NEXT_STAGE, ResetToDefault);
+        _as = GetComponent<AudioSource>();
     }
     private void OnDestroy()
     {
@@ -44,7 +46,10 @@ public class MouseManager : MonoSingleton<MouseManager>
                 Vector3 velocity = calculator.InstantaneousSpeed;
                 float mag = velocity.magnitude;
                 if (mag > 2.5 && canSwitchTime)//´ò»÷ÐÐÎª
+                {
+                    _as.Play();
                     EventManager.DispatchEvent<bool>(EventCommon.CHANGE_TIME, true);
+                }
             }
         }
 

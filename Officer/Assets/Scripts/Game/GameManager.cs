@@ -1,22 +1,20 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Rendering.PostProcessing;
 
 public class GameManager : MonoSingleton<GameManager>
 {
     private int curTimeStage = 0;//0早上，1下午，2晚上
     private Animator _animator;
+    public ReflectionProbe rp;
+    public Texture morningProbe;
+    public Texture afternoonProbe;
+    public Texture nightProbe;
     public Material morning;
-    public LightingDataAsset morningDataAsset;
     public Material afternoon;
-    public LightingDataAsset afternoonDataAsset;
     public Material night;
-    public LightingDataAsset nightDataAsset;
     public int totaldays = 10;
     public int goalWorkPrgoress = 50;
-    
+    public GameObject ending;
     void Start()
     {
         EventManager.AddListener<string>(EventCommon.PREPARE_CHANGE_TIME, PrepareChangeTime);
@@ -52,22 +50,21 @@ public class GameManager : MonoSingleton<GameManager>
         //需要重置玩家的状态
         //需要重置键盘的状态（可互动
         //重置所有物体的位置
-        if (curTimeStage ==0)
+        if (curTimeStage == 0)
         {
             RenderSettings.skybox = afternoon;
-            Lightmapping.lightingDataAsset = afternoonDataAsset;
+
             curTimeStage++;
         }
-        else if(curTimeStage == 1)
+        else if (curTimeStage == 1)
         {
             RenderSettings.skybox = night;
-            Lightmapping.lightingDataAsset = nightDataAsset;
             curTimeStage++;
         }
         else if (curTimeStage == 2)//一天过去了
         {
+
             RenderSettings.skybox = morning;
-            Lightmapping.lightingDataAsset = morningDataAsset;
             //小鼠回复血量
             DataCenter.Instance.GameData.HamsterData.hp = 10;
             //如果吃过零食了，随机道具
@@ -79,6 +76,14 @@ public class GameManager : MonoSingleton<GameManager>
             PlayerManager.Instance.ResetLocation();
             //随机新的零食
             SnackManager.Instance.RandomSnack();
+            if (DataCenter.Instance.GameData.PlayerData.days == 10)
+            {
+                ending.SetActive(true);
+            }
+            else
+            {
+                DataCenter.Instance.GameData.PlayerData.days++;
+            }
         }
         EventManager.DispatchEvent(EventCommon.UPDATE_MONITOR);
         EventManager.DispatchEvent(EventCommon.NEXT_STAGE);
@@ -90,7 +95,7 @@ public class GameManager : MonoSingleton<GameManager>
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
 }

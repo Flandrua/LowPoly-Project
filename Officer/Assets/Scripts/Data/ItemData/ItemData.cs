@@ -11,11 +11,11 @@ public class ItemData : MonoBehaviour
     public int workEfficiency = 0;
     public int extraFavorability = 0;
 
-    private TextMeshProUGUI _content = null;
-    private TextMeshProUGUI _name = null;
-    private Outline _outline = null;
-    private Vector3 initialPosition;
-    private Quaternion initialRotation;
+    [SerializeField] protected TextMeshProUGUI _content = null;
+    [SerializeField] protected TextMeshProUGUI _name = null;
+    protected Outline _outline = null;
+    protected Vector3 initialPosition;
+    protected Quaternion initialRotation;
     // Start is called before the first frame update
     void Start()
     {

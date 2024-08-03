@@ -10,12 +10,15 @@ public class KeyboardController : MonoSingleton<KeyboardController>
     private GameObject _workEffect;
     private Scrollbar _bar;//交互条
     private ParticleSystem _star;
+    public List<AudioClip> sounds = new List<AudioClip>();
+    private AudioSource _as;
     // Start is called before the first frame update
     void Start()
     {
         _workEffect = transform.parent.Find("Work").gameObject;
         _star = transform.parent.Find("Work").Find("Star").GetComponent<ParticleSystem>();
         _bar = transform.parent.Find("Work").Find("Canvas").Find("Scrollbar").GetComponent<Scrollbar>();
+        _as = GetComponent<AudioSource>();
         EventManager.AddListener(EventCommon.NEXT_STAGE, ResetToDefault);
     }
     private void OnDestroy()
@@ -67,7 +70,12 @@ public class KeyboardController : MonoSingleton<KeyboardController>
 
     private void HitHandle()
     {
-        if (actualHit < requireHit)
+        //声音处理
+        int randomIndex = Random.Range(0, sounds.Count);
+        _as.clip = sounds[randomIndex];
+        _as.Play();
+
+        if (actualHit < requireHit&&MouseManager.Instance.canSwitchTime==false)
         {
             actualHit++;
             _bar.size = ((float)actualHit / (float)requireHit);

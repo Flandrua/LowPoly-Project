@@ -15,13 +15,14 @@ public class SnackManager : MonoSingleton<SnackManager>
     private string _snackName;
     private string _desc;
     private Outline _outline;
-    private TextMeshProUGUI _content = null;
-    private TextMeshProUGUI _name = null;
+    [SerializeField] private TextMeshProUGUI _content = null;
+    [SerializeField] private TextMeshProUGUI _name = null;
     private bool isEating = false;
     private Vector3 initialPosition;
     private Quaternion initialRotation;
     public bool isPlayer = false;
     public bool isHamster = false;
+    public GameObject container;
 
     void Start()
     {
@@ -77,6 +78,8 @@ public class SnackManager : MonoSingleton<SnackManager>
             Debug.LogWarning("snacks已用完");
             return;
         }
+        _animation.enabled = false;
+        container.transform.localScale = Vector3.one;
         int randomIndex = Random.Range(0, _snacks.Count);
         _curSnacks = _snacks[randomIndex];
         _curSnacks.SetActive(true);
@@ -85,17 +88,18 @@ public class SnackManager : MonoSingleton<SnackManager>
         SnackData snackData = _curSnacks.GetComponent<SnackData>();
         _snackName = snackData.name;
         _desc = snackData.desc;
-        _outline=_curSnacks.GetComponent<Outline>();
+        _outline = _curSnacks.GetComponent<Outline>();
     }
     private void ResetToDefault()
     {
+        transform.position = initialPosition;
+        transform.rotation = Quaternion.identity;
         if (!_curSnacks.activeInHierarchy)
         {
             _animation.enabled = false;
+            container.transform.localScale = Vector3.one;
             //_curSnacks.SetActive(false);
         }
-        transform.position = initialPosition;
-        transform.rotation = Quaternion.identity;
         //RandomSnack();
 
     }
@@ -170,7 +174,7 @@ public class SnackManager : MonoSingleton<SnackManager>
     {
         _col.enabled = false;
         _curSnacks.SetActive(false);
-        SnackData snack= _curSnacks.GetComponent<SnackData>();
+        SnackData snack = _curSnacks.GetComponent<SnackData>();
         //RandomSnack();//注意，目前测试用，后续此处的random要删除
         if (isHamster)
         {

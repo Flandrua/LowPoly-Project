@@ -27,7 +27,7 @@ public class HamsterData
 public class PlayerData
 {
     public int workProgress = 0; 
-    public int days = 0;
+    public int days = 1;
     public int workEfficiency = 1;
     public int favorabilityAbility = 1;
     public List<ItemData> ownedItem = new List<ItemData>();
