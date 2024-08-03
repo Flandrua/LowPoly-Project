@@ -59,28 +59,34 @@ public class EnemyPatrolBehaviour : MonoBehaviour
     {
         if (_enemy.IsDead)
             return;
-        if (_enemy.skillBehaviour.isCasting)
-            return;
 
         CheckState();
+    }
+
+    private void Start()
+    {
+        patrolPoint_Left.SetParent(null);
+        patrolPoint_Right.SetParent(null);
+        safePoint_Left.SetParent(null);
+        safePoint_Right.SetParent(null);
     }
 
     private void FixedUpdate()
     {
         if (_enemy.IsDead)
             return;
-        if (_enemy.skillBehaviour.isCasting)
-            return;
+        //  if (_enemy.skillBehaviour.isCasting)
+        //       return;
 
         switch (state)
         {
             case PatrolState.GoRight:
-                _enemy.animator.SetBool("walk", true);
+                // _enemy.animator.SetBool("walk", true);
                 _rb2D.MovePosition((Vector2)transform.position + Vector2.right * speed * Time.fixedDeltaTime);
                 break;
 
             case PatrolState.GoLeft:
-                _enemy.animator.SetBool("walk", true);
+                //  _enemy.animator.SetBool("walk", true);
                 _rb2D.MovePosition((Vector2)transform.position + Vector2.left * speed * Time.fixedDeltaTime);
                 break;
         }
@@ -173,22 +179,22 @@ public class EnemyPatrolBehaviour : MonoBehaviour
         switch (state)
         {
             case PatrolState.GoRight:
-                _enemy.animator.SetBool("walk", true);
+                //  _enemy.animator.SetBool("walk", true);
                 flipTrans.localScale = new Vector3(1, 1, 1);
                 _stopTimer = 0;
                 break;
             case PatrolState.GoLeft:
-                _enemy.animator.SetBool("walk", true);
+                // _enemy.animator.SetBool("walk", true);
                 flipTrans.localScale = new Vector3(-1, 1, 1);
                 _stopTimer = 0;
                 break;
             case PatrolState.StopFacingLeft:
-                _enemy.animator.SetBool("walk", false);
+                // _enemy.animator.SetBool("walk", false);
                 flipTrans.localScale = new Vector3(-1, 1, 1);
                 _stopTimer = stopDuration;
                 break;
             case PatrolState.StopFacingRight:
-                _enemy.animator.SetBool("walk", false);
+                //_enemy.animator.SetBool("walk", false);
                 flipTrans.localScale = new Vector3(1, 1, 1);
                 _stopTimer = stopDuration;
                 break;

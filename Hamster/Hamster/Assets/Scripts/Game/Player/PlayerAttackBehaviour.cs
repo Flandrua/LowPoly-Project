@@ -32,8 +32,6 @@ public class PlayerAttackBehaviour : MonoBehaviour
     {
         if (_health.isDead)
             return;
-        if (!PlayerBehaviour.instance.isWarrierState)
-            return;
         if (Input.GetKeyDown(KeyCode.J))
             TryAttack();
     }

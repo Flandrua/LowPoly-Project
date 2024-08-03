@@ -30,8 +30,6 @@ public class PlayerJump : MonoBehaviour
     {
         if (com.GameTime.timeScale == 0)
             return;
-        if (ChatSystem.instance.IsChating())
-            return;
 
         if (_attack.isAttacking)
             return;
@@ -54,8 +52,8 @@ public class PlayerJump : MonoBehaviour
     void DoJump()
     {
         //_speedY = jumpPower;
-        PlayerBehaviour.instance.animator.SetBool("walk", false);
-        PlayerBehaviour.instance.animator.SetTrigger("jump");
+        //  PlayerBehaviour.instance.animator.SetBool("walk", false);
+        // PlayerBehaviour.instance.animator.SetTrigger("jump");
         _movePosition.rb.AddForce(new Vector2(0, jumpPower));
     }
 
@@ -69,6 +67,6 @@ public class PlayerJump : MonoBehaviour
         _movePosition.rb.velocity = v;
         _movePosition.StopXMovement();
 
-        PlayerBehaviour.instance.animator.SetBool("walk", false);
+        // PlayerBehaviour.instance.animator.SetBool("walk", false);
     }
 }

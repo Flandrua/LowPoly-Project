@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class PlayerHealthBehaviour : MonoBehaviour
 {
-    public HpBarFixedWidthBehaviour hpbar;
+    //public HpBarFixedWidthBehaviour hpbar;
     public int hpMax_girl;
     public int hpMax_warrior;
 
@@ -20,7 +20,7 @@ public class PlayerHealthBehaviour : MonoBehaviour
     public void FullFill(bool isWarrior)
     {
         _hpMax = isWarrior ? hpMax_warrior : hpMax_girl;
-        hpbar.Set(1, true);
+        // hpbar.Set(1, true);
         _hp = _hpMax;
     }
 
@@ -39,7 +39,7 @@ public class PlayerHealthBehaviour : MonoBehaviour
             _hp = 0;
 
         float ratio = (float)_hp / _hpMax;
-        hpbar.Set(ratio, false);
+        //  hpbar.Set(ratio, false);
         if (_hp <= 0)
             Die();
     }

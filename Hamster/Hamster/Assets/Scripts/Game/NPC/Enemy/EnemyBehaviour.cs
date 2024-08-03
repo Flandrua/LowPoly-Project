@@ -12,7 +12,6 @@ public class EnemyBehaviour : MonoBehaviour
 
     public string dieSound;
     public float deathFadeDelay;
-    public HeadKickSlay headKickSlay;
 
     [HideInInspector]
     public NpcController npcController;
@@ -24,7 +23,6 @@ public class EnemyBehaviour : MonoBehaviour
     public EnemyPlayerChecker playerChecker;
     [HideInInspector]
     public Animator animator;
-    public bool isBoss;
 
     private void Awake()
     {
