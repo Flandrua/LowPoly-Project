@@ -30,7 +30,6 @@ public class PlayerJump : MonoBehaviour
     {
         if (com.GameTime.timeScale == 0)
             return;
-
         if (_attack.isAttacking)
             return;
         if (_health.isDead)
@@ -59,6 +58,7 @@ public class PlayerJump : MonoBehaviour
 
     public void OnGrounded()
     {
+        Debug.Log("OnGrounded");
         //_speedY = 0;
         var v = _movePosition.rb.velocity;
         if (v.y > 0)

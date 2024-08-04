@@ -30,6 +30,7 @@ public class PlayerGroundDetecter : MonoBehaviour
 
             if (!_cols.Contains(col))
             {
+                Debug.Log(col.gameObject);
                 OnEnter(col);
                 _cols.Add(col);
             }
