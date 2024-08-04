@@ -38,6 +38,9 @@ public class EnemyPatrolBehaviour : MonoBehaviour
     float _stopTimer;
     public float speed;
 
+    //获取动画控制器
+    public Animator animator;
+
 
     public enum PatrolState
     {
@@ -179,22 +182,22 @@ public class EnemyPatrolBehaviour : MonoBehaviour
         switch (state)
         {
             case PatrolState.GoRight:
-                //  _enemy.animator.SetBool("walk", true);
+               animator.SetBool("walk", true);
                 flipTrans.localScale = new Vector3(1, 1, 1);
                 _stopTimer = 0;
                 break;
             case PatrolState.GoLeft:
-                // _enemy.animator.SetBool("walk", true);
+                animator.SetBool("walk", true);
                 flipTrans.localScale = new Vector3(-1, 1, 1);
                 _stopTimer = 0;
                 break;
             case PatrolState.StopFacingLeft:
-                // _enemy.animator.SetBool("walk", false);
+                animator.SetBool("walk", false);
                 flipTrans.localScale = new Vector3(-1, 1, 1);
                 _stopTimer = stopDuration;
                 break;
             case PatrolState.StopFacingRight:
-                //_enemy.animator.SetBool("walk", false);
+                animator.SetBool("walk", false);
                 flipTrans.localScale = new Vector3(1, 1, 1);
                 _stopTimer = stopDuration;
                 break;

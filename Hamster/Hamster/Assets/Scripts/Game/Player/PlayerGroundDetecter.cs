@@ -67,6 +67,7 @@ public class PlayerGroundDetecter : MonoBehaviour
         if (!_currentGrounds.Contains(col.gameObject))
             _currentGrounds.Add(col.gameObject);
         isGrounded = _currentGrounds.Count > 0;
+        PlayerBehaviour.instance.animator.SetBool("onGround", isGrounded);
         jump.OnGrounded();
     }
 
@@ -76,5 +77,6 @@ public class PlayerGroundDetecter : MonoBehaviour
         if (_currentGrounds.Contains(col.gameObject))
             _currentGrounds.Remove(col.gameObject);
         isGrounded = _currentGrounds.Count > 0;
+        PlayerBehaviour.instance.animator.SetBool("onGround", isGrounded);
     }
 }

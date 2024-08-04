@@ -50,7 +50,7 @@ public class PlayerMove : MonoBehaviour
             {
                 _speedX = 0;
             }
-            //PlayerBehaviour.instance.animator?.SetBool("walk", false);
+            PlayerBehaviour.instance.animator?.SetBool("walk", false);
             return;
         }
 
@@ -63,22 +63,22 @@ public class PlayerMove : MonoBehaviour
         if (_speedX > 0)
         {
             isMoving = true;
-            // if (!_jump.IsJumping)
-            //      PlayerBehaviour.instance.animator?.SetBool("walk", true);
+            if (!_jump.IsJumping)
+                PlayerBehaviour.instance.animator?.SetBool("walk", true);
             FlipRight();
         }
         else if (_speedX < 0)
         {
             isMoving = true;
             FlipLeft();
-            //  if (!_jump.IsJumping)
-            //    PlayerBehaviour.instance.animator?.SetBool("walk", true);
+            if (!_jump.IsJumping)
+                PlayerBehaviour.instance.animator?.SetBool("walk", true);
         }
         else
         {
             isMoving = false;
-            //  if (!_jump.IsJumping)
-            //     PlayerBehaviour.instance.animator?.SetBool("walk", false);
+            if (!_jump.IsJumping)
+                PlayerBehaviour.instance.animator?.SetBool("walk", false);
         }
     }
 
