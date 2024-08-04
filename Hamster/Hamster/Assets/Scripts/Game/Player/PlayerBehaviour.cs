@@ -27,6 +27,6 @@ public class PlayerBehaviour : MonoBehaviour
         //_npcController = GetComponent<NpcController>();
 
         //_npcController.Reinit(animator, flip);
-        health.FullFill(true);
+        health.FullFill();
     }
 }

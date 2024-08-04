@@ -3,12 +3,12 @@ using System.Collections;
 
 public class NpcMovePosition : MonoBehaviour
 {
-    public Rigidbody2D rb { get; private set; }
+    public Rigidbody rb { get; private set; }
     private Vector3 _movement;
 
     void Start()
     {
-        rb = GetComponent<Rigidbody2D>();
+        rb = GetComponent<Rigidbody>();
     }
 
     private void FixedUpdate()

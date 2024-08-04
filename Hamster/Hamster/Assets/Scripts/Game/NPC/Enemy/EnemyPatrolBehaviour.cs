@@ -29,7 +29,7 @@ public class EnemyPatrolBehaviour : MonoBehaviour
     //敌人如果已经超过了patrol point，会停下，否则继续巡逻到下一个patrol point
 
     EnemyBehaviour _enemy;
-    Rigidbody2D _rb2D;
+    Rigidbody _rb;
     public Transform patrolPoint_Left;
     public Transform patrolPoint_Right;
     public Transform safePoint_Left;
@@ -53,7 +53,7 @@ public class EnemyPatrolBehaviour : MonoBehaviour
 
     private void Awake()
     {
-        _rb2D = GetComponent<Rigidbody2D>();
+        _rb = GetComponent<Rigidbody>();
         _enemy = GetComponent<EnemyBehaviour>();
     }
 
@@ -85,12 +85,12 @@ public class EnemyPatrolBehaviour : MonoBehaviour
         {
             case PatrolState.GoRight:
                 // _enemy.animator.SetBool("walk", true);
-                _rb2D.MovePosition((Vector2)transform.position + Vector2.right * speed * Time.fixedDeltaTime);
+                _rb.MovePosition((Vector2)transform.position + Vector2.right * speed * Time.fixedDeltaTime);
                 break;
 
             case PatrolState.GoLeft:
                 //  _enemy.animator.SetBool("walk", true);
-                _rb2D.MovePosition((Vector2)transform.position + Vector2.left * speed * Time.fixedDeltaTime);
+                _rb.MovePosition((Vector2)transform.position + Vector2.left * speed * Time.fixedDeltaTime);
                 break;
         }
     }

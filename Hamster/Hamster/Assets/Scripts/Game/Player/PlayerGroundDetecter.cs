@@ -11,18 +11,19 @@ public class PlayerGroundDetecter : MonoBehaviour
     public PlayerHealthBehaviour health;
 
     public float radius;
-
-    List<Collider2D> _cols;
+    
+    List<Collider> _cols;
 
     private void Awake()
     {
         health = GetComponentInParent<PlayerHealthBehaviour>();
-        _cols = new List<Collider2D>();
+        _cols = new List<Collider>();
     }
 
     private void FixedUpdate()
     {
-        var cols = Physics2D.OverlapCircleAll(transform.position, radius);
+        Vector3 colsPos = new Vector3(transform.position.x,transform.position.y- 0.09f,transform.position.z);
+        var cols = Physics.OverlapSphere(colsPos, radius);
         foreach (var col in cols)
         {
             if (toIgnores.Contains(col.gameObject))
@@ -51,13 +52,13 @@ public class PlayerGroundDetecter : MonoBehaviour
             }
         }
     }
-    private void OnEnter(Collider2D col)
+    private void OnEnter(Collider col)
     {
-        if (col.tag == "Kill")
-        {
-            health.Die(true);
-            return;
-        }
+        //if (col.tag == "Kill")
+        //{
+        //    health.Die(true);
+        //    return;
+        //}
 
         var colEnemy = col.gameObject.GetComponent<EnemyBehaviour>();
         //head kick
@@ -71,7 +72,7 @@ public class PlayerGroundDetecter : MonoBehaviour
         jump.OnGrounded();
     }
 
-    private void OnExit(Collider2D col)
+    private void OnExit(Collider col)
     {
         //Debug.Log("OnCollisionExit2D " + collision.gameObject);
         if (_currentGrounds.Contains(col.gameObject))

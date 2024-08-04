@@ -6,8 +6,7 @@ using UnityEngine;
 public class PlayerHealthBehaviour : MonoBehaviour
 {
     //public HpBarFixedWidthBehaviour hpbar;
-    public int hpMax_girl;
-    public int hpMax_warrior;
+    public int hpMax;
 
     private int _hpMax;
     private int _hp;
@@ -17,9 +16,9 @@ public class PlayerHealthBehaviour : MonoBehaviour
     public float deathFadeDelay;
 
 
-    public void FullFill(bool isWarrior)
+    public void FullFill()
     {
-        _hpMax = isWarrior ? hpMax_warrior : hpMax_girl;
+        _hpMax = hpMax;
         // hpbar.Set(1, true);
         _hp = _hpMax;
     }
@@ -34,6 +33,7 @@ public class PlayerHealthBehaviour : MonoBehaviour
         if (_dead) return;
 
         //Debug.Log(this.name + "TakeDamage " + dmg);
+        PlayerBehaviour.instance.animator.SetTrigger("damage");
         _hp -= dmg;
         if (_hp < 0)
             _hp = 0;
@@ -58,10 +58,10 @@ public class PlayerHealthBehaviour : MonoBehaviour
 
         _dead = true;
         //ReviveSystem.instance.QueueDie(fromFall);
-        SoundSystem.instance.Play(dieSound);
-
-        if (!fromFall)
-            PlayerBehaviour.instance.animator.SetTrigger("die");
+        //SoundSystem.instance.Play(dieSound);
+        PlayerBehaviour.instance.animator.Play("Death");
+        //if (!fromFall)
+        //    PlayerBehaviour.instance.animator.SetTrigger("die");
 
         SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>();
         foreach (var sr in srs)
