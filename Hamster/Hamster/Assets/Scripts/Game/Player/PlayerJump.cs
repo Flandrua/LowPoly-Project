@@ -46,7 +46,7 @@ public class PlayerJump : MonoBehaviour
         DoJump();
     }
 
-    bool canNotJump { get { return _isFloating || _isAttacking || PlayerBehaviour.instance.health.isDead; } }
+    bool canNotJump { get { return _isFloating || _isAttacking || PlayerBehaviour.instance.health.isDead||!PlayerBehaviour.instance.move.canInput; } }
 
     void DoJump()
     {

@@ -33,7 +33,8 @@ public class PlayerHealthBehaviour : MonoBehaviour
         if (_dead) return;
 
         //Debug.Log(this.name + "TakeDamage " + dmg);
-        PlayerBehaviour.instance.animator.SetTrigger("damage");
+        //PlayerBehaviour.instance.animator.SetTrigger("damage");
+        PlayerBehaviour.instance.animator.Play("Hit");
         _hp -= dmg;
         if (_hp < 0)
             _hp = 0;
@@ -62,8 +63,9 @@ public class PlayerHealthBehaviour : MonoBehaviour
         PlayerBehaviour.instance.animator.Play("Death");
         //if (!fromFall)
         //    PlayerBehaviour.instance.animator.SetTrigger("die");
-
+        
         SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>();
+        PlayerBehaviour.instance.movePosition.StopXMovement();
         foreach (var sr in srs)
         {
             sr.DOFade(0, 3).SetDelay(deathFadeDelay + Random.Range(1, 3f));

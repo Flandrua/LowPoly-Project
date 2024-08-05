@@ -81,7 +81,7 @@ public class EnemyBehaviour : MonoBehaviour
 
         //CapsuleCollider2D col = npcController.myCollider as CapsuleCollider2D;
         //col.size = new Vector2(col.size.x * 0.25f, col.size.y * 0.25f);
-        StartCoroutine(DieProcess());
+        //StartCoroutine(DieProcess());
     }
 
     IEnumerator DieProcess()

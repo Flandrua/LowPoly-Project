@@ -1,10 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections;
+using Unity.VisualScripting;
 
 public class PlayerMovePosition : MonoBehaviour
 {
     public Rigidbody rb { get; private set; }
     private Vector3 _movement;
+    public bool isHurtMove;
+
 
     void Start()
     {
@@ -13,6 +16,10 @@ public class PlayerMovePosition : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (isHurtMove)
+        {
+            DoMove();
+        }
     }
 
     public void AddXMovement(Vector3 mm)
@@ -29,6 +36,33 @@ public class PlayerMovePosition : MonoBehaviour
 
         // 使用 MovePosition 方法移动到目标位置
         rb.MovePosition(targetPosition);
+    }
+    public void AddMovement(Vector3 mm, float t)
+    {
+        if (isHurtMove) return;
+        else
+        {
+            PlayerBehaviour.instance.move.canInput = false;
+            PlayerBehaviour.instance.move.ResetSpeed();
+            rb.useGravity = false;
+            isHurtMove = true;
+        }
+        TimeManager.Instance.AddTask(t, false, () =>
+        {
+            isHurtMove = false;
+            PlayerBehaviour.instance.move.canInput = true;
+            rb.useGravity = true;
+        }, this);
+        _movement = mm;
+    }
+    private void DoMove()
+    {
+        // 计算移动的目标位置
+        Vector3 targetPosition = transform.position + _movement * Time.deltaTime;
+
+        // 使用 MovePosition 方法移动到目标位置
+        rb.MovePosition(targetPosition);
+        Debug.Log(targetPosition);
     }
 
     public void StopXMovement()

@@ -11,6 +11,8 @@ public class PlayerBehaviour : MonoBehaviour
     public PlayerMove move;
     [HideInInspector]
     public PlayerAttackBehaviour attack;
+    [HideInInspector]
+    public PlayerMovePosition movePosition;
 
     public Animator animator;
 
@@ -24,6 +26,7 @@ public class PlayerBehaviour : MonoBehaviour
         attack = GetComponent<PlayerAttackBehaviour>();
         move = GetComponent<PlayerMove>();
         health = GetComponent<PlayerHealthBehaviour>();
+        movePosition = GetComponent<PlayerMovePosition>();
         //_npcController = GetComponent<NpcController>();
 
         //_npcController.Reinit(animator, flip);

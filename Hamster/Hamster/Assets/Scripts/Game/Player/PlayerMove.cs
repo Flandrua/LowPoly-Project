@@ -5,6 +5,7 @@ using UnityEngine;
 public class PlayerMove : MonoBehaviour
 {
     public float speed;
+    public bool canInput;
     private PlayerMovePosition _movePosition;
     private float _speedX;
     private PlayerJump _jump;
@@ -41,7 +42,7 @@ public class PlayerMove : MonoBehaviour
     /// </summary>
     void ReadInput()
     {
-        if (_health.isDead)
+        if (_health.isDead||!canInput)
             return;
 
         if (_attack.isAttacking)
@@ -87,12 +88,16 @@ public class PlayerMove : MonoBehaviour
     /// </summary>
     void Move()
     {
+        
         if (_speedX != 0)
             _movePosition.AddXMovement(Vector3.right * _speedX * speed);
         else
             _movePosition.StopXMovement();
     }
-
+    public void ResetSpeed()
+    {
+        _speedX = 0;
+    }
     void FlipRight()
     {
         PlayerBehaviour.instance.flip.localScale = new Vector3(1, 1, 1);
