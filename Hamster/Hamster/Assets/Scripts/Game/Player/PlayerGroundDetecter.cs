@@ -10,6 +10,7 @@ public class PlayerGroundDetecter : MonoBehaviour
     List<GameObject> _currentGrounds = new List<GameObject>();
     public PlayerHealthBehaviour health;
 
+    public Vector3 colsPosOffset;
     public float radius;
     
     List<Collider> _cols;
@@ -22,8 +23,11 @@ public class PlayerGroundDetecter : MonoBehaviour
 
     private void FixedUpdate()
     {
-        Vector3 colsPos = new Vector3(transform.position.x,transform.position.y- 0.09f,transform.position.z);
+        Vector3 colsPos = transform.position+colsPosOffset;
         var cols = Physics.OverlapSphere(colsPos, radius);
+        Debug.DrawLine(colsPos + Vector3.up * radius, colsPos - Vector3.up * radius, Color.red); // 绘制一条红色的线
+        Debug.DrawLine(colsPos + Vector3.left * radius, colsPos - Vector3.left * radius, Color.red); // 绘制一条红色的线
+        Debug.DrawLine(colsPos + Vector3.forward * radius, colsPos - Vector3.forward * radius, Color.red); // 绘制一条红色的线
         foreach (var col in cols)
         {
             if (toIgnores.Contains(col.gameObject))
