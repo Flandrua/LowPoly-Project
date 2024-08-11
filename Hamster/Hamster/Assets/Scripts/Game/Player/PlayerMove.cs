@@ -19,6 +19,15 @@ public class PlayerMove : MonoBehaviour
         _jump = GetComponent<PlayerJump>();
         _attack = GetComponent<PlayerAttackBehaviour>();
         _health = GetComponent<PlayerHealthBehaviour>();
+        EventManager.AddListener(EventCommon.CAN_INPUT, CanInput);
+    }
+    private void OnDestroy()
+    {
+        EventManager.RemoveListener(EventCommon.CAN_INPUT, CanInput);
+    }
+    public void CanInput()
+    {
+        canInput = true;
     }
 
     void Update()
@@ -98,7 +107,7 @@ public class PlayerMove : MonoBehaviour
     {
         _speedX = 0;
     }
-    void FlipRight()
+    public void FlipRight()
     {
         PlayerBehaviour.instance.flip.localScale = new Vector3(1, 1, 1);
     }

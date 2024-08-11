@@ -11,7 +11,7 @@ public class GameLoad : MonoBehaviour
     
     void Awake()
     {
-        CheckMac();
+        //CheckMac();
         var configs = Resources.LoadAll("Config");
         DataManager.Instance.LoadConfig(configs);
         DataCenter.Instance.InitData();

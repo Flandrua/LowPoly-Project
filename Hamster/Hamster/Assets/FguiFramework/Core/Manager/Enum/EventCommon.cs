@@ -28,4 +28,10 @@ public class EventCommon
     public static string SHOW_SHIELED = "ShowSheild";
     public static string SHOW_MILK = "ShowMilk";
     public static string REFRESH_SHOP = "RefreshShop";
+
+
+    public static string TELEPORT = "Teleport";
+    public static string CAN_INPUT = "CanInput";
+    public static string UPDATE_HP = "UpdateHp";
+
 }

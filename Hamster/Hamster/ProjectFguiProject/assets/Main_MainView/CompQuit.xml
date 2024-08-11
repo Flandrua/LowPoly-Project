@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<component size="838,468">
-  <displayList>
-    <image id="n8_ixu8" name="n8" src="ixu8b" fileName="image/home_close_dete.png" xy="0,0"/>
-    <component id="n9_ixu8" name="btnYes" src="ixu8g" fileName="BtnYes.xml" xy="469,302" group="n11_ixu8"/>
-    <component id="n10_ixu8" name="btnCancel" src="ixu8f" fileName="BtnCancel.xml" xy="129,302" group="n11_ixu8"/>
-    <group id="n11_ixu8" name="n11" xy="129,302" size="580,92"/>
-  </displayList>
-</component>

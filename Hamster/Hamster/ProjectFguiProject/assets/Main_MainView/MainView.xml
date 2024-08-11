@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <component size="1920,1080">
-  <displayList/>
+  <displayList>
+    <component id="n1_lvhl" name="hpBar" src="lvhlu" fileName="hpBar.xml" xy="34,29" size="702,99">
+      <ProgressBar value="100" max="100"/>
+    </component>
+  </displayList>
 </component>

@@ -21,6 +21,8 @@ public class PlayerHealthBehaviour : MonoBehaviour
         _hpMax = hpMax;
         // hpbar.Set(1, true);
         _hp = _hpMax;
+        int[] hplist = { _hp, _hpMax };
+        EventManager.DispatchEvent<int[]>(EventCommon.UPDATE_HP, hplist);
     }
 
     private void Update()
@@ -36,6 +38,8 @@ public class PlayerHealthBehaviour : MonoBehaviour
         //PlayerBehaviour.instance.animator.SetTrigger("damage");
         PlayerBehaviour.instance.animator.Play("Hit");
         _hp -= dmg;
+        int[] hplist = { _hp, _hpMax };
+        EventManager.DispatchEvent<int[]>(EventCommon.UPDATE_HP, hplist);
         if (_hp < 0)
             _hp = 0;
 
