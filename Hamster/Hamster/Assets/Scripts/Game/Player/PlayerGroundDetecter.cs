@@ -12,7 +12,7 @@ public class PlayerGroundDetecter : MonoBehaviour
 
     public Vector3 colsPosOffset;
     public float radius;
-    
+
     List<Collider> _cols;
 
     private void Awake()
@@ -23,7 +23,7 @@ public class PlayerGroundDetecter : MonoBehaviour
 
     private void FixedUpdate()
     {
-        Vector3 colsPos = transform.position+colsPosOffset;
+        Vector3 colsPos = transform.position + colsPosOffset;
         var cols = Physics.OverlapSphere(colsPos, radius);
         Debug.DrawLine(colsPos + Vector3.up * radius, colsPos - Vector3.up * radius, Color.red); // 绘制一条红色的线
         Debug.DrawLine(colsPos + Vector3.left * radius, colsPos - Vector3.left * radius, Color.red); // 绘制一条红色的线
@@ -82,6 +82,9 @@ public class PlayerGroundDetecter : MonoBehaviour
         if (_currentGrounds.Contains(col.gameObject))
             _currentGrounds.Remove(col.gameObject);
         isGrounded = _currentGrounds.Count > 0;
-        PlayerBehaviour.instance.animator.SetBool("onGround", isGrounded);
+        if (!isGrounded)
+        {
+            PlayerBehaviour.instance.animator.SetBool("onGround", false);
+        }
     }
 }
