@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using UnityEngine;
 
 public class PlayerMove : MonoBehaviour
@@ -11,6 +12,8 @@ public class PlayerMove : MonoBehaviour
     private PlayerJump _jump;
     private PlayerAttackBehaviour _attack;
     private PlayerHealthBehaviour _health;
+
+    private bool sewageInput = false;
     public bool isMoving { get; private set; }
 
     void Start()
@@ -65,31 +68,39 @@ public class PlayerMove : MonoBehaviour
         }
 
         _speedX = 0;
-        if (Input.GetKey(KeyCode.A))
-            _speedX = _speedX - 1;
-        if (Input.GetKey(KeyCode.D))
-            _speedX = _speedX + 1;
+        if (!sewageInput)
+        {
+            if (Input.GetKey(KeyCode.A))
+                _speedX = _speedX - 1;
+            if (Input.GetKey(KeyCode.D))
+                _speedX = _speedX + 1;
 
-        if (_speedX > 0)
-        {
-            isMoving = true;
-            if (!_jump.IsJumping)
-                PlayerBehaviour.instance.animator?.SetBool("walk", true);
-            FlipRight();
-        }
-        else if (_speedX < 0)
-        {
-            isMoving = true;
-            FlipLeft();
-            if (!_jump.IsJumping)
-                PlayerBehaviour.instance.animator?.SetBool("walk", true);
+            if (_speedX > 0)
+            {
+                isMoving = true;
+                if (!_jump.IsJumping)
+                    PlayerBehaviour.instance.animator?.SetBool("walk", true);
+                FlipRight();
+            }
+            else if (_speedX < 0)
+            {
+                isMoving = true;
+                FlipLeft();
+                if (!_jump.IsJumping)
+                    PlayerBehaviour.instance.animator?.SetBool("walk", true);
+            }
+            else
+            {
+                isMoving = false;
+                if (!_jump.IsJumping)
+                    PlayerBehaviour.instance.animator?.SetBool("walk", false);
+            }
         }
         else
         {
-            isMoving = false;
-            if (!_jump.IsJumping)
-                PlayerBehaviour.instance.animator?.SetBool("walk", false);
+            //3DÒÆ¶¯²Ù×÷
         }
+        
     }
 
     /// <summary>
