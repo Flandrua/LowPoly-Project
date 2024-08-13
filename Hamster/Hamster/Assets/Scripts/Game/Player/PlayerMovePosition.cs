@@ -22,21 +22,24 @@ public class PlayerMovePosition : MonoBehaviour
         }
     }
 
-    public void AddXMovement(Vector3 mm)
+    public void AddInputMovement(Vector3 mm, bool isX = true)
     {
-        var v = rb.velocity;
-        v.x = mm.x;
-        rb.velocity = v;
+        if (isX)
+        {
+            var v = rb.velocity;
+            v.x = mm.x;
+            rb.velocity = v;
+        }
+        else
+        {
+            var v = rb.velocity;
+            v.x = -transform.right.x * mm.x;
+            v.z = -transform.right.z * mm.x;
+            rb.velocity = v;
+            //Debug.Log(Vector3.Magnitude(rb.velocity));
+        }
+    }   
 
-        //// 假设你希望在 X 轴上移动
-        //Vector3 moveDirection = new Vector3(1, 0, 0); // X 轴方向
-
-        //// 计算移动的目标位置
-        //Vector3 targetPosition = transform.position + moveDirection * mm.x * Time.deltaTime;
-
-        //// 使用 MovePosition 方法移动到目标位置
-        //rb.MovePosition(targetPosition);
-    }
     /// <summary>
     /// 
     /// </summary>
@@ -76,10 +79,20 @@ public class PlayerMovePosition : MonoBehaviour
         rb.MovePosition(targetPosition);
     }
 
-    public void StopXMovement()
+    public void StopInputMovement(bool isX = true  )
     {
-        var v = rb.velocity;
-        v.x = 0;
-        rb.velocity = v;
+        if (isX)
+        {
+            var v = rb.velocity;
+            v.x = 0;
+            rb.velocity = v;
+        }
+        else
+        {
+            var v = rb.velocity;
+            v.x = 0;
+            v.z = 0;
+            rb.velocity = v;
+        }
     }
 }

@@ -7,13 +7,15 @@ public class PlayerMove : MonoBehaviour
 {
     public float speed;
     public bool canInput;
+    public float rotationSpeed = 10;
     private PlayerMovePosition _movePosition;
     private float _speedX;
+    private float _speedZ;
     private PlayerJump _jump;
     private PlayerAttackBehaviour _attack;
     private PlayerHealthBehaviour _health;
 
-    private bool sewageInput = false;
+    public bool sewageInput = false;
     public bool isMoving { get; private set; }
 
     void Start()
@@ -54,7 +56,7 @@ public class PlayerMove : MonoBehaviour
     /// </summary>
     void ReadInput()
     {
-        if (_health.isDead||!canInput)
+        if (_health.isDead || !canInput)
             return;
 
         if (_attack.isAttacking)
@@ -66,41 +68,62 @@ public class PlayerMove : MonoBehaviour
             PlayerBehaviour.instance.animator?.SetBool("walk", false);
             return;
         }
-
         _speedX = 0;
         if (!sewageInput)
         {
+
             if (Input.GetKey(KeyCode.A))
                 _speedX = _speedX - 1;
             if (Input.GetKey(KeyCode.D))
                 _speedX = _speedX + 1;
 
-            if (_speedX > 0)
-            {
-                isMoving = true;
-                if (!_jump.IsJumping)
-                    PlayerBehaviour.instance.animator?.SetBool("walk", true);
-                FlipRight();
-            }
-            else if (_speedX < 0)
-            {
-                isMoving = true;
-                FlipLeft();
-                if (!_jump.IsJumping)
-                    PlayerBehaviour.instance.animator?.SetBool("walk", true);
-            }
-            else
-            {
-                isMoving = false;
-                if (!_jump.IsJumping)
-                    PlayerBehaviour.instance.animator?.SetBool("walk", false);
-            }
+
         }
         else
         {
+            _speedZ = 0;
             //3D移动操作
+            if (Input.GetKey(KeyCode.A))//让A D来控制角色旋转的角度好了 _SpeedZ暂时不用
+            {
+                transform.Rotate(0, -Time.deltaTime * rotationSpeed, 0);
+                //_speedZ = _speedZ - 1;
+            }
+            if (Input.GetKey(KeyCode.D))
+            {
+                transform.Rotate(0, Time.deltaTime * rotationSpeed, 0);
+                //_speedZ = _speedZ + 1;
+            }
+            if (Input.GetKey(KeyCode.W))
+                _speedX = _speedX - 1;
+            if (Input.GetKey(KeyCode.S))
+                _speedX = _speedX + 1;
         }
-        
+
+        if (_speedX > 0)
+        {
+            isMoving = true;
+            if (!_jump.IsJumping)
+                PlayerBehaviour.instance.animator?.SetBool("walk", true);
+
+            if (!sewageInput)
+                FlipRight();
+        }
+        else if (_speedX < 0)
+        {
+            isMoving = true;
+            if (!sewageInput)
+                FlipLeft();
+            if (!_jump.IsJumping)
+                PlayerBehaviour.instance.animator?.SetBool("walk", true);
+        }
+        else
+        {
+            isMoving = false;
+            if (!_jump.IsJumping)
+                PlayerBehaviour.instance.animator?.SetBool("walk", false);
+        }
+
+
     }
 
     /// <summary>
@@ -108,17 +131,27 @@ public class PlayerMove : MonoBehaviour
     /// </summary>
     void Move()
     {
-        
-        if (_speedX != 0)
-            _movePosition.AddXMovement(Vector3.right * _speedX * speed);
-        else
-            _movePosition.StopXMovement();
+
+        if (!sewageInput)
+        {
+            if (_speedX != 0)
+                _movePosition.AddInputMovement(Vector3.right * _speedX * speed);
+            else
+                _movePosition.StopInputMovement();
+        }
+        if (sewageInput)
+        {
+            if (_speedZ != 0 || _speedX != 0)
+                _movePosition.AddInputMovement(new Vector3(_speedX, 0, _speedZ) * speed, false);
+            else
+                _movePosition.StopInputMovement(false);
+        }
     }
     public void ResetSpeed()
     {
         _speedX = 0;
     }
-    public void FlipRight()
+    public void FlipRight()//需要在切换到下水道的时候，调用一下，还原scale
     {
         PlayerBehaviour.instance.flip.localScale = new Vector3(1, 1, 1);
     }

@@ -66,7 +66,7 @@ public class PlayerJump : MonoBehaviour
             return;
         v.y = 0;
         _movePosition.rb.velocity = v;
-        _movePosition.StopXMovement();
+        _movePosition.StopInputMovement();
 
         //PlayerBehaviour.instance.animator.SetBool("walk", false);
     }

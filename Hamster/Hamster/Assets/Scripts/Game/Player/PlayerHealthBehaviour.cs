@@ -69,7 +69,7 @@ public class PlayerHealthBehaviour : MonoBehaviour
         //    PlayerBehaviour.instance.animator.SetTrigger("die");
         
         SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>();
-        PlayerBehaviour.instance.movePosition.StopXMovement();
+        PlayerBehaviour.instance.movePosition.StopInputMovement();
         foreach (var sr in srs)
         {
             sr.DOFade(0, 3).SetDelay(deathFadeDelay + Random.Range(1, 3f));

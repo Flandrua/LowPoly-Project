@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="186,188" extention="ProgressBar">
+  <displayList>
+    <graph id="n1_lvhl" name="bar" xy="11,6" size="166,172" type="rect" lineSize="0" fillColor="#ffff0000">
+      <relation target="" sidePair="height-height,middle-middle,left-left"/>
+    </graph>
+    <image id="n0_lvhl" name="n0" src="lvhlr" fileName="skill_round.png" xy="0,0" size="186,188">
+      <relation target="" sidePair="width-width,height-height"/>
+    </image>
+  </displayList>
+  <ProgressBar/>
+</component>
