@@ -36,7 +36,7 @@ public class PlayerHealthBehaviour : MonoBehaviour
 
         //Debug.Log(this.name + "TakeDamage " + dmg);
         //PlayerBehaviour.instance.animator.SetTrigger("damage");
-        PlayerBehaviour.instance.animator.Play("Hit");
+        PlayerBehaviour.instance.animator[0].Play("Hit");
         _hp -= dmg;
         int[] hplist = { _hp, _hpMax };
         EventManager.DispatchEvent<int[]>(EventCommon.UPDATE_HP, hplist);
@@ -64,7 +64,7 @@ public class PlayerHealthBehaviour : MonoBehaviour
         _dead = true;
         //ReviveSystem.instance.QueueDie(fromFall);
         //SoundSystem.instance.Play(dieSound);
-        PlayerBehaviour.instance.animator.Play("Death");
+        PlayerBehaviour.instance.animator[0].Play("Death");
         //if (!fromFall)
         //    PlayerBehaviour.instance.animator.SetTrigger("die");
         

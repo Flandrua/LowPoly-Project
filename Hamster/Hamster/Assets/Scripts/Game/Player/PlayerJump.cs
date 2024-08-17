@@ -46,14 +46,14 @@ public class PlayerJump : MonoBehaviour
         DoJump();
     }
 
-    bool canNotJump { get { return _isFloating || _isAttacking || PlayerBehaviour.instance.health.isDead || !PlayerBehaviour.instance.move.canInput; } }
+    bool canNotJump { get { return _isFloating || _isAttacking || PlayerBehaviour.instance.health.isDead || !PlayerBehaviour.instance.move.canInput||PlayerClimb.Instance.isClimb|| PlayerClimb.Instance.canClimb; } }
 
     void DoJump()
     {
         //_speedY = jumpPower;
-        PlayerBehaviour.instance.animator.SetBool("walk", false);
-        PlayerBehaviour.instance.animator.SetBool("onGround", false);
-        PlayerBehaviour.instance.animator.SetTrigger("jump");
+        PlayerBehaviour.instance.SetBool("walk", false);
+        PlayerBehaviour.instance.SetBool("onGround", false);
+        PlayerBehaviour.instance.animator[0].SetTrigger("jump");
         _movePosition.rb.AddForce(new Vector2(0, jumpPower));
     }
 

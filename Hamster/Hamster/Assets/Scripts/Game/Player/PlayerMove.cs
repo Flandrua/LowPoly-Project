@@ -10,6 +10,7 @@ public class PlayerMove : MonoBehaviour
     public float rotationSpeed = 10;
     private PlayerMovePosition _movePosition;
     private float _speedX;
+    private float _speedY = 0;
     private float _speedZ;
     private PlayerJump _jump;
     private PlayerAttackBehaviour _attack;
@@ -65,7 +66,7 @@ public class PlayerMove : MonoBehaviour
             {
                 _speedX = 0;
             }
-            PlayerBehaviour.instance.animator?.SetBool("walk", false);
+            PlayerBehaviour.instance?.SetBool("walk", false);
             return;
         }
         _speedX = 0;
@@ -81,29 +82,40 @@ public class PlayerMove : MonoBehaviour
         }
         else
         {
-            _speedZ = 0;
             //3D移动操作
-            if (Input.GetKey(KeyCode.A))//让A D来控制角色旋转的角度好了 _SpeedZ暂时不用
+            if (!PlayerClimb.Instance.isClimb)
             {
-                transform.Rotate(0, -Time.deltaTime * rotationSpeed, 0);
-                //_speedZ = _speedZ - 1;
+                _speedZ = 0;
+                if (Input.GetKey(KeyCode.A))//让A D来控制角色旋转的角度好了 _SpeedZ暂时不用
+                {
+                    transform.Rotate(0, -Time.deltaTime * rotationSpeed, 0);
+                    //_speedZ = _speedZ - 1;
+                }
+                if (Input.GetKey(KeyCode.D))
+                {
+                    transform.Rotate(0, Time.deltaTime * rotationSpeed, 0);
+                    //_speedZ = _speedZ + 1;
+                }
+                if (Input.GetKey(KeyCode.W))
+                    _speedX = _speedX - 1;
+                if (Input.GetKey(KeyCode.S))
+                    _speedX = _speedX + 1;
             }
-            if (Input.GetKey(KeyCode.D))
+            else
             {
-                transform.Rotate(0, Time.deltaTime * rotationSpeed, 0);
-                //_speedZ = _speedZ + 1;
+                _speedY = 0;
+                if (Input.GetKey(KeyCode.W))
+                    _speedY = _speedY - 1;
+                if (Input.GetKey(KeyCode.S))
+                    _speedY = _speedY + 1;
             }
-            if (Input.GetKey(KeyCode.W))
-                _speedX = _speedX - 1;
-            if (Input.GetKey(KeyCode.S))
-                _speedX = _speedX + 1;
         }
 
         if (_speedX > 0)
         {
             isMoving = true;
             if (!_jump.IsJumping)
-                PlayerBehaviour.instance.animator?.SetBool("walk", true);
+                PlayerBehaviour.instance.SetBool("walk", true);
 
             if (!sewageInput)
                 FlipRight();
@@ -114,14 +126,26 @@ public class PlayerMove : MonoBehaviour
             if (!sewageInput)
                 FlipLeft();
             if (!_jump.IsJumping)
-                PlayerBehaviour.instance.animator?.SetBool("walk", true);
+                PlayerBehaviour.instance.SetBool("walk", true);
         }
         else
         {
             isMoving = false;
             if (!_jump.IsJumping)
-                PlayerBehaviour.instance.animator?.SetBool("walk", false);
+                PlayerBehaviour.instance.SetBool("walk", false);
         }
+
+        if (_speedY != 0&& PlayerClimb.Instance.isClimb)
+        {
+            isMoving = true;
+            PlayerBehaviour.instance.SetBool("walk", true);
+        }
+        else if(_speedY == 0 && PlayerClimb.Instance.isClimb)
+        {
+            isMoving = false;
+            PlayerBehaviour.instance.SetBool("walk", false);
+        }
+
 
 
     }
@@ -141,10 +165,20 @@ public class PlayerMove : MonoBehaviour
         }
         if (sewageInput)
         {
-            if (_speedZ != 0 || _speedX != 0)
-                _movePosition.AddInputMovement(new Vector3(_speedX, 0, _speedZ) * speed, false);
+            if (!PlayerClimb.Instance.isClimb)
+            {
+                if (_speedZ != 0 || _speedX != 0)
+                    _movePosition.AddInputMovement(new Vector3(_speedX, 0, _speedZ) * speed, false);
+                else
+                    _movePosition.StopInputMovement(false,false);
+            }
             else
-                _movePosition.StopInputMovement(false);
+            {
+                if (_speedY != 0)
+                    _movePosition.AddInputMovement(new Vector3(0, _speedY, 0) * speed, false,true);
+                else
+                    _movePosition.StopInputMovement(false,true);
+            }
         }
     }
     public void ResetSpeed()

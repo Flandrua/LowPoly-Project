@@ -20,6 +20,10 @@ public class PlayerGroundDetecter : MonoBehaviour
         health = GetComponentInParent<PlayerHealthBehaviour>();
         _cols = new List<Collider>();
     }
+    private void Update()
+    {
+
+    }
 
     private void FixedUpdate()
     {
@@ -55,6 +59,7 @@ public class PlayerGroundDetecter : MonoBehaviour
                 _cols.Remove(col);
             }
         }
+        
     }
     private void OnEnter(Collider col)
     {
@@ -72,7 +77,7 @@ public class PlayerGroundDetecter : MonoBehaviour
         if (!_currentGrounds.Contains(col.gameObject))
             _currentGrounds.Add(col.gameObject);
         isGrounded = _currentGrounds.Count > 0;
-        PlayerBehaviour.instance.animator.SetBool("onGround", isGrounded);
+        PlayerBehaviour.instance.SetBool("onGround", isGrounded);
         jump.OnGrounded();
     }
 
@@ -84,7 +89,9 @@ public class PlayerGroundDetecter : MonoBehaviour
         isGrounded = _currentGrounds.Count > 0;
         if (!isGrounded)
         {
-            PlayerBehaviour.instance.animator.SetBool("onGround", false);
+            PlayerBehaviour.instance.SetBool("onGround", false);
         }
     }
+
+
 }

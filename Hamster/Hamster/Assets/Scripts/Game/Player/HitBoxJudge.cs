@@ -24,7 +24,7 @@ public class HitBoxJudge : MonoBehaviour
         if (other.gameObject.layer == LayerMask.NameToLayer("NPC")&&canHit)
         {
             canHit = false;
-            Animator animator = PlayerBehaviour.instance.animator;
+            Animator animator = PlayerBehaviour.instance.animator[0];
             animator.Play("Eyes_Squint", animator.GetLayerIndex("Shapekey"));
             hams.SetColor("_Color", hitColor);
             TimeManager.Instance.AddTask(1.5f, false, () => {

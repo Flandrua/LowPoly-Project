@@ -37,7 +37,7 @@ public class TPSpot : MonoBehaviour
                 _animator.SetBool("Open", true);
                 TimeManager.Instance.AddTask(1.5f, false, () => { _animator.SetBool("Open", false); }, this);
                 _playerBehaviour.move.FlipRight();
-                _playerBehaviour.animator.SetTrigger("Move");
+                _playerBehaviour.animator[0].SetTrigger("Move");
                 _playerBehaviour.move.canInput = false;
                 _playerBehaviour.move.ResetSpeed();
                 _playerBehaviour.transform.position = tpPos.transform.position;

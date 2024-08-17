@@ -22,12 +22,18 @@ public class PlayerMovePosition : MonoBehaviour
         }
     }
 
-    public void AddInputMovement(Vector3 mm, bool isX = true)
+    public void AddInputMovement(Vector3 mm, bool isX = true, bool isY = false)
     {
         if (isX)
         {
             var v = rb.velocity;
             v.x = mm.x;
+            rb.velocity = v;
+        }
+        if (isY)
+        {
+            var v = rb.velocity;
+            v.y =- mm.y;
             rb.velocity = v;
         }
         else
@@ -79,12 +85,18 @@ public class PlayerMovePosition : MonoBehaviour
         rb.MovePosition(targetPosition);
     }
 
-    public void StopInputMovement(bool isX = true  )
+    public void StopInputMovement(bool isX = true, bool isY = true  )
     {
         if (isX)
         {
             var v = rb.velocity;
             v.x = 0;
+            rb.velocity = v;
+        }
+        if (isY)
+        {
+            var v = rb.velocity;
+            v.y = 0;
             rb.velocity = v;
         }
         else

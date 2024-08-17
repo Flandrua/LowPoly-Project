@@ -1,7 +1,9 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using static UnityEngine.Rendering.DebugUI;
 
-public class PlayerBehaviour : MonoBehaviour
+public class PlayerBehaviour : MonoSingleton<PlayerBehaviour>
 {
     public static PlayerBehaviour instance;
 
@@ -14,7 +16,8 @@ public class PlayerBehaviour : MonoBehaviour
     [HideInInspector]
     public PlayerMovePosition movePosition;
 
-    public Animator animator;
+    [Header("第一个放角色的控制器")]
+    public List<Animator> animator;
 
     public Transform flip;
 
@@ -32,4 +35,15 @@ public class PlayerBehaviour : MonoBehaviour
         //_npcController.Reinit(animator, flip);
         health.FullFill();
     }
+
+    public void SetBool(string name, bool value)
+    {
+        foreach (var anim in animator)
+        {
+                anim.SetBool(name, value);
+        }
+    }
+
+
+
 }

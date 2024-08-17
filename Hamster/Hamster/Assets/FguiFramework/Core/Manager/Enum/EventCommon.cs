@@ -33,5 +33,6 @@ public class EventCommon
     public static string TELEPORT = "Teleport";
     public static string CAN_INPUT = "CanInput";
     public static string UPDATE_HP = "UpdateHp";
+    public static string INIT_TRANS_DATA = "InitTransData";
 
 }
