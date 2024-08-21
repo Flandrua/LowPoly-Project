@@ -7,7 +7,7 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
 {
     //用一个trigger box检测，如果玩家的trigger on enter有tag climb的box进入的话，关闭gravity，打开is kinematic，旋转角色；当角色到edge的时候，强制触发动画，让角色回正(应该按空格，触发攀爬功能）
     public float raycastDistance = 10f; // 射线检测的距离
-    public string wallTag = "Climb"; // 物体的标签
+    //public string wallTag = "Climb"; // 物体的标签
     private Rigidbody rb;
     private GameObject go;
     private GameObject curTop;
@@ -31,7 +31,7 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
     // Update is called once per frame
     void Update()
     {
-        Debug.Log(rb.transform.eulerAngles.y);
+        //Debug.Log(rb.transform.eulerAngles.y);
     }
     private void MoveToTop()
     {

@@ -28,6 +28,9 @@ public class EnemyPatrolBehaviour : MonoBehaviour
     //case 4: 玩家跳到敌人后面
     //敌人如果已经超过了patrol point，会停下，否则继续巡逻到下一个patrol point
 
+
+
+
     EnemyBehaviour _enemy;
     Rigidbody _rb;
     public Transform patrolPoint_Left;
