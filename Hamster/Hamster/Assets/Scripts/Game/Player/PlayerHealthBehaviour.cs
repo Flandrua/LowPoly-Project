@@ -35,8 +35,8 @@ public class PlayerHealthBehaviour : MonoBehaviour
         if (_dead) return;
 
         //Debug.Log(this.name + "TakeDamage " + dmg);
-        //PlayerBehaviour.instance.animator.SetTrigger("damage");
-        PlayerBehaviour.instance.animator[0].Play("Hit");
+        //PlayerBehaviour.Instance.animator.SetTrigger("damage");
+        PlayerBehaviour.Instance.animator[0].Play("Hit");
         _hp -= dmg;
         int[] hplist = { _hp, _hpMax };
         EventManager.DispatchEvent<int[]>(EventCommon.UPDATE_HP, hplist);
@@ -64,12 +64,12 @@ public class PlayerHealthBehaviour : MonoBehaviour
         _dead = true;
         //ReviveSystem.instance.QueueDie(fromFall);
         //SoundSystem.instance.Play(dieSound);
-        PlayerBehaviour.instance.animator[0].Play("Death");
+        PlayerBehaviour.Instance.animator[0].Play("Death");
         //if (!fromFall)
-        //    PlayerBehaviour.instance.animator.SetTrigger("die");
+        //    PlayerBehaviour.Instance.animator.SetTrigger("die");
         
         SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>();
-        PlayerBehaviour.instance.movePosition.StopInputMovement();
+        PlayerBehaviour.Instance.movePosition.StopInputMovement();
         foreach (var sr in srs)
         {
             sr.DOFade(0, 3).SetDelay(deathFadeDelay + Random.Range(1, 3f));

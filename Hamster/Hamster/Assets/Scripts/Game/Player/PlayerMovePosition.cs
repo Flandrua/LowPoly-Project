@@ -60,18 +60,18 @@ public class PlayerMovePosition : MonoBehaviour
         else
         {
             if (banInput)
-                PlayerBehaviour.instance.move.canInput = false;
+                PlayerBehaviour.Instance.move.canInput = false;
             if (banGravity)
                 rb.useGravity = false;
             if (resetSpeed)
-                PlayerBehaviour.instance.move.ResetSpeed();
+                PlayerBehaviour.Instance.move.ResetSpeed();
             isHurtMove = true;
 
         }
         TimeManager.Instance.AddTask(t, false, () =>
         {
             isHurtMove = false;
-            PlayerBehaviour.instance.move.canInput = true;
+            PlayerBehaviour.Instance.move.canInput = true;
             rb.useGravity = true;
         }, this);
         _movement = mm;

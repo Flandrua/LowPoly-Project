@@ -4,11 +4,11 @@ using UnityEngine;
 
 public class HitBoxJudge : MonoBehaviour
 {
-    private bool canHit=true;
+    private bool canHit = true;
     public Color hitColor;
     public Color defalutColor;
     public Material hams;
-    
+
     void Start()
     {
 
@@ -21,27 +21,37 @@ public class HitBoxJudge : MonoBehaviour
     }
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.layer == LayerMask.NameToLayer("NPC")&&canHit)
+        if (other.gameObject.layer == LayerMask.NameToLayer("NPC") && canHit)
         {
             canHit = false;
-            Animator animator = PlayerBehaviour.instance.animator[0];
+            Animator animator = PlayerBehaviour.Instance.animator[0];
             animator.Play("Eyes_Squint", animator.GetLayerIndex("Shapekey"));
             hams.SetColor("_Color", hitColor);
-            TimeManager.Instance.AddTask(1.5f, false, () => {
+            TimeManager.Instance.AddTask(1.5f, false, () =>
+            {
                 canHit = true;
                 hams.SetColor("_Color", defalutColor);
             }, this);
-            if (PlayerBehaviour.instance.flip.localScale == new Vector3(1, 1, 1))
+            if (PlayerBehaviour.Instance.isSewage)
             {
-                PlayerBehaviour.instance.movePosition.AddMovement(new Vector3(-2f,1, 0),0.5f);
+                Vector3 collisionDirection = other.transform.position - transform.position;
+                Vector3 normalizedDirection = collisionDirection.normalized;
+                normalizedDirection *= -2;
+                normalizedDirection.y = 1;
+                PlayerBehaviour.Instance.movePosition.AddMovement(normalizedDirection,0.5f);
             }
-            else if (PlayerBehaviour.instance.flip.localScale == new Vector3(-1, 1, 1))
+            else
             {
-                PlayerBehaviour.instance.movePosition.AddMovement(new Vector3(2f, 1, 0),0.5f);
+                if (PlayerBehaviour.Instance.flip.localScale == new Vector3(1, 1, 1))
+                {
+                    PlayerBehaviour.Instance.movePosition.AddMovement(new Vector3(-2f, 1, 0), 0.5f);
+                }
+                else if (PlayerBehaviour.Instance.flip.localScale == new Vector3(-1, 1, 1))
+                {
+                    PlayerBehaviour.Instance.movePosition.AddMovement(new Vector3(2f, 1, 0), 0.5f);
+                }
             }
-
-            PlayerBehaviour.instance.health.TakeDamage(1);
-
+            PlayerBehaviour.Instance.health.TakeDamage(1);
         }
     }
 }

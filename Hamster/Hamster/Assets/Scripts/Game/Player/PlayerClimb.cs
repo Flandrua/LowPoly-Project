@@ -19,8 +19,8 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
     void Start()
     {
         EventManager.AddListener(EventCommon.MOVE_TO_TOP,MoveToTop);
-        rb = PlayerBehaviour.instance.GetComponent<Rigidbody>();
-        go = PlayerBehaviour.instance.animator[0].gameObject;
+        rb = PlayerBehaviour.Instance.GetComponent<Rigidbody>();
+        go = PlayerBehaviour.Instance.animator[0].gameObject;
 
     }
     private void OnDestroy()
@@ -53,7 +53,7 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
         {
             //Íæ¼Ò½øÈë¶¥¶Ë
             curTop = other.GetComponent<ClimbBoxSpot>().TopPos;
-            PlayerBehaviour.instance.animator[0].SetTrigger("MoveToTop");
+            PlayerBehaviour.Instance.animator[0].SetTrigger("MoveToTop");
         }
     }
     private void OnTriggerStay(Collider other)
@@ -88,7 +88,7 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
         tempP.y += 0.15f;
         rb.transform.position = tempP;
         go.transform.rotation = Quaternion.Euler(tempR);
-        PlayerBehaviour.instance.animator[0].Play("Idle_A");
+        PlayerBehaviour.Instance.animator[0].Play("Idle_A");
     }
 
     private void RotateToGround()

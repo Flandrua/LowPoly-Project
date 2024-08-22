@@ -20,9 +20,9 @@ public class JumpSpot : MonoBehaviour
     {
         if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
-            PlayerBehaviour.instance.movePosition.AddMovement(new Vector3(0, 4, 0), 1, true, false, false);
+            PlayerBehaviour.Instance.movePosition.AddMovement(new Vector3(0, 4, 0), 1, true, false, false);
             _particle.Play();
-            //Animator animator = PlayerBehaviour.instance.animator;
+            //Animator animator = PlayerBehaviour.Instance.animator;
             //animator.SetTrigger("jump");
     
         }

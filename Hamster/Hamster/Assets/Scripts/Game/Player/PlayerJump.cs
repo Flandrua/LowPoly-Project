@@ -46,14 +46,14 @@ public class PlayerJump : MonoBehaviour
         DoJump();
     }
 
-    bool canNotJump { get { return _isFloating || _isAttacking || PlayerBehaviour.instance.health.isDead || !PlayerBehaviour.instance.move.canInput||PlayerClimb.Instance.isClimb|| PlayerClimb.Instance.canClimb; } }
+    bool canNotJump { get { return _isFloating || _isAttacking || PlayerBehaviour.Instance.health.isDead || !PlayerBehaviour.Instance.move.canInput||PlayerClimb.Instance.isClimb|| PlayerClimb.Instance.canClimb; } }
 
     void DoJump()
     {
         //_speedY = jumpPower;
-        PlayerBehaviour.instance.SetBool("walk", false);
-        PlayerBehaviour.instance.SetBool("onGround", false);
-        PlayerBehaviour.instance.animator[0].SetTrigger("jump");
+        PlayerBehaviour.Instance.SetBool("walk", false);
+        PlayerBehaviour.Instance.SetBool("onGround", false);
+        PlayerBehaviour.Instance.animator[0].SetTrigger("jump");
         _movePosition.rb.AddForce(new Vector2(0, jumpPower));
     }
 
@@ -68,6 +68,6 @@ public class PlayerJump : MonoBehaviour
         _movePosition.rb.velocity = v;
         _movePosition.StopInputMovement();
 
-        //PlayerBehaviour.instance.animator.SetBool("walk", false);
+        //PlayerBehaviour.Instance.animator.SetBool("walk", false);
     }
 }

@@ -16,7 +16,6 @@ public class PlayerMove : MonoBehaviour
     private PlayerAttackBehaviour _attack;
     private PlayerHealthBehaviour _health;
 
-    public bool sewageInput = false;
     public bool isMoving { get; private set; }
 
     void Start()
@@ -59,18 +58,18 @@ public class PlayerMove : MonoBehaviour
     {
         if (_health.isDead || !canInput)
             return;
-
+        PlayerBehaviour pb = PlayerBehaviour.Instance;
         if (_attack.isAttacking)
         {
             if (!_jump.IsJumping)
             {
                 _speedX = 0;
             }
-            PlayerBehaviour.instance?.SetBool("walk", false);
+            pb?.SetBool("walk", false);
             return;
         }
         _speedX = 0;
-        if (!sewageInput)
+        if (!pb.isSewage)
         {
 
             if (Input.GetKey(KeyCode.A))
@@ -115,35 +114,35 @@ public class PlayerMove : MonoBehaviour
         {
             isMoving = true;
             if (!_jump.IsJumping)
-                PlayerBehaviour.instance.SetBool("walk", true);
+                pb.SetBool("walk", true);
 
-            if (!sewageInput)
+            if (!pb.isSewage)
                 FlipRight();
         }
         else if (_speedX < 0)
         {
             isMoving = true;
-            if (!sewageInput)
+            if (!pb.isSewage)
                 FlipLeft();
             if (!_jump.IsJumping)
-                PlayerBehaviour.instance.SetBool("walk", true);
+                pb.SetBool("walk", true);
         }
         else
         {
             isMoving = false;
             if (!_jump.IsJumping)
-                PlayerBehaviour.instance.SetBool("walk", false);
+                pb.SetBool("walk", false);
         }
 
         if (_speedY != 0&& PlayerClimb.Instance.isClimb)
         {
             isMoving = true;
-            PlayerBehaviour.instance.SetBool("walk", true);
+            pb.SetBool("walk", true);
         }
         else if(_speedY == 0 && PlayerClimb.Instance.isClimb)
         {
             isMoving = false;
-            PlayerBehaviour.instance.SetBool("walk", false);
+            pb.SetBool("walk", false);
         }
 
 
@@ -156,14 +155,14 @@ public class PlayerMove : MonoBehaviour
     void Move()
     {
 
-        if (!sewageInput)
+        if (!PlayerBehaviour.Instance.isSewage)
         {
             if (_speedX != 0)
                 _movePosition.AddInputMovement(Vector3.right * _speedX * speed);
             else
                 _movePosition.StopInputMovement();
         }
-        if (sewageInput)
+        if (PlayerBehaviour.Instance.isSewage)
         {
             if (!PlayerClimb.Instance.isClimb)
             {
@@ -187,11 +186,11 @@ public class PlayerMove : MonoBehaviour
     }
     public void FlipRight()//需要在切换到下水道的时候，调用一下，还原scale
     {
-        PlayerBehaviour.instance.flip.localScale = new Vector3(1, 1, 1);
+        PlayerBehaviour.Instance.flip.localScale = new Vector3(1, 1, 1);
     }
 
     void FlipLeft()
     {
-        PlayerBehaviour.instance.flip.localScale = new Vector3(-1, 1, 1);
+        PlayerBehaviour.Instance.flip.localScale = new Vector3(-1, 1, 1);
     }
 }

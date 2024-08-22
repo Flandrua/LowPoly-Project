@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Burst.CompilerServices;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
@@ -10,16 +11,19 @@ public class EnemyPatrol : MonoBehaviour
 {
     // Start is called before the first frame update
     public List<GameObject> patrolPoints;
+    private List<GameObject> unchekcedPoint;
     [Header("------debug------")]
     [SerializeField] private int pointIndex;
     [SerializeField] private GameObject curTargerPoint;
     [SerializeField] private bool isPatrol = true;
     [SerializeField] private bool canMove = true;
+    [SerializeField] private bool canRun = false;
 
-
-    [Header("------ debug ------")] 
-    public float speed = 1.0f;
-    private Rigidbody rb;
+    [Header("------ debug ------")]
+    public float speed = 1.5f;
+    public float runSpeed = 2f;
+    private Rigidbody _rb;
+    private Animator _animator;
     public float rotateSpeed = 1.0f;
     public float raycastDistance = 10f; // 射线检测的距离
     public GameObject rayStart;
@@ -29,30 +33,42 @@ public class EnemyPatrol : MonoBehaviour
     //玩家被Wall tag物体挡住后，AI回去巡逻，检测最近的点，并且打一条射线，如果中间没有障碍物，就从那个点开始重新巡逻
     void Start()
     {
-        rb = GetComponent<Rigidbody>();
+        _rb = GetComponent<Rigidbody>();
+        _animator = GetComponent<Animator>();
         pointIndex = 0;
         curTargerPoint = patrolPoints[pointIndex];
+        unchekcedPoint = new List<GameObject>(patrolPoints);
+        WalkOrRun(false);
     }
 
     // Update is called once per frame
     void Update()
     {
-
-        RayDectecter();
+        if (canMove)
+        {
+            RayDectecter();
+            FaceToTarget(curTargerPoint);
+        }
         PatrolCheck();
-        FaceToTarget(curTargerPoint);
+
     }
     private void LateUpdate()
     {
         if (canMove)
             MoveForward();
     }
+    private void WalkOrRun(bool isRun)
+    {
+        canRun = isRun;
+        _animator.SetBool("run", isRun);
+    }
     private void MoveForward()
     {
         Vector3 direction = curTargerPoint.transform.position - transform.position;
+        float speed = canRun ? runSpeed : this.speed;
         Vector3 velocity = direction.normalized * speed;
         velocity.y = 0;
-        rb.velocity = velocity;
+        _rb.velocity = velocity;
     }
     private void PatrolCheck()
     {
@@ -60,7 +76,7 @@ public class EnemyPatrol : MonoBehaviour
         {
             float shortestDistance = Vector3.Distance(curTargerPoint.transform.position, transform.position);
             //Debug.Log(shortestDistance);
-            if (shortestDistance < 0.4f)
+            if (shortestDistance < 0.4f)//切换巡逻点
             {
                 pointIndex++;
                 if (pointIndex > patrolPoints.Count - 1) pointIndex = 0;
@@ -71,7 +87,7 @@ public class EnemyPatrol : MonoBehaviour
 
     private void RayDectecter()
     {
-        //在巡逻的时候，用射线检测碰到的第一个box，如果是玩家，isPatrol=false;
+        //在巡逻的时候，用射线检测碰到的第一个box，如果是"Player"tag或layer，isPatrol=false;
         //在chase的时候，如果玩家和AI之间有wall物体存在，判定丢失视野，计算合适的点位后isPatrol=true，回去巡逻
         Ray ray = new Ray(rayStart.transform.position + rayPosOffset, transform.forward + rayRoateOffset);
         // 在场景中绘制射线
@@ -84,10 +100,11 @@ public class EnemyPatrol : MonoBehaviour
             {
                 GameObject go = hit.collider.gameObject;
                 //Debug.Log(go.name);
-                if (hit.collider.gameObject.layer == LayerMask.NameToLayer("Player"))
+                if (hit.collider.gameObject.CompareTag("Player"))
                 {
-                    curTargerPoint = go;
+                    curTargerPoint = PlayerBehaviour.Instance.gameObject;
                     isPatrol = false;
+                    WalkOrRun(true);
                 }
             }
         }
@@ -97,6 +114,7 @@ public class EnemyPatrol : MonoBehaviour
             RaycastHit[] hits = Physics.RaycastAll(ray);
             if (hits.Length > 0)
             {
+                //从hits里面，计算出一个距离最近的点
                 RaycastHit closestHit = hits[0];
                 float shortestDistance = Vector3.Distance(closestHit.point, transform.position);
                 foreach (RaycastHit hit in hits)
@@ -109,19 +127,20 @@ public class EnemyPatrol : MonoBehaviour
                         closestHit = hit;
                     }
                 }
-                if (closestHit.collider.gameObject.layer != LayerMask.NameToLayer("Player"))
+                if (!closestHit.collider.gameObject.CompareTag("Player"))//如果这个距离最近的点不是Player，那么就回去巡逻
                 {
+                    WalkOrRun(false);
                     isPatrol = true;//回去巡逻
+                    unchekcedPoint = new List<GameObject>(patrolPoints);
                     //得到一个最近的点位
-                    List<GameObject> listGo = patrolPoints;
-                    while (listGo.Count > 0)//update内调用，注意死机问题
+                    while (unchekcedPoint.Count > 0)//update内调用，注意死机问题
                     {
-                        GameObject target = ClosePoint(listGo);
+                        GameObject target = ClosePoint(unchekcedPoint);
                         //如果最近点位之间有遮挡，从列表里寻找其他点位
                         GameObject blocker = CheckBlocked(target);
                         if (blocker != target)
                         {
-                            listGo.Remove(target);
+                            unchekcedPoint.Remove(target);
                         }
                         else
                         {
@@ -130,7 +149,7 @@ public class EnemyPatrol : MonoBehaviour
                             break;
                         }
                     }
-                    if (listGo.Count == 0)
+                    if (unchekcedPoint.Count == 0)
                         Debug.LogWarning("可能没有找到最近可行的点位");
 
 
@@ -179,12 +198,7 @@ public class EnemyPatrol : MonoBehaviour
     }
 
 
-    public void AddInputMovement(Vector3 mm)
-    {
-        var v = rb.velocity;
-        v.z = -mm.z;
-        rb.velocity = v * speed;
-    }
+
 
     public void RotateSelf(float roate)
     {
@@ -198,5 +212,22 @@ public class EnemyPatrol : MonoBehaviour
         float angle = Vector3.SignedAngle(transform.forward, directionToTarget, Vector3.up);
         if (angle < -5f || angle > 5f)
             RotateSelf(angle);
+    }
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("Player"))
+        {
+            //停顿1.6秒
+            canMove = false;
+            _animator.Play("Idle");
+            TimeManager.Instance.AddTask(1.6f, false, () =>
+            {//由于玩家被创飞后，AI有时候会因为玩家飞太高，丢失视野，这里做一个处理
+                curTargerPoint = PlayerBehaviour.Instance.gameObject;
+                isPatrol = false;
+                _animator.Play("Run");
+                WalkOrRun(true);
+                canMove = true;
+            }, this);
+        }
     }
 }

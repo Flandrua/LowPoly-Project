@@ -102,7 +102,7 @@ namespace com
             var yawed = backward * Mathf.Cos(_param.yaw) + Vector3.right * Mathf.Sin(_param.yaw);
             var ideaPos = target.position + (yawed * Mathf.Cos(_param.pitch) + Vector3.up * Mathf.Sin(_param.pitch)) * _param.distance;
 
-            if (PlayerBehaviour.instance.move.sewageInput && !isTween)
+            if (PlayerBehaviour.Instance.isSewage && !isTween)
             {
                 //如果处于下水道的时候，就让parent constrain处理摄像机位置问题
             }

@@ -19,7 +19,7 @@ public class EnemyPlayerChecker : MonoBehaviour
     {
         if (permanentAlert && _permanentAlertRes)
         {
-            if (PlayerBehaviour.instance.health.isDead)
+            if (PlayerBehaviour.Instance.health.isDead)
             {
                 _permanentAlertRes = false;
                 return false;
@@ -33,7 +33,7 @@ public class EnemyPlayerChecker : MonoBehaviour
 
     public bool PlayerInSight()
     {
-        var pos = PlayerBehaviour.instance.transform.position;
+        var pos = PlayerBehaviour.Instance.transform.position;
         var dx = pos.x - transform.position.x;
         var dy = pos.y - transform.position.y;
         if (Mathf.Abs(dy) > playerCheckDistanceY)
@@ -59,7 +59,7 @@ public class EnemyPlayerChecker : MonoBehaviour
 
     public bool PlayerInRawSight()
     {
-        var pos = PlayerBehaviour.instance.transform.position;
+        var pos = PlayerBehaviour.Instance.transform.position;
         var dx = pos.x - transform.position.x;
         var res = true;
         if (_enemy.patrolBehaviour.facingRight)

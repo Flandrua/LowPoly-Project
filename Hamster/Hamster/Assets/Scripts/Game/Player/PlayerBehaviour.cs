@@ -5,8 +5,6 @@ using static UnityEngine.Rendering.DebugUI;
 
 public class PlayerBehaviour : MonoSingleton<PlayerBehaviour>
 {
-    public static PlayerBehaviour instance;
-
     [HideInInspector]
     public PlayerHealthBehaviour health;
     [HideInInspector]
@@ -21,11 +19,55 @@ public class PlayerBehaviour : MonoSingleton<PlayerBehaviour>
 
     public Transform flip;
 
+    public bool isSewage;
+
+    public GameObject spider;
+    public GameObject fish;
+    public GameObject[] fishHideObject;
+    private bool _isFish;
+    private bool _isSpider;
+    private bool _isSwim;
+
+    public bool IsFish
+    {
+        get { return _isFish; }
+        set
+        {
+            fish.SetActive(value);
+            _isFish = value;
+            if(fishHideObject.Length > 0)
+            {
+                foreach(var obj in fishHideObject)
+                {
+                    obj.SetActive(value);
+                }
+            }
+        }
+    }
+
+    public bool IsSpider
+    {
+        get { return _isSpider; }
+        set
+        {
+            spider.SetActive(value);
+            _isSpider = value;
+        }
+    }
+
+    public bool IsSwim
+    {
+        get { return _isSwim; }
+        set
+        {
+            animator[0].SetBool("swim", value);
+            _isSwim = value;
+        }
+    }
     //NpcController _npcController;
 
-    private void Awake()
+    override public void Init()
     {
-        instance = this;
         attack = GetComponent<PlayerAttackBehaviour>();
         move = GetComponent<PlayerMove>();
         health = GetComponent<PlayerHealthBehaviour>();
@@ -34,16 +76,17 @@ public class PlayerBehaviour : MonoSingleton<PlayerBehaviour>
 
         //_npcController.Reinit(animator, flip);
         health.FullFill();
+
+        IsFish = true;
+        IsSpider = true;
     }
 
     public void SetBool(string name, bool value)
     {
         foreach (var anim in animator)
         {
-                anim.SetBool(name, value);
+            anim.SetBool(name, value);
         }
+
     }
-
-
-
 }

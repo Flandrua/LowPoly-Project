@@ -58,7 +58,7 @@ public class EnemySkillBehaviour : MonoBehaviour
                 _enemy.animator.SetTrigger("sky fire");
 
                 var fbPos = transform.position;
-                var playerPos = PlayerBehaviour.instance.transform.position;
+                var playerPos = PlayerBehaviour.Instance.transform.position;
                 fbPos.x = (fbPos.x + playerPos.x) * 0.5f;
                 fbPos.y += 10;
 
@@ -74,7 +74,7 @@ public class EnemySkillBehaviour : MonoBehaviour
             case "spike":
                 _enemy.animator.SetTrigger("spike");
                 var spikePos = skl.launchEffect.transform.position;
-                spikePos.x = PlayerBehaviour.instance.transform.position.x;
+                spikePos.x = PlayerBehaviour.Instance.transform.position.x;
                 var spike = Instantiate(skl.prefab, spikePos, Quaternion.identity);
                 var spikeImg = spike.GetComponentInChildren<SpriteRenderer>();
 
@@ -137,7 +137,7 @@ public class EnemySkillBehaviour : MonoBehaviour
         if (crtSkill != null)
         {
             var pos = trans.position;
-            var player = PlayerBehaviour.instance;
+            var player = PlayerBehaviour.Instance;
             bool inRange = false;
             var dist = player.transform.position - pos;
             dist.z = 0;
@@ -223,7 +223,7 @@ public class EnemySkillBehaviour : MonoBehaviour
         if (skl.cdTimer > 0)
             return false;
 
-        var playerPos = PlayerBehaviour.instance.transform.position;
+        var playerPos = PlayerBehaviour.Instance.transform.position;
         var dx = Mathf.Abs(playerPos.x - transform.position.x);
         if (dx < skl.minDist || dx > skl.maxDist)
             return false;

@@ -15,7 +15,7 @@ public class TPSpot : MonoBehaviour
     {
         _animator = GetComponentInChildren<Animator>();
         EventManager.AddListener(EventCommon.TELEPORT, Teleport);
-        _playerBehaviour = PlayerBehaviour.instance;
+        _playerBehaviour = PlayerBehaviour.Instance;
     }
     private void OnDestroy()
     {
