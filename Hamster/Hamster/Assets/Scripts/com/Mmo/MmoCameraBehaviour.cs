@@ -4,7 +4,7 @@ using UnityEngine.Animations;
 
 namespace com
 {
-    public class MmoCameraBehaviour : MonoBehaviour
+    public class MmoCameraBehaviour : MonoSingleton<MmoCameraBehaviour>
     {
         public Transform target;
 
@@ -43,7 +43,27 @@ namespace com
         public void ToggleParam()
         {
             var newIndex = (_paramIndex == 0) ? 1 : 0;
-
+            if (switchDuration==0)
+            {//有问题
+                isTween = false;
+                switch (newIndex)
+                {
+                    case 0:
+                        {
+                            _parentCons.enabled = false;
+                            _param = _params[newIndex];
+                            break;
+                        }
+                    case 1:
+                        {
+                            _parentCons.enabled = true;
+                            _param = _params[newIndex];
+                            break;
+                        }
+                }
+                SetParam(newIndex);
+                return;
+            }
 
             StopAllCoroutines();
             StartCoroutine(TweenParam(_param, _params[newIndex], switchDuration, newIndex));

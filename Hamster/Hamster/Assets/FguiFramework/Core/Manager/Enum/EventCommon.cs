@@ -35,5 +35,7 @@ public class EventCommon
     public static string UPDATE_HP = "UpdateHp";
     public static string INIT_TRANS_DATA = "InitTransData";
     public static string MOVE_TO_TOP = "MoveToTop";
+    public static string ENTRANCE = "Entrance";
+    public static string CHANGE_SCENE = "ChangeScene";
 
 }

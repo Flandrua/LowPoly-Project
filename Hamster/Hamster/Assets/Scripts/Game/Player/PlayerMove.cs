@@ -158,9 +158,9 @@ public class PlayerMove : MonoBehaviour
         if (!PlayerBehaviour.Instance.isSewage)
         {
             if (_speedX != 0)
-                _movePosition.AddInputMovement(Vector3.right * _speedX * speed);
+                _movePosition.AddInputMovement(-Vector3.right * _speedX * speed);
             else
-                _movePosition.StopInputMovement();
+                _movePosition.StopInputMovement(true,false);
         }
         if (PlayerBehaviour.Instance.isSewage)
         {
@@ -189,7 +189,7 @@ public class PlayerMove : MonoBehaviour
         PlayerBehaviour.Instance.flip.localScale = new Vector3(1, 1, 1);
     }
 
-    void FlipLeft()
+    public void FlipLeft()
     {
         PlayerBehaviour.Instance.flip.localScale = new Vector3(-1, 1, 1);
     }
