@@ -82,7 +82,7 @@ public class PlayerMove : MonoBehaviour
         else
         {
             //3D移动操作
-            if (!PlayerClimb.Instance.isClimb)
+            if (!PlayerClimb.Instance.isClimbing)
             {
                 _speedZ = 0;
                 if (Input.GetKey(KeyCode.A))//让A D来控制角色旋转的角度好了 _SpeedZ暂时不用
@@ -134,12 +134,12 @@ public class PlayerMove : MonoBehaviour
                 pb.SetBool("walk", false);
         }
 
-        if (_speedY != 0&& PlayerClimb.Instance.isClimb)
+        if (_speedY != 0&& PlayerClimb.Instance.isClimbing)
         {
             isMoving = true;
             pb.SetBool("walk", true);
         }
-        else if(_speedY == 0 && PlayerClimb.Instance.isClimb)
+        else if(_speedY == 0 && PlayerClimb.Instance.isClimbing)
         {
             isMoving = false;
             pb.SetBool("walk", false);
@@ -164,7 +164,7 @@ public class PlayerMove : MonoBehaviour
         }
         if (PlayerBehaviour.Instance.isSewage)
         {
-            if (!PlayerClimb.Instance.isClimb)
+            if (!PlayerClimb.Instance.isClimbing)
             {
                 if (_speedZ != 0 || _speedX != 0)
                     _movePosition.AddInputMovement(new Vector3(_speedX, 0, _speedZ) * speed, false);

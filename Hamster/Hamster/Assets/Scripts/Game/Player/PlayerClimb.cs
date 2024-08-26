@@ -12,13 +12,13 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
     private GameObject go;
     private GameObject curTop;
 
-    public bool isClimb = false;
+    public bool isClimbing = false;
     public bool canClimb = false;
     private bool canJudgeClimb = true;
     // Start is called before the first frame update
     void Start()
     {
-        EventManager.AddListener(EventCommon.MOVE_TO_TOP,MoveToTop);
+        EventManager.AddListener(EventCommon.MOVE_TO_TOP, MoveToTop);
         rb = PlayerBehaviour.Instance.GetComponent<Rigidbody>();
         go = PlayerBehaviour.Instance.animator[0].gameObject;
 
@@ -32,6 +32,15 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
     void Update()
     {
         //Debug.Log(rb.transform.eulerAngles.y);
+        if (canClimb && !isClimbing && Input.GetKeyDown(KeyCode.Space))
+        {
+            OnClimbingWall();
+        }
+        else if (canClimb && isClimbing && Input.GetKeyDown(KeyCode.Space))
+        {
+            //从墙上爬下来，回正，打开gravity，
+            RotateToGround();
+        }
     }
     private void MoveToTop()
     {
@@ -49,29 +58,25 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
             canClimb = true;
         }
 
-        if (other.gameObject.name == "EdgeEnd"&&isClimb)
+        if (other.gameObject.name == "EdgeEnd" && isClimbing)
         {
             //玩家进入顶端
             curTop = other.GetComponent<ClimbBoxSpot>().TopPos;
             PlayerBehaviour.Instance.animator[0].SetTrigger("MoveToTop");
         }
     }
-    private void OnTriggerStay(Collider other)
+    private void OnTriggerExit(Collider other)
     {
-        if (other.gameObject.name == "EdgeStart" && canClimb && !isClimb && Input.GetKeyDown(KeyCode.Space))
+        if (other.gameObject.name == "EdgeStart")
         {
-            OnClimbingWall();
-        }
-        else if (other.gameObject.name == "EdgeStart" && canClimb && isClimb && Input.GetKeyDown(KeyCode.Space))
-        {
-            //从墙上爬下来，回正，打开gravity，
-            RotateToGround();
+            canClimb = false;
         }
     }
+
     private void OnClimbingWall()
     {
         //开始爬墙，关闭gravity
-        isClimb = true;
+        isClimbing = true;
         rb.useGravity = false;
         rb.velocity = Vector3.zero;
         if (rb.transform.eulerAngles.y >= 180 && rb.transform.eulerAngles.y <= 360)//检测小鼠面对哪个方向，攀爬附着哪个方向，但是这样背身攀爬会产生bug
@@ -93,7 +98,7 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
 
     private void RotateToGround()
     {
-        isClimb = false;
+        isClimbing = false;
         rb.useGravity = true;
         if (rb.transform.eulerAngles.y >= 180 && rb.transform.eulerAngles.y <= 360)//检测小鼠面对哪个方向，攀爬附着哪个方向，但是这样背身攀爬会产生bug
         {
@@ -106,13 +111,5 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
         Vector3 tempR = go.transform.rotation.eulerAngles;
         tempR.x = 0;
         go.transform.rotation = Quaternion.Euler(tempR);
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.gameObject.name == "EdgeStart")
-        {
-            canClimb = false;
-        }
     }
 }
