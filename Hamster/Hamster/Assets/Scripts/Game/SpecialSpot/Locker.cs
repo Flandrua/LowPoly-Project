@@ -2,14 +2,19 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class JumpSpot : MonoBehaviour
+public enum LockerType
 {
+    K,
+    N
+}
+public class Locker : MonoBehaviour
+{
+    public LockerType type;
+    private Animator _animator;
     // Start is called before the first frame update
-    public ParticleSystem _particle;
-    public float jumpForce = 6f;
     void Start()
     {
-     
+        _animator = GetComponent<Animator>();
     }
 
     // Update is called once per frame
@@ -17,15 +22,15 @@ public class JumpSpot : MonoBehaviour
     {
         
     }
+
     private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
-            PlayerBehaviour.Instance.movePosition.AddMovement(new Vector3(0, jumpForce, 0), 1, true, false, false);
-            _particle.Play();
-            //Animator animator = PlayerBehaviour.Instance.animator;
-            //animator.SetTrigger("jump");
-    
+            if(DataCenter.Instance.GameData.LockerTypes.Contains(type))
+            {
+                _animator.SetBool("unlock", true);
+            }
         }
     }
 }

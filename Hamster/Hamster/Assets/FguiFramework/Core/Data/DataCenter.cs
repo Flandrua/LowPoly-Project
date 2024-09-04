@@ -7,7 +7,11 @@ using System;
 public class GameData
 {
     private long _saveTime = 0;
+    private List<LockerType> _lockerTypes = new List<LockerType>();
+    private List<Ability>_abilities= new List<Ability>();
     public long SaveTime { get => _saveTime; set => _saveTime = value; }
+    public List<LockerType> LockerTypes { get => _lockerTypes; set => _lockerTypes = value; }
+    public List<Ability> Abilities { get => _abilities; set => _abilities = value; }
 }
 
 public class DataCenter : Singleton<DataCenter>
