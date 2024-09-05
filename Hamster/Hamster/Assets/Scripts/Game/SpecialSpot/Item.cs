@@ -32,9 +32,8 @@ public class Item : MonoBehaviour
             switch (type)
             {
                 case Ability.Spider:
-                    PlayerBehaviour.Instance.spider.SetActive(true); break;
-                    case Ability.Fish:
-                    PlayerBehaviour.Instance.fish.SetActive(true);
+                    break;
+                    case Ability.Fish:                    
                     foreach(GameObject go in poolEntry)
                     {
                         go.SetActive(false);

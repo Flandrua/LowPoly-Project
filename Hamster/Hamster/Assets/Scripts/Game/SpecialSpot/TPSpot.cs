@@ -7,6 +7,8 @@ public class TPSpot : MonoBehaviour
     //如果玩家在TP box的里面按下了E，则进入TP，传送到初始地点
     // Start is called before the first frame update
     public GameObject tpPos;
+    public TPSpot targetSpot;
+    public bool isTarget = false;
     public bool isBase = false;
     private Animator _animator;
     private bool playerExist = false;
@@ -29,11 +31,13 @@ public class TPSpot : MonoBehaviour
     }
     private void OnTriggerStay(Collider other)
     {
-        if (other.gameObject.layer == LayerMask.NameToLayer("Player") && !isBase)
+        if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
             playerExist = true;
-            if (Input.GetKey(KeyCode.E)&& _playerBehaviour.move.canInput)
+            if (Input.GetKey(KeyCode.E) && _playerBehaviour.move.canInput)
             {
+                targetSpot.isTarget = true;
+                if (targetSpot.isBase) _playerBehaviour.animator[0].SetBool("base", true);
                 _animator.SetBool("Open", true);
                 TimeManager.Instance.AddTask(1.5f, false, () => { _animator.SetBool("Open", false); }, this);
                 _playerBehaviour.move.FlipRight();
@@ -51,8 +55,10 @@ public class TPSpot : MonoBehaviour
 
     private void Teleport()
     {
-        if (isBase)
+        if (isTarget)
         {
+            isTarget = false;
+
             _playerBehaviour.gameObject.transform.position = tpPos.transform.position;
             _animator.SetBool("Open", true);
             TimeManager.Instance.AddTask(2f, false, () => { _animator.SetBool("Open", false); }, this);
