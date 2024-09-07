@@ -19,8 +19,8 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
     void Start()
     {
         EventManager.AddListener(EventCommon.MOVE_TO_TOP, MoveToTop);
-        rb = PlayerBehaviour.Instance.GetComponent<Rigidbody>();
-        go = PlayerBehaviour.Instance.animator[0].gameObject;
+        rb = PlayerBehaviour.Instance.GetComponent<Rigidbody>();//Player的RB
+        go = PlayerBehaviour.Instance.animator[0].gameObject;//模型本身的gameobject
 
     }
     private void OnDestroy()
@@ -31,23 +31,47 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
     // Update is called once per frame
     void Update()
     {
+        if (!DataCenter.Instance.GameData.Abilities.Contains(Ability.Spider)) return;
         //Debug.Log(rb.transform.eulerAngles.y);
-        if (canClimb && !isClimbing && Input.GetKeyDown(KeyCode.Space))
+        if (PlayerBehaviour.Instance.isSewage)
         {
-            OnClimbingWall();
+            if (canClimb && !isClimbing && Input.GetKeyDown(KeyCode.Space))
+            {      
+                On3DClimbingWall();
+            }
+            else if (canClimb && isClimbing && Input.GetKeyDown(KeyCode.Space))
+            {
+                //从墙上爬下来，回正，打开gravity，
+                RotateTo3DGround();
+            }
         }
-        else if (canClimb && isClimbing && Input.GetKeyDown(KeyCode.Space))
+        else
         {
-            //从墙上爬下来，回正，打开gravity，
-            RotateToGround();
+            if (canClimb && !isClimbing && Input.GetKeyDown(KeyCode.Space))
+            {
+                On2DClimbingWall();
+            }
+            else if (canClimb && isClimbing && Input.GetKeyDown(KeyCode.Space))
+            {
+                //从墙上爬下来，回正，打开gravity，
+                RotateTo2DGround();
+            }
         }
     }
     private void MoveToTop()
     {
+        PlayerBehaviour.Instance.move.canInput = true;
         Vector3 temp = curTop.transform.position;
-        temp.x = rb.transform.position.x;
+        if (PlayerBehaviour.Instance.isSewage)
+        {
+            temp.x = rb.transform.position.x;
+            RotateTo3DGround();
+        }
+        else
+            RotateTo2DGround();
+
         rb.transform.position = temp;
-        RotateToGround();
+        PlayerBehaviour.Instance.spider.SetActive(false);
     }
 
     private void OnTriggerEnter(Collider other)
@@ -62,6 +86,7 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
         {
             //玩家进入顶端
             curTop = other.GetComponent<ClimbBoxSpot>().TopPos;
+            PlayerBehaviour.Instance.move.canInput = false;
             PlayerBehaviour.Instance.animator[0].SetTrigger("MoveToTop");
         }
     }
@@ -73,8 +98,9 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
         }
     }
 
-    private void OnClimbingWall()
+    private void On3DClimbingWall()
     {
+        PlayerBehaviour.Instance.spider.SetActive(true);
         //开始爬墙，关闭gravity
         isClimbing = true;
         rb.useGravity = false;
@@ -96,8 +122,9 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
         PlayerBehaviour.Instance.animator[0].Play("Idle_A");
     }
 
-    private void RotateToGround()
+    private void RotateTo3DGround()
     {
+        PlayerBehaviour.Instance.spider.SetActive(false);
         isClimbing = false;
         rb.useGravity = true;
         if (rb.transform.eulerAngles.y >= 180 && rb.transform.eulerAngles.y <= 360)//检测小鼠面对哪个方向，攀爬附着哪个方向，但是这样背身攀爬会产生bug
@@ -108,6 +135,44 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
         {
             rb.transform.rotation = Quaternion.Euler(new Vector3(0, 90, 0));//平面旋转
         }
+        Vector3 tempR = go.transform.rotation.eulerAngles;
+        tempR.x = 0;
+        go.transform.rotation = Quaternion.Euler(tempR);
+    }
+    private void On2DClimbingWall()
+    {
+        PlayerBehaviour.Instance.spider.SetActive(true);
+        //开始爬墙，关闭gravity
+        isClimbing = true;
+        rb.useGravity = false;
+        rb.velocity = Vector3.zero;
+        Vector3 tempR = go.transform.rotation.eulerAngles;
+        tempR.x = -90;//垂直旋转
+        Vector3 tempP = PlayerBehaviour.Instance.flip.transform.position;
+        if (PlayerBehaviour.Instance.flip.transform.localScale.x == 1)//检测小鼠面对哪个方向，攀爬附着哪个方向，2D里面根据filp的正负来检测,1右边，-1左边
+            tempP.x += 0.15f;
+        else
+            tempP.x -= 0.15f;
+
+        PlayerBehaviour.Instance.flip.transform.position = tempP;
+        Vector3 tempRbP = rb.transform.position;
+        tempRbP.y += 0.15f;
+        rb.transform.position = tempRbP;
+        go.transform.rotation = Quaternion.Euler(tempR);
+        PlayerBehaviour.Instance.animator[0].Play("Idle_A");
+    }
+
+    private void RotateTo2DGround()
+    {
+        PlayerBehaviour.Instance.spider.SetActive(false);
+        isClimbing = false;
+        rb.useGravity = true;
+        Vector3 tempP = PlayerBehaviour.Instance.flip.transform.position;
+        if (PlayerBehaviour.Instance.flip.transform.localScale.x == 1)//检测小鼠面对哪个方向，攀爬附着哪个方向，2D里面根据filp的正负来检测,1右边，-1左边
+            tempP.x -= 0.15f;
+        else
+            tempP.x += 0.15f;
+        PlayerBehaviour.Instance.flip.transform.position = tempP;
         Vector3 tempR = go.transform.rotation.eulerAngles;
         tempR.x = 0;
         go.transform.rotation = Quaternion.Euler(tempR);

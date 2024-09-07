@@ -51,6 +51,7 @@ public class HitBoxJudge : MonoBehaviour
                     PlayerBehaviour.Instance.movePosition.AddMovement(new Vector3(2f, 1, 0), 0.5f);
                 }
             }
+            PlayerAudio.Instance.Hurt();
             PlayerBehaviour.Instance.health.TakeDamage(1);
         }
     }

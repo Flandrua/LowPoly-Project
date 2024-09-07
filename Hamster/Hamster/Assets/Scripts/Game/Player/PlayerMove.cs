@@ -56,8 +56,13 @@ public class PlayerMove : MonoBehaviour
     /// </summary>
     void ReadInput()
     {
-        if (_health.isDead || !canInput)
+        if (_health.isDead || !canInput)// 禁止操作，速度归零
+        {
+            _speedX = 0;
+            _speedY = 0;
+            _speedZ = 0;
             return;
+        }
         PlayerBehaviour pb = PlayerBehaviour.Instance;
         if (_attack.isAttacking)
         {
@@ -72,11 +77,21 @@ public class PlayerMove : MonoBehaviour
         if (!pb.isSewage)
         {
 
-            if (Input.GetKey(KeyCode.A))
-                _speedX = _speedX - 1;
-            if (Input.GetKey(KeyCode.D))
-                _speedX = _speedX + 1;
-
+            if (PlayerClimb.Instance.isClimbing)//2D攀爬操作读取
+            {
+                _speedY = 0;
+                if (Input.GetKey(KeyCode.W))
+                    _speedY = _speedY - 1;
+                if (Input.GetKey(KeyCode.S))
+                    _speedY = _speedY + 1;
+            }
+            else//2D正常移动
+            {
+                if (Input.GetKey(KeyCode.A))
+                    _speedX = _speedX - 1;
+                if (Input.GetKey(KeyCode.D))
+                    _speedX = _speedX + 1;
+            }
 
         }
         else
@@ -110,6 +125,8 @@ public class PlayerMove : MonoBehaviour
             }
         }
 
+
+
         if (_speedX > 0)
         {
             isMoving = true;
@@ -134,12 +151,12 @@ public class PlayerMove : MonoBehaviour
                 pb.SetBool("walk", false);
         }
 
-        if (_speedY != 0&& PlayerClimb.Instance.isClimbing)
+        if (_speedY != 0 && PlayerClimb.Instance.isClimbing)
         {
             isMoving = true;
             pb.SetBool("walk", true);
         }
-        else if(_speedY == 0 && PlayerClimb.Instance.isClimbing)
+        else if (_speedY == 0 && PlayerClimb.Instance.isClimbing)
         {
             isMoving = false;
             pb.SetBool("walk", false);
@@ -157,27 +174,47 @@ public class PlayerMove : MonoBehaviour
 
         if (!PlayerBehaviour.Instance.isSewage)
         {
+            TwoDMove();
+        }
+
+        if (PlayerBehaviour.Instance.isSewage)
+        {
+            ThreeDMove();
+        }
+    }
+
+    private void TwoDMove()
+    {
+        if (!PlayerClimb.Instance.isClimbing)
+        {
             if (_speedX != 0)
                 _movePosition.AddInputMovement(-Vector3.right * _speedX * speed);
             else
-                _movePosition.StopInputMovement(true,false);
+                _movePosition.StopInputMovement(true, false);
         }
-        if (PlayerBehaviour.Instance.isSewage)
+        else//2D攀爬速度
         {
-            if (!PlayerClimb.Instance.isClimbing)
-            {
-                if (_speedZ != 0 || _speedX != 0)
-                    _movePosition.AddInputMovement(new Vector3(_speedX, 0, _speedZ) * speed, false);
-                else
-                    _movePosition.StopInputMovement(false,false);
-            }
+            if (_speedY != 0)
+                _movePosition.AddInputMovement(new Vector3(0, _speedY, 0) * speed, false, true);
             else
-            {
-                if (_speedY != 0)
-                    _movePosition.AddInputMovement(new Vector3(0, _speedY, 0) * speed, false,true);
-                else
-                    _movePosition.StopInputMovement(false,true);
-            }
+                _movePosition.StopInputMovement(false, true);
+        }
+    }
+    private void ThreeDMove()
+    {
+        if (!PlayerClimb.Instance.isClimbing)
+        {
+            if (_speedZ != 0 || _speedX != 0)
+                _movePosition.AddInputMovement(new Vector3(_speedX, 0, _speedZ) * speed, false);
+            else
+                _movePosition.StopInputMovement(false, false);
+        }
+        else//3D攀爬速度
+        {
+            if (_speedY != 0)
+                _movePosition.AddInputMovement(new Vector3(0, _speedY, 0) * speed, false, true);
+            else
+                _movePosition.StopInputMovement(false, true);
         }
     }
     public void ResetSpeed()

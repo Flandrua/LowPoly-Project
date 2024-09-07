@@ -17,13 +17,19 @@ public class PoolEntry : MonoBehaviour
     }
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.CompareTag("Player") && PlayerBehaviour.Instance.IsFish)
+        if (other.gameObject.CompareTag("Player"))
+        {
             PlayerBehaviour.Instance.IsSwim = true;
+            PlayerBehaviour.Instance.fish.SetActive(true);
+        }
     }
     private void OnTriggerExit(Collider other)
     {
-        if (other.gameObject.CompareTag("Player") && PlayerBehaviour.Instance.IsFish)
+        if (other.gameObject.CompareTag("Player"))
+        {
             PlayerBehaviour.Instance.IsSwim = false;
+            PlayerBehaviour.Instance.fish.SetActive(false);
+        }
     }
 }
 

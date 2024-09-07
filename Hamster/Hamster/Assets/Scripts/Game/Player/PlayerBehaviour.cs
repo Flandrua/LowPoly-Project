@@ -28,32 +28,6 @@ public class PlayerBehaviour : MonoSingleton<PlayerBehaviour>
     private bool _isSpider;
     private bool _isSwim;
 
-    public bool IsFish
-    {
-        get { return _isFish; }
-        set
-        {
-            fish.SetActive(value);
-            _isFish = value;
-            if(fishHideObject.Length > 0)
-            {
-                foreach(var obj in fishHideObject)
-                {
-                    obj.SetActive(value);
-                }
-            }
-        }
-    }
-
-    public bool IsSpider
-    {
-        get { return _isSpider; }
-        set
-        {
-            spider.SetActive(value);
-            _isSpider = value;
-        }
-    }
 
     public bool IsSwim
     {
@@ -77,8 +51,6 @@ public class PlayerBehaviour : MonoSingleton<PlayerBehaviour>
         //_npcController.Reinit(animator, flip);
         health.FullFill();
 
-        IsFish = true;
-        IsSpider = true;
     }
 
     public void SetBool(string name, bool value)
