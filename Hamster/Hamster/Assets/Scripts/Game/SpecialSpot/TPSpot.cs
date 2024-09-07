@@ -18,6 +18,8 @@ public class TPSpot : MonoBehaviour
         _animator = GetComponentInChildren<Animator>();
         EventManager.AddListener(EventCommon.TELEPORT, Teleport);
         _playerBehaviour = PlayerBehaviour.Instance;
+        _animator.SetBool("Open", true);
+        TimeManager.Instance.AddTask(2f, false, () => { _animator.SetBool("Open", false); }, this);
     }
     private void OnDestroy()
     {

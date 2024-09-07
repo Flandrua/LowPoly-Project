@@ -27,6 +27,7 @@ public class Exit : MonoBehaviour
             if(DataCenter.Instance.GameData.Abilities.Contains(Ability.Phone))
             {
                 //½á¾Ö
+
             }
         }
     }
