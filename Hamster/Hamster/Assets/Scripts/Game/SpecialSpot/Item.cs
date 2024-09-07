@@ -4,7 +4,8 @@ using UnityEngine;
 public enum Ability
 {
     Spider,
-    Fish
+    Fish,
+    Phone
 }
 public class Item : MonoBehaviour
 {
