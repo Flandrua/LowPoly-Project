@@ -6,11 +6,11 @@ public class WallRemove : MonoBehaviour
 {
     public float transitionSpeed = 8;
     public float targetAlpha = 0f;
-    public float raycastDistance = 2000f; // 射线检测的距离
+    public float raycastDistanceOffset = -0.1f; // 射线检测的距离偏移
     public string wallTag = "Wall"; // 物体的标签
 
-    public Vector3 rayPosOffset;
-    public Vector3 rayRoateOffset;
+    public float rayInvertDistOffset = 2;
+    public Transform targetSpot;
     bool isChangeingOcpacity;
     private void Start()
     {
@@ -19,22 +19,28 @@ public class WallRemove : MonoBehaviour
     void Update()
     {
         // 从摄像机的位置向前发射射线
-
-        Ray ray = new Ray(transform.position + rayPosOffset, transform.forward + rayRoateOffset);
-        //RaycastHit hit;
+        var dir = targetSpot.position - transform.position;
+        var dirNormalized = dir.normalized;
+        var from = transform.position - dirNormalized * rayInvertDistOffset;
+        Ray ray = new Ray(from, dirNormalized);
 
         // 在场景中绘制射线
-        Debug.DrawRay(ray.origin, ray.direction * raycastDistance, Color.red);
+        var dist = dir.magnitude + raycastDistanceOffset + rayInvertDistOffset;
+        Debug.DrawRay(ray.origin, ray.direction * dist, Color.cyan);
 
         RaycastHit[] hits = Physics.RaycastAll(ray);
         if (hits.Length > 0)
         {
             foreach (RaycastHit hit in hits)
             {
+                if (hit.distance > dist)
+                    continue;
+
                 if (hit.collider.CompareTag(wallTag))
                 {
+                    Debug.LogWarning(hit.collider.gameObject);
                     TransparentEffect Te = hit.collider.GetComponent<TransparentEffect>();
-                    Te.inView = true;
+                    Te.SetInView(true);
                 }
             }
         }

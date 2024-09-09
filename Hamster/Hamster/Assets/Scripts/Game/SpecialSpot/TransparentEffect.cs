@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.Burst.CompilerServices;
 using UnityEngine;
 
 public class TransparentEffect : MonoBehaviour
@@ -13,7 +12,7 @@ public class TransparentEffect : MonoBehaviour
     private float targetAlpha = 0f;
     public bool doAppear = false;
     private bool isTransMat = false;
-    // Start is called before the first frame update
+
     void Start()
     {
         wallRenderer = GetComponent<Renderer>();
@@ -23,18 +22,10 @@ public class TransparentEffect : MonoBehaviour
     {
         EventManager.RemoveListener<float[]>(EventCommon.INIT_TRANS_DATA, Disappear);
     }
-    // Update is called once per frame
+
     void Update()
     {
-        if (inView && !doAppear)
-        {
-            doAppear = true;
-        }
-        else if (!inView)
-        {
-            doAppear = false;
-        }
-
+        SetDoAppear(inView);
 
         if (doAppear)
         {
@@ -48,8 +39,8 @@ public class TransparentEffect : MonoBehaviour
             wallRenderer.material.color = wallColor;
             if (wallColor.a <= targetAlpha + 0.05f)
             {
-                doAppear = false;
-                inView = false;
+                SetDoAppear(false);
+                SetInView(false);
             }
 
         }
@@ -69,9 +60,25 @@ public class TransparentEffect : MonoBehaviour
                     isTransMat = false;
                 }
             }
-
         }
     }
+
+    public void SetInView(bool b)
+    {
+
+        if (inView == b)
+            return;
+        Debug.Log("Set InView " + b);
+        inView = b;
+    }
+    public void SetDoAppear(bool b)
+    {
+        if (doAppear == b)
+            return;
+        Debug.Log("Set DoAppear " + b);
+        doAppear = b;
+    }
+
     public void Disappear(float[] data)
     {
         if (this.transitionSpeed != data[0])
@@ -80,4 +87,3 @@ public class TransparentEffect : MonoBehaviour
             this.targetAlpha = data[1];
     }
 }
-
