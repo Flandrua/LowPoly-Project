@@ -38,7 +38,6 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -42237,7 +42236,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27daa02092d4cfa4a999b47a9b91a6e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  target: {fileID: 2142490355}
+  target: {fileID: 14028534}
   _params:
   - offset: {x: 0, y: 0, z: 4.54}
     pitch: 0
@@ -42268,10 +42267,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   transitionSpeed: 8
   targetAlpha: 0.1
-  raycastDistance: 10
+  raycastDistanceOffset: -0.1
   wallTag: Climb
-  rayPosOffset: {x: 0, y: 0.69, z: 0}
-  rayRoateOffset: {x: 0, y: 0.11, z: 0}
+  rayInvertDistOffset: 2
+  targetSpot: {fileID: 950671279}
 --- !u!1773428102 &1492246612
 ParentConstraint:
   m_ObjectHideFlags: 0
