@@ -38,22 +38,22 @@ public class TransparentEffect : MonoBehaviour
 
         if (doAppear)
         {
-            if(!isTransMat)
+            if (!isTransMat)
             {
                 wallRenderer.material = transparent;
-                isTransMat= true;
+                isTransMat = true;
             }
             Color wallColor = wallRenderer.material.color;
             wallColor.a = Mathf.Lerp(wallRenderer.material.color.a, targetAlpha, Time.deltaTime * transitionSpeed);
             wallRenderer.material.color = wallColor;
-            if (wallColor.a <= targetAlpha+0.05f)
+            if (wallColor.a <= targetAlpha + 0.05f)
             {
                 doAppear = false;
                 inView = false;
             }
 
         }
-        else if(!inView)
+        else if (!inView)
         {
             if (wallRenderer.material.color.a < 0.99)
             {
@@ -63,10 +63,10 @@ public class TransparentEffect : MonoBehaviour
             }
             else
             {
-                if(isTransMat)
+                if (isTransMat)
                 {
                     wallRenderer.material = opaque;
-                    isTransMat= false;
+                    isTransMat = false;
                 }
             }
 
@@ -79,7 +79,5 @@ public class TransparentEffect : MonoBehaviour
         if (this.targetAlpha != data[1])
             this.targetAlpha = data[1];
     }
-
-
 }
 
