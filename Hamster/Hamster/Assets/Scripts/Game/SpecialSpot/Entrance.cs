@@ -23,12 +23,14 @@ public class Entrance : MonoBehaviour
         _animator = GetComponentInChildren<Animator>();
         _playerBehaviour = PlayerBehaviour.Instance;
         EventManager.AddListener(EventCommon.ENTRANCE, EnterScene);
-        EventManager.AddListener(EventCommon.CHANGE_SCENE, ChangeScene);
+        EventManager.AddListener(EventCommon.CHANGE_SCENE_EXIT, ChangeSceneExit);//动画机事件
+        EventManager.AddListener(EventCommon.CHANGE_SCENE_ENTER, ChangeSceneEnter);//动画机事件
     }
     private void OnDestroy()
     {
         EventManager.RemoveListener(EventCommon.ENTRANCE, EnterScene);
-        EventManager.RemoveListener(EventCommon.CHANGE_SCENE, ChangeScene);
+        EventManager.RemoveListener(EventCommon.CHANGE_SCENE_EXIT, ChangeSceneExit);
+        EventManager.RemoveListener(EventCommon.CHANGE_SCENE_ENTER, ChangeSceneEnter);//动画机事件
     }
 
     // Update is called once per frame
@@ -45,7 +47,7 @@ public class Entrance : MonoBehaviour
             {
                 isPlayerExist = true;
                 ResetToTarget(_playerBehaviour.gameObject, tpPos);
-                MmoCameraBehaviour.Instance.target = tpPos.transform;
+                MmoCameraBehaviour.Instance.target = tpPos.transform.Find("fix");
                 if (curScene == SceneType.Sewer)
                     _playerBehaviour.transform.rotation = Quaternion.Euler(new Vector3(0, 180, 0));
                 _playerBehaviour.move.FlipRight();
@@ -62,30 +64,38 @@ public class Entrance : MonoBehaviour
     {
         if (isPlayerExist)
         {
-            MmoCameraBehaviour.Instance.target = targerEntrance.tpPos.transform;
+            MmoCameraBehaviour.Instance.target = targerEntrance.tpPos.transform.Find("fix");
             ResetToTarget(_playerBehaviour.gameObject, targerEntrance.tpPos);
             MmoCameraBehaviour.Instance.testToggle = true;
             if (targerEntrance.curScene == SceneType.Sewer)
                 _playerBehaviour.transform.rotation = Quaternion.Euler(new Vector3(0, 180, 0));
         }
     }
-    private void ChangeScene()
+    private void ChangeSceneExit()
     {
         if (isPlayerExist)
         {
             isPlayerExist = false;
+            MmoCameraBehaviour.Instance.target = _playerBehaviour.rig.transform;
+            MmoCameraBehaviour.Instance.target = _playerBehaviour.rig.transform;
+            return;
+
+        }
+    }
+    private void ChangeSceneEnter()
+    {
+        if (isPlayerExist)
+        {
             switch (targerEntrance.curScene)
             {
                 case SceneType.Sewer:
                     {
                         _playerBehaviour.isSewage = true;
-                        MmoCameraBehaviour.Instance.target = _playerBehaviour.gameObject.transform;
                         return;
                     }
                 case SceneType.Ventilation:
                     {
                         _playerBehaviour.isSewage = false;
-                        MmoCameraBehaviour.Instance.target = _playerBehaviour.gameObject.transform;
                         return;
                     }
             }

@@ -36,6 +36,8 @@ public class EventCommon
     public static string INIT_TRANS_DATA = "InitTransData";
     public static string MOVE_TO_TOP = "MoveToTop";
     public static string ENTRANCE = "Entrance";
-    public static string CHANGE_SCENE = "ChangeScene";
+    public static string CHANGE_SCENE_EXIT = "ChangeSceneExit";
+    public static string CHANGE_SCENE_ENTER = "ChangeSceneEnter";
+    public static string START_GAME = "StartGame";
 
 }

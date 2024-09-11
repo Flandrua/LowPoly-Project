@@ -36,7 +36,7 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
         if (PlayerBehaviour.Instance.isSewage)
         {
             if (canClimb && !isClimbing && Input.GetKeyDown(KeyCode.Space))
-            {      
+            {
                 On3DClimbingWall();
             }
             else if (canClimb && isClimbing && Input.GetKeyDown(KeyCode.Space))
@@ -105,19 +105,24 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
         isClimbing = true;
         rb.useGravity = false;
         rb.velocity = Vector3.zero;
+        Vector3 tempP = PlayerBehaviour.Instance.flip.transform.position;
         if (rb.transform.eulerAngles.y >= 180 && rb.transform.eulerAngles.y <= 360)//检测小鼠面对哪个方向，攀爬附着哪个方向，但是这样背身攀爬会产生bug
         {
             rb.transform.rotation = Quaternion.Euler(new Vector3(0, -90, 0));//平面旋转
+            tempP.z += 0.2f;
+
         }
         else
         {
             rb.transform.rotation = Quaternion.Euler(new Vector3(0, 90, 0));//平面旋转
+            tempP.z -= 0.2f;
         }
+        PlayerBehaviour.Instance.flip.transform.position = tempP;
         Vector3 tempR = go.transform.rotation.eulerAngles;
         tempR.x = -90;//垂直旋转
-        Vector3 tempP = rb.transform.position;
-        tempP.y += 0.15f;
-        rb.transform.position = tempP;
+        Vector3 tempP2 = rb.transform.position;
+        tempP2.y += 0.15f;
+        rb.transform.position = tempP2;
         go.transform.rotation = Quaternion.Euler(tempR);
         PlayerBehaviour.Instance.animator[0].Play("Idle_A");
     }
@@ -127,14 +132,19 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
         PlayerBehaviour.Instance.spider.SetActive(false);
         isClimbing = false;
         rb.useGravity = true;
+        Vector3 tempP = PlayerBehaviour.Instance.flip.transform.position;
         if (rb.transform.eulerAngles.y >= 180 && rb.transform.eulerAngles.y <= 360)//检测小鼠面对哪个方向，攀爬附着哪个方向，但是这样背身攀爬会产生bug
         {
             rb.transform.rotation = Quaternion.Euler(new Vector3(0, -90, 0));//平面旋转
+            tempP.z -= 0.2f;
         }
         else
         {
+
             rb.transform.rotation = Quaternion.Euler(new Vector3(0, 90, 0));//平面旋转
+            tempP.z += 0.2f;
         }
+        PlayerBehaviour.Instance.flip.transform.position = tempP;
         Vector3 tempR = go.transform.rotation.eulerAngles;
         tempR.x = 0;
         go.transform.rotation = Quaternion.Euler(tempR);
@@ -150,9 +160,9 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
         tempR.x = -90;//垂直旋转
         Vector3 tempP = PlayerBehaviour.Instance.flip.transform.position;
         if (PlayerBehaviour.Instance.flip.transform.localScale.x == 1)//检测小鼠面对哪个方向，攀爬附着哪个方向，2D里面根据filp的正负来检测,1右边，-1左边
-            tempP.x += 0.15f;
+            tempP.x += 0.3f;
         else
-            tempP.x -= 0.15f;
+            tempP.x -= 0.3f;
 
         PlayerBehaviour.Instance.flip.transform.position = tempP;
         Vector3 tempRbP = rb.transform.position;
@@ -169,12 +179,13 @@ public class PlayerClimb : MonoSingleton<PlayerClimb>
         rb.useGravity = true;
         Vector3 tempP = PlayerBehaviour.Instance.flip.transform.position;
         if (PlayerBehaviour.Instance.flip.transform.localScale.x == 1)//检测小鼠面对哪个方向，攀爬附着哪个方向，2D里面根据filp的正负来检测,1右边，-1左边
-            tempP.x -= 0.15f;
+            tempP.x -= 0.3f;
         else
-            tempP.x += 0.15f;
+            tempP.x += 0.3f;
         PlayerBehaviour.Instance.flip.transform.position = tempP;
         Vector3 tempR = go.transform.rotation.eulerAngles;
         tempR.x = 0;
         go.transform.rotation = Quaternion.Euler(tempR);
     }
+
 }

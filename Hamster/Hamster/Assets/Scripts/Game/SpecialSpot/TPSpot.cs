@@ -10,13 +10,21 @@ public class TPSpot : MonoBehaviour
     public TPSpot targetSpot;
     public bool isTarget = false;
     public bool isBase = false;
+    public AudioClip open;
+    public AudioClip close;
+    private AudioSource _as;
     private Animator _animator;
     private bool playerExist = false;
     private PlayerBehaviour _playerBehaviour;
     void Start()
     {
         _animator = GetComponentInChildren<Animator>();
+        _as = GetComponent<AudioSource>();
         EventManager.AddListener(EventCommon.TELEPORT, Teleport);
+        if (isBase)
+        {
+            EventManager.AddListener(EventCommon.START_GAME, StartTp);
+        }
         _playerBehaviour = PlayerBehaviour.Instance;
         _animator.SetBool("Open", true);
         TimeManager.Instance.AddTask(2f, false, () => { _animator.SetBool("Open", false); }, this);
@@ -24,6 +32,10 @@ public class TPSpot : MonoBehaviour
     private void OnDestroy()
     {
         EventManager.RemoveListener(EventCommon.TELEPORT, Teleport);
+        if (isBase)
+        {
+            EventManager.RemoveListener(EventCommon.START_GAME, StartTp);
+        }
     }
 
     // Update is called once per frame
@@ -41,7 +53,15 @@ public class TPSpot : MonoBehaviour
                 targetSpot.isTarget = true;
                 if (targetSpot.isBase) _playerBehaviour.animator[0].SetBool("base", true);
                 _animator.SetBool("Open", true);
-                TimeManager.Instance.AddTask(1.5f, false, () => { _animator.SetBool("Open", false); }, this);
+                _as.clip = open;
+                _as.Play();
+                TimeManager.Instance.AddTask(1.5f, false, () =>
+                {
+                    _animator.SetBool("Open", false);
+                    _as.clip = close;
+                    _as.Play();
+
+                }, this);
                 _playerBehaviour.move.FlipRight();
                 _playerBehaviour.animator[0].SetTrigger("Move");
                 _playerBehaviour.move.canInput = false;
@@ -60,10 +80,24 @@ public class TPSpot : MonoBehaviour
         if (isTarget)
         {
             isTarget = false;
-
-            _playerBehaviour.gameObject.transform.position = tpPos.transform.position;
-            _animator.SetBool("Open", true);
-            TimeManager.Instance.AddTask(2f, false, () => { _animator.SetBool("Open", false); }, this);
+            StartTp();
         }
+    }
+
+    private void StartTp()
+    {
+
+        _playerBehaviour.gameObject.transform.position = tpPos.transform.position;
+        _animator.SetBool("Open", true);
+        _as.clip = open;
+        _as.Play();
+
+        TimeManager.Instance.AddTask(2f, false, () =>
+        {
+            _animator.SetBool("Open", false);
+            _as.clip = close;
+            _as.Play();
+
+        }, this);
     }
 }

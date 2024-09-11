@@ -24,6 +24,8 @@ public class PlayerBehaviour : MonoSingleton<PlayerBehaviour>
     public GameObject spider;
     public GameObject fish;
     public GameObject[] fishHideObject;
+
+    public GameObject rig;
     private bool _isFish;
     private bool _isSpider;
     private bool _isSwim;

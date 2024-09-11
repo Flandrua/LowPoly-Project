@@ -21,6 +21,7 @@ public class PoolEntry : MonoBehaviour
         {
             PlayerBehaviour.Instance.IsSwim = true;
             PlayerBehaviour.Instance.fish.SetActive(true);
+            PlayerAudio.Instance.IntoPool();
         }
     }
     private void OnTriggerExit(Collider other)
@@ -29,6 +30,7 @@ public class PoolEntry : MonoBehaviour
         {
             PlayerBehaviour.Instance.IsSwim = false;
             PlayerBehaviour.Instance.fish.SetActive(false);
+            PlayerAudio.Instance.OutPool();
         }
     }
 }
