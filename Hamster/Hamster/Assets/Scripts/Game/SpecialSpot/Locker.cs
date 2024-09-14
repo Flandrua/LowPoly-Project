@@ -11,10 +11,17 @@ public class Locker : MonoBehaviour
 {
     public LockerType type;
     private Animator _animator;
+    private AudioSource _as;
     // Start is called before the first frame update
     void Start()
     {
         _animator = GetComponent<Animator>();
+        _as = GetComponent<AudioSource>();
+        EventManager.AddListener(EventCommon.START_GAME, InitLock);
+    }
+    private void InitLock()
+    {
+        _animator.Play("Lock");
     }
 
     // Update is called once per frame
@@ -30,7 +37,13 @@ public class Locker : MonoBehaviour
             if(DataCenter.Instance.GameData.LockerTypes.Contains(type))
             {
                 _animator.SetBool("unlock", true);
+                
             }
         }
+    }
+
+    private void PlayerAudio()
+    {
+        _as.Play();
     }
 }

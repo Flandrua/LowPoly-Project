@@ -91,11 +91,13 @@ public class Entrance : MonoBehaviour
                 case SceneType.Sewer:
                     {
                         _playerBehaviour.isSewage = true;
+                        BGMManager.Instance.Bgm1();
                         return;
                     }
                 case SceneType.Ventilation:
                     {
                         _playerBehaviour.isSewage = false;
+                        BGMManager.Instance.Bgm2();
                         return;
                     }
             }
@@ -116,4 +118,5 @@ public class Entrance : MonoBehaviour
         // »Ö¸´¸¸ÎïÌå
         go.transform.SetParent(target.transform.parent);
     }
+
 }

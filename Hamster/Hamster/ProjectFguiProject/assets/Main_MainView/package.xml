@@ -6,6 +6,7 @@
     <image id="lvhls" name="biomeitemborder.png" path="/"/>
     <image id="lvhlt" name="biomeitempoint.png" path="/"/>
     <component id="lvhlu" name="hpBar.xml" path="/"/>
+    <component id="dd1iw" name="btn.xml" path="/"/>
   </resources>
   <publish name=""/>
 </packageDescription>

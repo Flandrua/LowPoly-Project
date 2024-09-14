@@ -24,6 +24,12 @@ public class PlayerHealthBehaviour : MonoBehaviour
         int[] hplist = { _hp, _hpMax };
         EventManager.DispatchEvent<int[]>(EventCommon.UPDATE_HP, hplist);
     }
+    public void InitHealth()
+    {
+        FullFill();
+        _dead = false;
+        PlayerBehaviour.Instance.animator[0].SetBool("death", false);
+    }
 
     private void Update()
     {
@@ -64,16 +70,17 @@ public class PlayerHealthBehaviour : MonoBehaviour
         _dead = true;
         //ReviveSystem.instance.QueueDie(fromFall);
         //SoundSystem.instance.Play(dieSound);
-        PlayerBehaviour.Instance.animator[0].Play("Death");
+        PlayerBehaviour.Instance.animator[0].SetBool("death", true);
         //if (!fromFall)
         //    PlayerBehaviour.Instance.animator.SetTrigger("die");
-        
+
         SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>();
         PlayerBehaviour.Instance.movePosition.StopInputMovement();
         foreach (var sr in srs)
         {
             sr.DOFade(0, 3).SetDelay(deathFadeDelay + Random.Range(1, 3f));
         }
+        TimeManager.Instance.AddTask(3, false, () => { EventManager.DispatchEvent(EventCommon.GAME_OVER); }, this);
     }
 
     void DoRoutineMove()

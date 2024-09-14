@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using UnityEditor.Rendering.LookDev;
 using UnityEngine;
 using UnityEngine.Animations;
 
@@ -17,8 +18,15 @@ namespace com
         public float switchDuration = 2f;
         private void Start()
         {
+            EventManager.AddListener(EventCommon.START_GAME, initCam);
+            target = PlayerBehaviour.Instance.rig.transform;
             _parentCons = GetComponent<ParentConstraint>();
             SetParam(0);
+        }
+        private void initCam()
+        {
+            _parentCons.enabled = false;
+            _param = _params[0];
         }
 
 

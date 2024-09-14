@@ -23,6 +23,7 @@ public class HitBoxJudge : MonoBehaviour
     {
         if (other.gameObject.layer == LayerMask.NameToLayer("NPC") && canHit)
         {
+            if(PlayerBehaviour.Instance.health.isDead) { return; }
             canHit = false;
             Animator animator = PlayerBehaviour.Instance.animator[0];
             animator.Play("Eyes_Squint", animator.GetLayerIndex("Shapekey"));

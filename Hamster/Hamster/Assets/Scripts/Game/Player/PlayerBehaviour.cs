@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEditor.PlayerSettings;
 using static UnityEngine.Rendering.DebugUI;
 
 public class PlayerBehaviour : MonoSingleton<PlayerBehaviour>
@@ -18,6 +19,7 @@ public class PlayerBehaviour : MonoSingleton<PlayerBehaviour>
     public List<Animator> animator;
 
     public Transform flip;
+    public GameObject StartPos;
 
     public bool isSewage;
 
@@ -48,11 +50,21 @@ public class PlayerBehaviour : MonoSingleton<PlayerBehaviour>
         move = GetComponent<PlayerMove>();
         health = GetComponent<PlayerHealthBehaviour>();
         movePosition = GetComponent<PlayerMovePosition>();
+        EventManager.AddListener(EventCommon.START_GAME, InitPlayer);
         //_npcController = GetComponent<NpcController>();
+        InitPlayer();
 
-        //_npcController.Reinit(animator, flip);
-        health.FullFill();
-
+    }
+    private void InitPlayer()
+    {
+        //重置数据中心的数据
+        DataCenter.Instance.NewGameData();
+        //重置判断标签
+        health.InitHealth();
+        move.canInput = true;
+        isSewage = false;
+        ResetToTarget(this.gameObject, StartPos);
+        animator[0].Play("Idle_A");
     }
 
     public void SetBool(string name, bool value)
@@ -62,5 +74,19 @@ public class PlayerBehaviour : MonoSingleton<PlayerBehaviour>
             anim.SetBool(name, value);
         }
 
+    }
+    void ResetToTarget(GameObject go, GameObject target)
+    {
+        // 暂时将当前物体的父物体设置为 targetEntrance
+        Transform originalParent = transform.parent;
+        go.transform.SetParent(target.transform);
+
+        // 将局部旋转设置为零
+        go.transform.localRotation = Quaternion.Euler(Vector3.zero);
+
+        go.transform.position = target.transform.position;
+
+        // 恢复父物体
+        go.transform.SetParent(target.transform.parent.parent.parent);
     }
 }

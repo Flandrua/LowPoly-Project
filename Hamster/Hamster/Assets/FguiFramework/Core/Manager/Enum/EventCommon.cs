@@ -39,5 +39,6 @@ public class EventCommon
     public static string CHANGE_SCENE_EXIT = "ChangeSceneExit";
     public static string CHANGE_SCENE_ENTER = "ChangeSceneEnter";
     public static string START_GAME = "StartGame";
+    public static string GAME_OVER = "GameOver";
 
 }

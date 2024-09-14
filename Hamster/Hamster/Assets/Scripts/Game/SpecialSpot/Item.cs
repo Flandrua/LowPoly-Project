@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 public enum Ability
 {
@@ -12,12 +10,26 @@ public class Item : MonoBehaviour
     public Ability type;
     public GameObject[] poolEntry;
     private Animator _animator;
+    private AudioSource _as;
     // Start is called before the first frame update
     void Start()
     {
+        _as = GetComponent<AudioSource>();
         _animator = GetComponent<Animator>();
+        EventManager.AddListener(EventCommon.START_GAME, InitItem);
     }
-
+    private void InitItem()
+    {
+        _animator.Play("BubbleSpin");
+        this.GetComponent<Collider>().enabled = true;
+        if (type == Ability.Fish)
+        {
+            foreach (GameObject go in poolEntry)
+            {
+                go.SetActive(true);
+            }
+        }
+    }
     // Update is called once per frame
     void Update()
     {
@@ -30,6 +42,8 @@ public class Item : MonoBehaviour
         {
             _animator.SetBool("get", true);
             DataCenter.Instance.GameData.Abilities.Add(type);
+            _as.Play();
+            this.GetComponent<Collider>().enabled = false;
             switch (type)
             {
                 case Ability.Spider:

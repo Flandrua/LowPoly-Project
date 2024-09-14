@@ -55,13 +55,17 @@ public class TPSpot : MonoBehaviour
                 _animator.SetBool("Open", true);
                 _as.clip = open;
                 _as.Play();
-                TimeManager.Instance.AddTask(1.5f, false, () =>
+                TimeManager.Instance.AddTask(1f, false, () =>
                 {
-                    _animator.SetBool("Open", false);
                     _as.clip = close;
                     _as.Play();
 
                 }, this);
+                TimeManager.Instance.AddTask(1.5f, false, () =>
+                {
+                    _animator.SetBool("Open", false);
+
+                }, this);      
                 _playerBehaviour.move.FlipRight();
                 _playerBehaviour.animator[0].SetTrigger("Move");
                 _playerBehaviour.move.canInput = false;

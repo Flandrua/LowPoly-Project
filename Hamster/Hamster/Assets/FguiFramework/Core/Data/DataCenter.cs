@@ -26,8 +26,7 @@ public class DataCenter : Singleton<DataCenter>
         string str = PlayerPrefs.GetString("GameData");
         if (string.IsNullOrEmpty(str))
         {
-            _gameData = new GameData();
-            SaveData();
+            NewGameData();
         }
         else
         {
@@ -47,6 +46,11 @@ public class DataCenter : Singleton<DataCenter>
     {
         TimeSpan ts = DateTime.Now - new DateTime(1970, 1, 1, 0, 0, 0, 0);
         return Convert.ToInt64(ts.TotalSeconds);
+    }
+    public void NewGameData()
+    {
+        _gameData=new GameData();
+        SaveData();
     }
 
     public Color HexToColor(string hex)
