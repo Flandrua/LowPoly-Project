@@ -58,13 +58,14 @@ public class PlayerBehaviour : MonoSingleton<PlayerBehaviour>
     private void InitPlayer()
     {
         //重置数据中心的数据
-        DataCenter.Instance.NewGameData();
+        //DataCenter.Instance.NewGameData();
         //重置判断标签
         health.InitHealth();
         move.canInput = true;
         isSewage = false;
         ResetToTarget(this.gameObject, StartPos);
         animator[0].Play("Idle_A");
+        animator[0].Play("Eyes_Normal",1);
     }
 
     public void SetBool(string name, bool value)

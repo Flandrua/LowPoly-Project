@@ -2435,6 +2435,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.0778528, y: 0.1927301, z: 0.26233634}
   m_Center: {x: 0.0000018309806, y: -0.0000009164214, z: -0.00000025331974}
+--- !u!1 &81805036
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 81805037}
+  m_Layer: 0
+  m_Name: "Restart\u91CD\u7F6E\u540E\uFF0C\u89D2\u8272\u5F62\u6001\u952E\u548C\u94C1\u95E8\u91CD\u7F6E,\u6B7B\u4EA1\u589E\u52A0\u4E00\u4E2A\u8F6C\u573A\uFF1F"
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &81805037
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 81805036}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 29.920403, y: 1.8323833, z: -16.405272}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &83090356
 GameObject:
   m_ObjectHideFlags: 0
@@ -36029,7 +36060,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_PlayOnAwake: 1
-  m_Volume: 0.5
+  m_Volume: 0.4
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -64957,7 +64988,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2142490355}
-  - component: {fileID: 2142490365}
   - component: {fileID: 2142490364}
   - component: {fileID: 2142490363}
   - component: {fileID: 2142490362}
@@ -64967,6 +64997,7 @@ GameObject:
   - component: {fileID: 2142490358}
   - component: {fileID: 2142490357}
   - component: {fileID: 2142490356}
+  - component: {fileID: 2142490365}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -89389,3 +89420,4 @@ SceneRoots:
   - {fileID: 1577358955}
   - {fileID: 359914848}
   - {fileID: 1279923826}
+  - {fileID: 81805037}
