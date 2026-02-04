@@ -1,10 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
-public class UIManager : MonoBehaviour
+public class UIManager : MonoSingleton<UIManager>
 {
     // Start is called before the first frame update
+    public Text txtHeight;
     void Start()
     {
         
@@ -14,5 +16,11 @@ public class UIManager : MonoBehaviour
     void Update()
     {
         
+    }
+
+    public void UpdateHeight(float height)
+    {
+        string displayValue = height.ToString("F1");
+        txtHeight.text = displayValue.ToString();
     }
 }
