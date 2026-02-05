@@ -12,9 +12,9 @@ public class MainMonitorData : ItemData
     void Start()
     {
         _content = UIMonitorController.Instance.content;
-        _name = UIMonitorController.Instance.name;
-        _outline = GetComponent<Outline>();
-        _outline.enabled = false;
+        _name = UIMonitorController.Instance.nameTxt;
+        //_outline = GetComponent<Outline>();
+        //_outline.enabled = false;
         //_content.text = desc;
         //_name.text = itemName;
         initialPosition = transform.position;

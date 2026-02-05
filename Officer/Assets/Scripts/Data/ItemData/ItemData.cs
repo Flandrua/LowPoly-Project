@@ -13,17 +13,17 @@ public class ItemData : MonoBehaviour
 
     [SerializeField] protected TextMeshProUGUI _content = null;
     [SerializeField] protected TextMeshProUGUI _name = null;
-    protected Outline _outline = null;
+    //protected Outline _outline = null;
     protected Vector3 initialPosition;
     protected Quaternion initialRotation;
     // Start is called before the first frame update
     void Start()
     {
         EventManager.AddListener(EventCommon.NEXT_STAGE, ResetToDefault);
-        _content = UIMonitorController.Instance.content;
-        _name = UIMonitorController.Instance.name;
-        _outline = GetComponent<Outline>();
-        _outline.enabled = false;
+        //_content = UIMonitorController.Instance.content;
+        //_name = UIMonitorController.Instance.nameTxt;
+        //_outline = GetComponent<Outline>();
+        //_outline.enabled = false;
         //_content.text = desc;
         //_name.text = itemName;
         initialPosition = transform.position;
@@ -37,7 +37,7 @@ public class ItemData : MonoBehaviour
     {
         _content.text = desc;
         _name.text = itemName;
-        _outline.enabled = flag;
+        //_outline.enabled = flag;
         UIMonitorController.Instance.Show(flag);
     }
 

@@ -73,7 +73,7 @@ public class GameManager : MonoSingleton<GameManager>
             HamsterController.Instance.ResetMoveAnimation();
             curTimeStage = 0;
             //玩家需要在床边醒来,如果吃了零食还要减去临时工作效率
-            PlayerManager.Instance.ResetLocation();
+            PlayerSteamVRManager.Instance.ResetLocation();
             //随机新的零食
             SnackManager.Instance.RandomSnack();
             if (DataCenter.Instance.GameData.PlayerData.days == 10)

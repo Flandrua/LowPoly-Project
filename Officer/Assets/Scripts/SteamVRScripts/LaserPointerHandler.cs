@@ -100,6 +100,15 @@ public class LaserPointerHandler : MonoBehaviour
     {
         if (lastHoveredInteractable != null && attachedObject == null)
         {
+            // 核心检测：尝试获取你的自定义交互脚本
+            MyInteractableSteamVR customInteractable = lastHoveredInteractable.GetComponent<MyInteractableSteamVR>();
+
+            // 如果找到了脚本且 canBeMoved 为 false，则直接返回，不执行抓取逻辑
+            if (customInteractable != null && !customInteractable.canBeMoved)
+            {
+                return;
+            }
+
             attachedObject = lastHoveredInteractable.gameObject;
             posOffset = handTransform.InverseTransformPoint(attachedObject.transform.position);
             rotOffset = Quaternion.Inverse(handTransform.rotation) * attachedObject.transform.rotation;
@@ -107,7 +116,7 @@ public class LaserPointerHandler : MonoBehaviour
             Rigidbody rb = attachedObject.GetComponent<Rigidbody>();
             if (rb != null) { rb.isKinematic = true; rb.useGravity = false; }
 
-            attachedObject.SendMessage("OnAttachedToHand", null, SendMessageOptions.DontRequireReceiver);
+            attachedObject.SendMessage("OnAttachedToHand", hand, SendMessageOptions.DontRequireReceiver);
         }
     }
 
@@ -123,7 +132,7 @@ public class LaserPointerHandler : MonoBehaviour
         {
             Rigidbody rb = attachedObject.GetComponent<Rigidbody>();
             if (rb != null) { rb.isKinematic = false; rb.useGravity = true; }
-            attachedObject.SendMessage("OnDetachedFromHand", null, SendMessageOptions.DontRequireReceiver);
+            attachedObject.SendMessage("OnDetachedFromHand", hand, SendMessageOptions.DontRequireReceiver);
             attachedObject = null;
         }
     }

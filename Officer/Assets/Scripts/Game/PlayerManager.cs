@@ -5,7 +5,8 @@ using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 
-public class PlayerManager :MonoSingleton<PlayerManager>
+//启用就改成MonoSingleton<PlayerManager>
+public class PlayerManager :MonoBehaviour
 {
     public GameObject xr;
     public int tempEfficiency = 0;

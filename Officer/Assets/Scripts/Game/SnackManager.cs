@@ -14,7 +14,7 @@ public class SnackManager : MonoSingleton<SnackManager>
     [SerializeField] private GameObject _curSnacks;
     private string _snackName;
     private string _desc;
-    private Outline _outline;
+    //private Outline _outline;
     [SerializeField] private TextMeshProUGUI _content = null;
     [SerializeField] private TextMeshProUGUI _name = null;
     private bool isEating = false;
@@ -37,7 +37,7 @@ public class SnackManager : MonoSingleton<SnackManager>
         _col = GetComponent<Collider>();
         _snacks = GetChildren(transform.Find("Container"));
         _content = UIMonitorController.Instance.content;
-        _name = UIMonitorController.Instance.name;
+        _name = UIMonitorController.Instance.nameTxt;
         RandomSnack();
 
     }
@@ -45,7 +45,7 @@ public class SnackManager : MonoSingleton<SnackManager>
     {
         _content.text = _desc;
         _name.text = _snackName;
-        _outline.enabled = flag;
+        //_outline.enabled = flag;
         UIMonitorController.Instance.Show(flag);
     }
 
@@ -88,7 +88,7 @@ public class SnackManager : MonoSingleton<SnackManager>
         SnackData snackData = _curSnacks.GetComponent<SnackData>();
         _snackName = snackData.name;
         _desc = snackData.desc;
-        _outline = _curSnacks.GetComponent<Outline>();
+        //_outline = _curSnacks.GetComponent<Outline>();
     }
     private void ResetToDefault()
     {

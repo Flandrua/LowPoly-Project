@@ -13,6 +13,10 @@ public class KeyboardController : MonoSingleton<KeyboardController>
     public List<AudioClip> sounds = new List<AudioClip>();
     private AudioSource _as;
     // Start is called before the first frame update
+    private void Awake()
+    {
+        DataCenter.Instance.InitData();
+    }
     void Start()
     {
         _workEffect = transform.parent.Find("Work").gameObject;

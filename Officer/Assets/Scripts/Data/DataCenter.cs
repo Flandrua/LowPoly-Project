@@ -26,7 +26,7 @@ public class HamsterData
 }
 public class PlayerData
 {
-    public int workProgress = 0; 
+    public int workProgress = 0;
     public int days = 1;
     public int workEfficiency = 1;
     public int favorabilityAbility = 1;
@@ -99,11 +99,11 @@ public class DataCenter : Singleton<DataCenter>
             }
         }
         return totalWork;
-    }   
-    
+    }
+
     public int GetTotalFavorabilityAbility()
     {
-        int totalFav=GameData.PlayerData.favorabilityAbility;
+        int totalFav = GameData.PlayerData.favorabilityAbility;
         if (GameData.PlayerData.ownedItem.Count > 0)
         {
             foreach (ItemData item in GameData.PlayerData.ownedItem)
@@ -116,7 +116,7 @@ public class DataCenter : Singleton<DataCenter>
 
     public void GetFavorability(int value)
     {
-    GameData.HamsterData.favorability += value;
+        GameData.HamsterData.favorability += value;
         Debug.Log($"Favorability:{value}");
     }
 
@@ -129,7 +129,7 @@ public class DataCenter : Singleton<DataCenter>
     {
         GameData.PlayerData.workEfficiency += value;
         Debug.Log($"Efficiency:{value}");
-    }  
+    }
     public void GetWorkProgress(int value)
     {
         GameData.PlayerData.workProgress += value;

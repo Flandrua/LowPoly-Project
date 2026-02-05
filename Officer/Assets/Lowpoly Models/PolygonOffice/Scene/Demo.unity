@@ -146581,6 +146581,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cf9ccc2f9e089a147bcc2c1f80141e69, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  txtHeight: {fileID: 0}
 --- !u!4 &4071754930431320802 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3558099952818522655, guid: c3d10e5877b0eca4884eb60ba6b59c2b, type: 3}
