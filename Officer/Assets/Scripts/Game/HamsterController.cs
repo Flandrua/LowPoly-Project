@@ -53,26 +53,26 @@ public enum HamsterEyes
 public class HamsterController : MonoSingleton<HamsterController>
 {
 
-    //切换动画
-    //碰撞互动
-    //数值交互
+    //???????
+    //???????
+    //???????
 
 
     private Animator _animator;
     private Collider _col;
     private GameObject _favEffect;
-    private Scrollbar _bar;//交互停留时间条
+    private Scrollbar _bar;//????????????
     private ParticleSystem _heart;
     private ParticleSystem _flame;
     [SerializeField] private bool onTrigger = false;
-    [SerializeField] private bool isDead = false;
+    [SerializeField] public bool isDead = false;
     [SerializeField] public bool isOut = false;
     [SerializeField] private bool isDamage = false;
     [SerializeField] private bool isPlay = false;
     [SerializeField] public bool isEating = false;
 
-    public float stayRequireTime = 3;//互动需求停留时间
-    private float stayTime = 0;//停留时间
+    public float stayRequireTime = 3;//??????????????
+    private float stayTime = 0;//??????
     private AudioSource _as;
     public AudioClip hit;
     public AudioClip eat;
@@ -143,7 +143,7 @@ public class HamsterController : MonoSingleton<HamsterController>
                 _heart.Play();
                 _bar.size = 1;
                 Debug.Log("get favor");
-                //通知GM互动完成
+                //??GM???????
                 EventManager.DispatchEvent(EventCommon.PREPARE_CHANGE_TIME,"play");
             }
         }
@@ -159,10 +159,10 @@ public class HamsterController : MonoSingleton<HamsterController>
             InstantaneousSpeedCalculator calculator = other.GetComponent<InstantaneousSpeedCalculator>();
             if (calculator != null)
             {
-                // 获取速度并输出
+                // ??????????
                 Vector3 velocity = calculator.InstantaneousSpeed;
                 float mag = velocity.magnitude;
-                if (mag > 2.5)//打击行为
+                if (mag > 2.5)//??????
                 {
                     GetDamage(-2);
                     GetFavorability(-1);
@@ -171,14 +171,14 @@ public class HamsterController : MonoSingleton<HamsterController>
                         _animator.Play("Eyes_Cry", _animator.GetLayerIndex("Shapekey"));
                     }
                 }
-                else if (stayTime < stayRequireTime&&MouseManager.Instance.canSwitchTime==false)//触摸行为,并且判断今天行动是否结束
+                else if (stayTime < stayRequireTime&&MouseManager.Instance.canSwitchTime==false)//???????,???????????????????
                 {
                     isPlay = true;
                     _animator.Play("Idle_A");
                     _animator.Play("Eyes_Happy", _animator.GetLayerIndex("Shapekey"));
-                    TimeManager.Instance.RemoveTask(BarHide, this);//移除该类计时器
+                    TimeManager.Instance.RemoveTask(BarHide, this);//???????????
                     _favEffect.SetActive(true);
-                    TimeManager.Instance.AddTask(5,false, BarHide, this);//5秒后隐藏Bar
+                    TimeManager.Instance.AddTask(5,false, BarHide, this);//5???????Bar
                 }
 
                 //Debug.Log("Player velocity: " + mag);
@@ -191,7 +191,7 @@ public class HamsterController : MonoSingleton<HamsterController>
             _animator.Play("Eyes_Excited", _animator.GetLayerIndex("Shapekey"));
             _as.clip = eat;
             _as.Play();
-            EventManager.DispatchEvent(EventCommon.HAMSTER_EATING, true);//给SnackManager发送开始吃的通知
+            EventManager.DispatchEvent(EventCommon.HAMSTER_EATING, true);//??SnackManager???????????
 
         }
     }
@@ -205,7 +205,7 @@ public class HamsterController : MonoSingleton<HamsterController>
         {
             onTrigger = false;
             isPlay = false;
-            if (stayTime < stayRequireTime)//如果停留时间没有到3秒，重置时间
+            if (stayTime < stayRequireTime)//?????????????3?????????
             {
                 stayTime= 0;
                 //_favEffect.SetActive(false);
@@ -216,13 +216,13 @@ public class HamsterController : MonoSingleton<HamsterController>
         {
             onTrigger = false;
             isEating = false;
-            EventManager.DispatchEvent(EventCommon.HAMSTER_EATING, false);//给SnackManager发送中断吃的通知
+            EventManager.DispatchEvent(EventCommon.HAMSTER_EATING, false);//??SnackManager???????????
         }
     }
 
 
     /// <summary>
-    /// 给外部hover用的更换仓鼠动作动画
+    /// ????hover????????????????
     /// </summary>
     /// <param name="animationName"></param>
 
@@ -236,7 +236,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
     }
     /// <summary>
-    /// 给外部hover用的更换仓鼠眼睛动画
+    /// ????hover?????????????????
     /// </summary>
     /// <param name="animationName"></param>
     public void ChangeEyesAnimationByStr(string animationName)
@@ -265,7 +265,7 @@ public class HamsterController : MonoSingleton<HamsterController>
     //}
 
     /// <summary>
-    /// 加好感度
+    /// ?????
     /// </summary>
     /// <param name="value"></param>
     public void GetFavorability(int value)
@@ -273,27 +273,31 @@ public class HamsterController : MonoSingleton<HamsterController>
         DataCenter.Instance.GetFavorability(value);
     }
     /// <summary>
-    /// 减仓鼠HP,公式是+=value，所以扣血的value需要是负数
+    /// ??????HP,?????+=value??????????value????????
     /// </summary>
     /// <param name="value"></param>
     public void GetDamage(int value)
     {
-        //减仓鼠的血，检测是否死亡，是否播放被打动画
+        //????????????????????????????????
         _as.clip = hit;
         _as.Play();
         DataCenter.Instance.GetDamage(value);
         if (DataCenter.Instance.GameData.HamsterData.hp <= 0)
+        {
+            PlayRandomTTS("TTS/HamsterDead");
             Death();
+        }
         else
         {
             isDamage = true;
             _animator.SetTrigger("damage");
-
+            // ????HamsterHit??
+            PlayRandomTTS("TTS/HamsterHit");
         }
     }
     public void Death()
     {
-        //死亡，播放死亡动画
+        //??????????????????
         DataCenter.Instance.GameData.HamsterData.hp = 0;
         _animator.Play("Eyes_Dead", _animator.GetLayerIndex("Shapekey"));
         _animator.Play("Death");
@@ -314,14 +318,16 @@ public class HamsterController : MonoSingleton<HamsterController>
         isOut = true;
         onTrigger = false;
         GetFavorability(snack.extraFavorability);
-        //需要判断是否吃了特殊食物
+        //???????????????????
         if(snack.isPoisonous)
         {
+            TTSManager.Instance.PlayTTS("TTS/Special/ChocolateDead");
             Death();
             return;
         }
         else if (snack.isSour)
         {
+            TTSManager.Instance.PlayTTS("TTS/Special/LemonHamster");
             _animator.SetBool("Sour", true);
             _animator.Play("Eyes_Trauma", _animator.GetLayerIndex("Shapekey"));
             _animator.Play("Walk");
@@ -333,18 +339,50 @@ public class HamsterController : MonoSingleton<HamsterController>
         }
         else if (snack.isWine)
         {
+            TTSManager.Instance.PlayTTS("TTS/Special/BeerHamster");
             _animator.Play("Eyes_Spin", _animator.GetLayerIndex("Shapekey"));
         }
         else if (snack.isSpicy)
         {
+            TTSManager.Instance.PlayTTS("TTS/Special/PeperHamster");
             _animator.Play("Eyes_Shrink", _animator.GetLayerIndex("Shapekey"));
             _flame.Play();
         }
-        //录制一个走开的动画
+        //??????????????
         _animator.Play("Walk");
         _animator.SetBool("Move",true);
         
         TimeManager.Instance.AddTask(3, false, () => { _animator.Play("Jump"); }, this);
         TimeManager.Instance.AddTask(4.1f, false, () => { _animator.Play("Walk"); }, this);
+    }
+
+    /// <summary>
+    /// ?????????TTS??
+    /// </summary>
+    /// <param name="resourcePath">Resources??????????????</param>
+    private void PlayRandomTTS(string resourcePath)
+    {
+        // ??????????????
+        AudioClip[] clips = Resources.LoadAll<AudioClip>(resourcePath);
+        
+        if (clips == null || clips.Length == 0)
+        {
+            Debug.LogWarning($"HamsterController: ??? {resourcePath} ????????");
+            return;
+        }
+
+        // ????????
+        int randomIndex = Random.Range(0, clips.Length);
+        AudioClip selectedClip = clips[randomIndex];
+
+        // ??TTSManager??
+        if (TTSManager.Instance != null && selectedClip != null)
+        {
+            TTSManager.Instance.PlayTTS(selectedClip);
+        }
+        else
+        {
+            Debug.LogWarning("HamsterController: TTSManager???????????");
+        }
     }
 }

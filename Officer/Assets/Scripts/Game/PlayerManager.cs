@@ -93,8 +93,12 @@ public class PlayerManager :MonoBehaviour
         //判断是否吃了特殊零食
         if (snack.isSpicy)
         {
+            TTSManager.Instance.PlayTTS("TTS/Special/PeperPlayer");
             _flame.Play();
         }
+
+        if (snack.isWine)
+            TTSManager.Instance.PlayTTS("TTS/Special/BeerPlayer");
 
     }
 }

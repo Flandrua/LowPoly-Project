@@ -15,6 +15,10 @@ public class GameManager : MonoSingleton<GameManager>
     public int totaldays = 10;
     public int goalWorkPrgoress = 50;
     public GameObject ending;
+    private void Awake()
+    {
+        DataCenter.Instance.InitData();
+    }
     void Start()
     {
         EventManager.AddListener<string>(EventCommon.PREPARE_CHANGE_TIME, PrepareChangeTime);
@@ -78,7 +82,7 @@ public class GameManager : MonoSingleton<GameManager>
             SnackManager.Instance.RandomSnack();
             if (DataCenter.Instance.GameData.PlayerData.days == 10)
             {
-                ending.SetActive(true);
+                EndingManager.Instance.Ending();
             }
             else
             {
@@ -97,5 +101,8 @@ public class GameManager : MonoSingleton<GameManager>
     {
 
     }
+
+
+
 
 }

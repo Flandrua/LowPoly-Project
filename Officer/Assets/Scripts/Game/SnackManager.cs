@@ -20,6 +20,7 @@ public class SnackManager : MonoSingleton<SnackManager>
     private bool isEating = false;
     private Vector3 initialPosition;
     private Quaternion initialRotation;
+    private string audioAsset;
     public bool isPlayer = false;
     public bool isHamster = false;
     public GameObject container;
@@ -88,6 +89,7 @@ public class SnackManager : MonoSingleton<SnackManager>
         SnackData snackData = _curSnacks.GetComponent<SnackData>();
         _snackName = snackData.name;
         _desc = snackData.desc;
+        audioAsset = $"TTS/SnackIteraction/{_snackName}";
         //_outline = _curSnacks.GetComponent<Outline>();
     }
     private void ResetToDefault()
@@ -102,6 +104,11 @@ public class SnackManager : MonoSingleton<SnackManager>
         }
         //RandomSnack();
 
+    }
+
+    public void PlaySnackTTS()
+    {
+        TTSManager.Instance.PlayTTS(audioAsset);
     }
     void Update()
     {
