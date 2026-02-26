@@ -53,12 +53,19 @@ public class VRInputController : MonoBehaviour
     private void HandleRightHandRotation()
     {
         Vector2 axis = joystickRotate.GetAxis(SteamVR_Input_Sources.RightHand);
+        if (Mathf.Abs(axis.x) <= 0.3f) return;
 
-        // 方式 A: 平滑转向 (类似推摇杆慢慢转动)
-        if (Mathf.Abs(axis.x) > 0.3f)
-        {
-            playerTransform.Rotate(0, axis.x * rotateSpeed * Time.deltaTime, 0);
-        }
+        float angle = axis.x * rotateSpeed * Time.deltaTime;
+
+        // 脚下点：头在水平面上的投影（或直接用 playerTransform.position，看你的层级）
+        Vector3 pivot = new Vector3(
+            headTransform.position.x,
+            playerTransform.position.y,  // 地面高度用根的 y
+            headTransform.position.z
+        );
+
+        // 绕脚下点绕 Y 轴旋转
+        playerTransform.RotateAround(pivot, Vector3.up, angle);
 
         /* // 方式 B: 瞬间转向 (Snap Turn - 比较不容易晕车)
         if (Mathf.Abs(axis.x) > 0.7f && canSnapTurn)

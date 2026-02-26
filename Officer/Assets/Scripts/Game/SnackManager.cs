@@ -192,6 +192,8 @@ public class SnackManager : MonoSingleton<SnackManager>
         {
             EventManager.DispatchEvent<SnackData>(EventCommon.PLAYER_FINISH_EATING, snack);
         }
+        isPlayer = false;
+        isHamster = false;
     }
 
 

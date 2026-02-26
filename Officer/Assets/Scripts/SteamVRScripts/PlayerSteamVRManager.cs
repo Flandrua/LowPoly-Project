@@ -38,7 +38,7 @@ public class PlayerSteamVRManager : MonoSingleton<PlayerSteamVRManager>
 
     public void OnHeightUp()
     {
-        Vector3 pos = transform.position;
+        Vector3 pos = HeightGO.transform.position;
         height += 0.1f;
         pos.y = height;
         HeightGO.transform.position = pos;
@@ -46,7 +46,7 @@ public class PlayerSteamVRManager : MonoSingleton<PlayerSteamVRManager>
     }
     public void OnHeightDown()
     {
-        Vector3 pos = transform.position;
+        Vector3 pos = HeightGO.transform.position;
         height -= 0.1f;
         pos.y = height;
         HeightGO.transform.position = pos;

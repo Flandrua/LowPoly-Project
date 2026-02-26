@@ -90,7 +90,8 @@ public class GameManager : MonoSingleton<GameManager>
             }
         }
         EventManager.DispatchEvent(EventCommon.UPDATE_MONITOR);
-        EventManager.DispatchEvent(EventCommon.NEXT_STAGE);
+        TimeManager.Instance.AddTask(0.5f, false, () => { EventManager.DispatchEvent(EventCommon.NEXT_STAGE); }, this);
+
         TimeManager.Instance.AddTask(1, false, () => { SendAnimatorPostSignal(false); }, this);
 
     }
