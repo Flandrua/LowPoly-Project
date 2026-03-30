@@ -757,12 +757,16 @@ namespace Valve.VR
         public virtual void SetBonePosition(int boneIndex, Vector3 localPosition)
         {
             if (onlySetRotations == false) //ignore position sets if we're only setting rotations
-                bones[boneIndex].localPosition = localPosition;
+            {
+                if (SteamVR_Utils.IsValid(localPosition))
+                    bones[boneIndex].localPosition = localPosition;
+            }
         }
 
         public virtual void SetBoneRotation(int boneIndex, Quaternion localRotation)
         {
-            bones[boneIndex].localRotation = localRotation;
+            if (SteamVR_Utils.IsValid(localRotation))
+                bones[boneIndex].localRotation = localRotation;
         }
 
         /// <summary>
@@ -921,12 +925,16 @@ namespace Valve.VR
             {
                 if (onTransformChanged != null)
                     onTransformChanged.Invoke(this, inputSource);
+
                 if (onTransformChangedEvent != null)
                     onTransformChangedEvent.Invoke(this, inputSource);
             }
 
-            this.transform.position = skeletonPosition;
-            this.transform.rotation = skeletonRotation;
+            if (SteamVR_Utils.IsValid(skeletonPosition))
+                this.transform.position = skeletonPosition;
+
+            if (SteamVR_Utils.IsValid(skeletonRotation))
+                this.transform.rotation = skeletonRotation;
 
             if (onTransformUpdated != null)
                 onTransformUpdated.Invoke(this, inputSource);

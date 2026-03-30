@@ -1011,20 +1011,36 @@ namespace Valve.VR
                     {
                         // SteamVR's coordinate system is right handed, and Unity's is left handed.  The FBX data has its
                         // X axis flipped when Unity imports it, so here we need to flip the X axis as well
-                        bonePositions[boneIndex].x = -tempBoneTransforms[boneIndex].position.v0;
-                        bonePositions[boneIndex].y = tempBoneTransforms[boneIndex].position.v1;
-                        bonePositions[boneIndex].z = tempBoneTransforms[boneIndex].position.v2;
+                        Vector3 nextBonePosition = new Vector3(
+                            -tempBoneTransforms[boneIndex].position.v0,
+                            tempBoneTransforms[boneIndex].position.v1,
+                            tempBoneTransforms[boneIndex].position.v2);
 
-                        boneRotations[boneIndex].x = tempBoneTransforms[boneIndex].orientation.x;
-                        boneRotations[boneIndex].y = -tempBoneTransforms[boneIndex].orientation.y;
-                        boneRotations[boneIndex].z = -tempBoneTransforms[boneIndex].orientation.z;
-                        boneRotations[boneIndex].w = tempBoneTransforms[boneIndex].orientation.w;
+                        Quaternion nextBoneRotation = new Quaternion(
+                            tempBoneTransforms[boneIndex].orientation.x,
+                            -tempBoneTransforms[boneIndex].orientation.y,
+                            -tempBoneTransforms[boneIndex].orientation.z,
+                            tempBoneTransforms[boneIndex].orientation.w);
+
+                        if (SteamVR_Utils.IsValid(nextBonePosition))
+                            bonePositions[boneIndex] = nextBonePosition;
+                        else if (SteamVR_Utils.IsValid(lastBonePositions[boneIndex]) == false)
+                            bonePositions[boneIndex] = Vector3.zero;
+
+                        if (SteamVR_Utils.IsValid(nextBoneRotation))
+                            boneRotations[boneIndex] = NormalizeQuaternion(nextBoneRotation);
+                        else if (SteamVR_Utils.IsValid(lastBoneRotations[boneIndex]))
+                            boneRotations[boneIndex] = lastBoneRotations[boneIndex];
+                        else
+                            boneRotations[boneIndex] = Quaternion.identity;
                     }
 
                     // Now that we're in the same handedness as Unity, rotate the root bone around the Y axis
                     // so that forward is facing down +Z
 
                     boneRotations[0] = SteamVR_Action_Skeleton.steamVRFixUpRotation * boneRotations[0];
+                    if (SteamVR_Utils.IsValid(boneRotations[0]) == false)
+                        boneRotations[0] = Quaternion.identity;
                 }
 
                 UpdateSkeletalSummaryData(summaryDataType, true);
@@ -1053,6 +1069,20 @@ namespace Valve.VR
 
             if (skipStateAndEventUpdates == false)
                 CheckAndSendEvents();
+        }
+
+        protected Quaternion NormalizeQuaternion(Quaternion rotation)
+        {
+            float magnitude = Mathf.Sqrt(
+                rotation.x * rotation.x +
+                rotation.y * rotation.y +
+                rotation.z * rotation.z +
+                rotation.w * rotation.w);
+
+            if (magnitude > 0.0001f)
+                return new Quaternion(rotation.x / magnitude, rotation.y / magnitude, rotation.z / magnitude, rotation.w / magnitude);
+
+            return Quaternion.identity;
         }
 
         /// <summary>

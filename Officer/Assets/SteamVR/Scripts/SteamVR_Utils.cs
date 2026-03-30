@@ -53,11 +53,16 @@ public static class SteamVR_Utils
 
 	public static bool IsValid(Vector3 vector)
 	{
-		return (float.IsNaN(vector.x) == false && float.IsNaN(vector.y) == false && float.IsNaN(vector.z) == false);
+		return (float.IsNaN(vector.x) == false && float.IsInfinity(vector.x) == false &&
+			float.IsNaN(vector.y) == false && float.IsInfinity(vector.y) == false &&
+			float.IsNaN(vector.z) == false && float.IsInfinity(vector.z) == false);
 	}
 	public static bool IsValid(Quaternion rotation)
 	{
-		return (float.IsNaN(rotation.x) == false && float.IsNaN(rotation.y) == false && float.IsNaN(rotation.z) == false && float.IsNaN(rotation.w) == false) &&
+		return (float.IsNaN(rotation.x) == false && float.IsInfinity(rotation.x) == false &&
+			float.IsNaN(rotation.y) == false && float.IsInfinity(rotation.y) == false &&
+			float.IsNaN(rotation.z) == false && float.IsInfinity(rotation.z) == false &&
+			float.IsNaN(rotation.w) == false && float.IsInfinity(rotation.w) == false) &&
 			(rotation.x != 0 || rotation.y != 0 || rotation.z != 0 || rotation.w != 0);
 	}
 
