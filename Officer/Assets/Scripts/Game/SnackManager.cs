@@ -1,23 +1,24 @@
-using System.Collections;
+Ôªøusing System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit;
 
 public class SnackManager : MonoSingleton<SnackManager>
 {
-    //ÀÊª˙¡„ ≥π¶ƒ‹£ª≤ª◊ˆ∂‘œÛ≥ÿ£¨÷±Ω”πÃ∂®À¿
-    //¡„ ≥±ª≥‘∂Øª≠¥¶¿Ì
+    // Random snack selection without pooling.
     private Animation _animation;
     private string _animationName;
     private Collider _col;
+    private XRGrabInteractable _grabInteractable;
     [SerializeField] private List<GameObject> _snacks = new List<GameObject>();
     [SerializeField] private GameObject _curSnacks;
     private string _snackName;
     private string _desc;
-    //private Outline _outline;
     [SerializeField] private TextMeshProUGUI _content = null;
     [SerializeField] private TextMeshProUGUI _name = null;
     private bool isEating = false;
+    private bool _lastGrabState = false;
     private Vector3 initialPosition;
     private Quaternion initialRotation;
     private string audioAsset;
@@ -36,17 +37,18 @@ public class SnackManager : MonoSingleton<SnackManager>
         _animation.enabled = false;
         _animationName = "VanishEffect";
         _col = GetComponent<Collider>();
+        _grabInteractable = GetComponent<XRGrabInteractable>();
         _snacks = GetChildren(transform.Find("Container"));
         _content = UIMonitorController.Instance.content;
         _name = UIMonitorController.Instance.nameTxt;
+        RegisterGrabEvents();
         RandomSnack();
-
     }
+
     public void ShowUIDec(bool flag)
     {
         _content.text = _desc;
         _name.text = _snackName;
-        //_outline.enabled = flag;
         UIMonitorController.Instance.Show(flag);
     }
 
@@ -59,26 +61,30 @@ public class SnackManager : MonoSingleton<SnackManager>
         }
         return children;
     }
+
     private void OnDestroy()
     {
         EventManager.RemoveListener<bool>(EventCommon.HAMSTER_EATING, HamsterEating);
         EventManager.RemoveListener<bool>(EventCommon.PLAYER_EATING, PlayerEating);
         EventManager.RemoveListener(EventCommon.NEXT_STAGE, ResetToDefault);
+        UnregisterGrabEvents();
     }
+
     public void RandomSnack()
     {
-        if (_curSnacks != null)
+        if (_curSnacks != null && _curSnacks.activeInHierarchy)
         {
-            if (_curSnacks.activeInHierarchy)//»Áπ˚ «√ª”–≥‘µƒ¡„ ≥£¨æÕ“˛≤ÿµÙ
-            {
-                _curSnacks.SetActive(false);
-            }
+            _curSnacks.SetActive(false);
         }
+
         if (_snacks.Count == 0)
         {
-            Debug.LogWarning("snacks“—”√ÕÍ");
+            Debug.LogWarning("snacksÂ∑≤Áî®ÂÆå");
+            _lastGrabState = false;
+            NotifySnackHint(false);
             return;
         }
+
         _animation.enabled = false;
         container.transform.localScale = Vector3.one;
         int randomIndex = Random.Range(0, _snacks.Count);
@@ -90,30 +96,33 @@ public class SnackManager : MonoSingleton<SnackManager>
         _snackName = snackData.name;
         _desc = snackData.desc;
         audioAsset = $"TTS/SnackIteraction/{_snackName}";
-        //_outline = _curSnacks.GetComponent<Outline>();
+        _lastGrabState = false;
+        NotifySnackHint(false);
     }
+
     private void ResetToDefault()
     {
+        _lastGrabState = false;
+        NotifySnackHint(false);
         transform.position = initialPosition;
         transform.rotation = Quaternion.identity;
-        if (!_curSnacks.activeInHierarchy)
+        if (_curSnacks != null && !_curSnacks.activeInHierarchy)
         {
             _animation.enabled = false;
             container.transform.localScale = Vector3.one;
-            //_curSnacks.SetActive(false);
         }
-        //RandomSnack();
-
     }
 
     public void PlaySnackTTS()
     {
         TTSManager.Instance.PlayTTS(audioAsset);
     }
+
     void Update()
     {
-
+        SyncGrabHintState();
     }
+
     public void HamsterEating(bool flag)
     {
         if (isPlayer) { return; }
@@ -124,17 +133,12 @@ public class SnackManager : MonoSingleton<SnackManager>
             _animation[_animationName].speed = 1;
             _animation.enabled = true;
             _animation.Play();
-            //“∆≥˝3√Î∫Û÷ÿ÷√∂Øª≠º∆ ±∆˜
             TimeManager.Instance.RemoveTask(StopAnimation, this);
-
         }
         else
         {
-            //œ»‘›Õ£∂Øª≠
             _animation[_animationName].speed = 0;
-            //3√Î∫Û÷ÿ÷√∂Øª≠º∆ ±∆˜
             TimeManager.Instance.AddTask(3, false, StopAnimation, this);
-
         }
     }
 
@@ -148,19 +152,15 @@ public class SnackManager : MonoSingleton<SnackManager>
             _animation[_animationName].speed = 1;
             _animation.enabled = true;
             _animation.Play();
-            //“∆≥˝3√Î∫Û÷ÿ÷√∂Øª≠º∆ ±∆˜
             TimeManager.Instance.RemoveTask(StopAnimation, this);
-
         }
         else
         {
-            //œ»‘›Õ£∂Øª≠
             _animation[_animationName].speed = 0;
-            //3√Î∫Û÷ÿ÷√∂Øª≠º∆ ±∆˜
             TimeManager.Instance.AddTask(3, false, StopAnimation, this);
-
         }
     }
+
     public void StopAnimation()
     {
         isHamster = false;
@@ -173,28 +173,85 @@ public class SnackManager : MonoSingleton<SnackManager>
         AnimationState state = ani[name];
         ani.Play(name);
         state.time = 0;
-        ani.Sample();  //¡¢º¥…˙–ß
+        ani.Sample();
         state.enabled = false;
     }
 
-    public void FinishEating()//∂Øª≠ ¬º˛
+    public void FinishEating()
     {
+        _lastGrabState = false;
+        NotifySnackHint(false);
         _col.enabled = false;
         _curSnacks.SetActive(false);
         SnackData snack = _curSnacks.GetComponent<SnackData>();
-        //RandomSnack();//◊¢“‚£¨ƒø«∞≤‚ ‘”√£¨∫Û–¯¥À¥¶µƒrandom“™…æ≥˝
         if (isHamster)
         {
             HamsterController.Instance.isEating = false;
             EventManager.DispatchEvent<SnackData>(EventCommon.HAMSTER_FINISH_EATING, snack);
         }
+
         if (isPlayer)
         {
             EventManager.DispatchEvent<SnackData>(EventCommon.PLAYER_FINISH_EATING, snack);
         }
+
         isPlayer = false;
         isHamster = false;
     }
 
+    private void RegisterGrabEvents()
+    {
+        if (_grabInteractable == null)
+        {
+            return;
+        }
 
+        _grabInteractable.selectEntered.AddListener(OnSnackGrabbed);
+        _grabInteractable.selectExited.AddListener(OnSnackReleased);
+    }
+
+    private void UnregisterGrabEvents()
+    {
+        if (_grabInteractable == null)
+        {
+            return;
+        }
+
+        _grabInteractable.selectEntered.RemoveListener(OnSnackGrabbed);
+        _grabInteractable.selectExited.RemoveListener(OnSnackReleased);
+    }
+
+    private void OnSnackGrabbed(SelectEnterEventArgs args)
+    {
+        _lastGrabState = true;
+        NotifySnackHint(true);
+    }
+
+    private void OnSnackReleased(SelectExitEventArgs args)
+    {
+        _lastGrabState = false;
+        NotifySnackHint(false);
+    }
+
+    private void NotifySnackHint(bool showHint)
+    {
+        EventManager.DispatchEvent(EventCommon.PLAYER_SNACK_HINT, showHint);
+    }
+
+    private void SyncGrabHintState()
+    {
+        if (_grabInteractable == null)
+        {
+            return;
+        }
+
+        bool isGrabbed = _grabInteractable.isSelected;
+        if (_lastGrabState == isGrabbed)
+        {
+            return;
+        }
+
+        _lastGrabState = isGrabbed;
+        NotifySnackHint(isGrabbed);
+    }
 }

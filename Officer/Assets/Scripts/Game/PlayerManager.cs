@@ -1,12 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
-using TMPro;
+锘縰sing System.Collections;
 using Unity.XR.CoreUtils;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.XR.Interaction.Toolkit;
 
-//启用就改成MonoSingleton<PlayerManager>
-public class PlayerManager :MonoBehaviour
+//鍚敤灏辨敼鎴怣onoSingleton<PlayerManager>
+public class PlayerManager : MonoBehaviour
 {
     public GameObject xr;
     public int tempEfficiency = 0;
@@ -19,15 +18,22 @@ public class PlayerManager :MonoBehaviour
     private Quaternion initialRotation;
     private ParticleSystem _flame;
     private AudioSource _as;
-    // Start is called before the first frame update
+    [SerializeField] private Color snackHintColor = new Color(0.68f, 0.87f, 1f, 0.1f);
+    [SerializeField] private float snackHintRadius = 0.12f;
+    private GameObject _snackHintVisual;
+    private MeshRenderer _snackHintRenderer;
+    private Material _snackHintMaterial;
+
     private void Awake()
     {
         DataCenter.Instance.InitData();
     }
+
     void Start()
     {
         DataCenter.Instance.NewData();
         EventManager.AddListener<SnackData>(EventCommon.PLAYER_FINISH_EATING, PlayerFinishEating);
+        EventManager.AddListener<bool>(EventCommon.PLAYER_SNACK_HINT, SetSnackHintVisible);
         characterController = xr.GetComponent<CharacterController>();
         xrOrign = xr.GetComponent<XROrigin>();
         ccd = xr.GetComponent<CustomCharacterControllerDriver>();
@@ -36,11 +42,23 @@ public class PlayerManager :MonoBehaviour
         _flame = GetComponentInChildren<ParticleSystem>();
         _as = GetComponent<AudioSource>();
         cameraOffset.transform.localPosition = initCameraOffset;
+        InitSnackHintZone();
     }
+
     private void OnDestroy()
     {
         EventManager.RemoveListener<SnackData>(EventCommon.PLAYER_FINISH_EATING, PlayerFinishEating);
+        EventManager.RemoveListener<bool>(EventCommon.PLAYER_SNACK_HINT, SetSnackHintVisible);
+        if (_snackHintVisual != null)
+        {
+            Destroy(_snackHintVisual);
+        }
+        if (_snackHintMaterial != null)
+        {
+            Destroy(_snackHintMaterial);
+        }
     }
+
     public void ResetLocation()
     {
         DataCenter.Instance.GetWorkEfficiency(-tempEfficiency);
@@ -50,10 +68,126 @@ public class PlayerManager :MonoBehaviour
         xr.transform.rotation = initialRotation;
     }
 
-    // Update is called once per frame
     void Update()
     {
+    }
 
+    private void InitSnackHintZone()
+    {
+        MeshRenderer baseRenderer = GetComponent<MeshRenderer>();
+        Material baseMaterial = baseRenderer != null ? baseRenderer.sharedMaterial : null;
+        _snackHintMaterial = baseMaterial != null ? new Material(baseMaterial) : CreateFallbackSnackHintMaterial();
+        if (_snackHintMaterial == null)
+        {
+            return;
+        }
+
+        if (baseRenderer != null)
+        {
+            baseRenderer.enabled = false;
+        }
+
+        Transform headRoot = transform.parent != null ? transform.parent : transform;
+        _snackHintVisual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        _snackHintVisual.name = "HeadCollider";
+        _snackHintVisual.transform.SetParent(headRoot, false);
+        _snackHintVisual.transform.localPosition = transform.localPosition;
+        _snackHintVisual.transform.localRotation = Quaternion.identity;
+        _snackHintVisual.transform.localScale = Vector3.one * snackHintRadius * 2f;
+
+        Collider visualCollider = _snackHintVisual.GetComponent<Collider>();
+        if (visualCollider != null)
+        {
+            visualCollider.enabled = false;
+        }
+
+        _snackHintRenderer = _snackHintVisual.GetComponent<MeshRenderer>();
+        if (_snackHintRenderer == null)
+        {
+            return;
+        }
+
+        _snackHintMaterial.name = "SnackHintRuntimeMaterial";
+        ApplySnackHintStyle(_snackHintMaterial);
+        _snackHintRenderer.material = _snackHintMaterial;
+        _snackHintRenderer.shadowCastingMode = ShadowCastingMode.Off;
+        _snackHintRenderer.receiveShadows = false;
+        SetSnackHintVisible(false);
+    }
+
+    private Material CreateFallbackSnackHintMaterial()
+    {
+        Shader shader = Shader.Find("Standard");
+        return shader != null ? new Material(shader) : null;
+    }
+
+    private void ApplySnackHintStyle(Material material)
+    {
+        if (material == null)
+        {
+            return;
+        }
+
+        if (material.HasProperty("_BaseColor"))
+        {
+            material.SetColor("_BaseColor", snackHintColor);
+        }
+
+        if (material.HasProperty("_Color"))
+        {
+            material.color = snackHintColor;
+        }
+
+        if (material.HasProperty("_SrcBlend"))
+        {
+            material.SetInt("_SrcBlend", (int)BlendMode.SrcAlpha);
+        }
+
+        if (material.HasProperty("_DstBlend"))
+        {
+            material.SetInt("_DstBlend", (int)BlendMode.OneMinusSrcAlpha);
+        }
+
+        if (material.HasProperty("_ZWrite"))
+        {
+            material.SetInt("_ZWrite", 0);
+        }
+
+        if (material.HasProperty("_Cull"))
+        {
+            material.SetInt("_Cull", (int)CullMode.Off);
+        }
+
+        if (material.HasProperty("_EmissionColor"))
+        {
+            material.EnableKeyword("_EMISSION");
+            material.SetColor("_EmissionColor", snackHintColor * 0.35f);
+        }
+
+        material.DisableKeyword("_ALPHATEST_ON");
+        material.EnableKeyword("_ALPHABLEND_ON");
+        material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        material.renderQueue = (int)RenderQueue.Transparent;
+
+        if (material.HasProperty("_Mode"))
+        {
+            material.SetFloat("_Mode", 3f);
+        }
+
+        if (material.HasProperty("_Surface"))
+        {
+            material.SetFloat("_Surface", 1f);
+        }
+    }
+
+    public void SetSnackHintVisible(bool visible)
+    {
+        if (_snackHintRenderer == null)
+        {
+            return;
+        }
+
+        _snackHintRenderer.enabled = visible;
     }
 
     /// <summary>
@@ -66,15 +200,14 @@ public class PlayerManager :MonoBehaviour
         xrOrign.CameraYOffset = height;
         cameraOffset.transform.position = cameraOffset.transform.parent.TransformPoint(new Vector3(0, height, 0));
         ccd.UpdateHeight();
-        //DebugHelper.Instance.DebugMsg($"{xrOrign.CameraYOffset},{characterController.height}");
     }
+
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Snack"))
         {
             _as.Play();
-            EventManager.DispatchEvent(EventCommon.PLAYER_EATING, true);//给SnackManager发送开始吃的通知
-
+            EventManager.DispatchEvent(EventCommon.PLAYER_EATING, true);
         }
     }
 
@@ -82,15 +215,14 @@ public class PlayerManager :MonoBehaviour
     {
         if (other.CompareTag("Snack"))
         {
-
-            EventManager.DispatchEvent(EventCommon.PLAYER_EATING, false);//给SnackManager发送中断吃的通知
+            EventManager.DispatchEvent(EventCommon.PLAYER_EATING, false);
         }
     }
+
     private void PlayerFinishEating(SnackData snack)
     {
         tempEfficiency = snack.workEfficiency;
         DataCenter.Instance.GetWorkEfficiency(snack.workEfficiency);
-        //判断是否吃了特殊零食
         if (snack.isSpicy)
         {
             TTSManager.Instance.PlayTTS("TTS/Special/PeperPlayer");
@@ -98,7 +230,8 @@ public class PlayerManager :MonoBehaviour
         }
 
         if (snack.isWine)
+        {
             TTSManager.Instance.PlayTTS("TTS/Special/BeerPlayer");
-
+        }
     }
 }

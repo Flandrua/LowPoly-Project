@@ -32,8 +32,8 @@ public class MainMonitorData : ItemData
     }
     public void UpdateInfo()
     {
-        day.text = $"Day:{DataCenter.Instance.GameData.PlayerData.days}/{GameManager.Instance.totaldays}";
-        float size = (DataCenter.Instance.GameData.PlayerData.workProgress*1.0f) / (GameManager.Instance.goalWorkPrgoress*1.0f);
+        day.text = $"Day:{DataCenter.Instance.GameData.PlayerData.days}/{GameManager.Instance.TotalDays}";
+        float size = (DataCenter.Instance.GameData.PlayerData.workProgress*1.0f) / (GameManager.Instance.goalWorkProgress*1.0f);
         bar.size = size;
     }
 }

@@ -1,38 +1,37 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Events;
 using Valve.VR;
 using Valve.VR.InteractionSystem;
 
 public class MyInteractableSteamVR : Interactable
 {
-    [Header("??????????")]
+    [Header("悬停回调")]
     public UnityEvent onHoverBegin;
-    [Tooltip("????????????")]
+    [Tooltip("只触发一次的悬停开始回调")]
     public UnityEvent onHoverBeginOnce;
     public UnityEvent onHoverEnd;
 
-    [Header("???????????")]
-    public UnityEvent onTriggerDown; // ????????????????
+    [Header("触发器回调")]
+    public UnityEvent onTriggerDown;
     [Tooltip("只触发一次的触发器按下回调")]
     public UnityEvent onTriggerDownOnce;
 
-    [Header("???????")]
-    public bool canBeMoved = true; // ? false???????????
+    [Header("是否可移动")]
+    public bool canBeMoved = true;
 
-    private bool hasTriggeredHoverBeginOnce = false; // ????????????
-    private bool hasTriggeredTriggerDownOnce = false; // 标记是否已触发一次性触发器回调
+    private bool hasTriggeredHoverBeginOnce = false;
+    private bool hasTriggeredTriggerDownOnce = false;
+    private bool lastAttachedState = false;
 
     protected override void OnHandHoverBegin(Hand hand)
     {
-        base.OnHandHoverBegin(hand); // ????????????????????????????
+        base.OnHandHoverBegin(hand);
 
         ItemData itemData = GetComponent<ItemData>();
         if (itemData != null) itemData.ShowUIDec(true);
 
-        // ??????
         if (onHoverBegin != null) onHoverBegin.Invoke();
 
-        // ????????????????
         if (!hasTriggeredHoverBeginOnce && onHoverBeginOnce != null)
         {
             onHoverBeginOnce.Invoke();
@@ -42,7 +41,7 @@ public class MyInteractableSteamVR : Interactable
 
     protected override void OnHandHoverEnd(Hand hand)
     {
-        base.OnHandHoverEnd(hand); // ????????????????????
+        base.OnHandHoverEnd(hand);
 
         ItemData itemData = GetComponent<ItemData>();
         if (itemData != null) itemData.ShowUIDec(false);
@@ -50,19 +49,29 @@ public class MyInteractableSteamVR : Interactable
         if (onHoverEnd != null) onHoverEnd.Invoke();
     }
 
-    // ??? Update ?????????
+    protected override void OnAttachedToHand(Hand hand)
+    {
+        base.OnAttachedToHand(hand);
+        lastAttachedState = true;
+        NotifySnackHint(true);
+    }
+
+    protected override void OnDetachedFromHand(Hand hand)
+    {
+        base.OnDetachedFromHand(hand);
+        lastAttachedState = false;
+        NotifySnackHint(false);
+    }
+
     protected override void Update()
     {
-        base.Update(); // ?????????? Update ???????????????
+        base.Update();
+        SyncAttachedHintState();
 
-        // ???????????????????
         if (isHovering)
         {
-            // ???????????????????
             foreach (Hand hand in hoveringHands)
             {
-                // ?????????????????? (GrabPinch)
-                // SteamVR Hand ???????????????????????
                 if (SteamVR_Actions.default_InteractUI.GetStateUp(hand.handType))
                 {
                     OnTriggerPressed();
@@ -71,17 +80,33 @@ public class MyInteractableSteamVR : Interactable
         }
     }
 
+    private void SyncAttachedHintState()
+    {
+        bool isAttached = attachedToHand != null;
+        if (isAttached == lastAttachedState)
+        {
+            return;
+        }
+
+        lastAttachedState = isAttached;
+        NotifySnackHint(isAttached);
+    }
+
+    private void NotifySnackHint(bool visible)
+    {
+        if (CompareTag("Snack"))
+        {
+            EventManager.DispatchEvent(EventCommon.PLAYER_SNACK_HINT, visible);
+        }
+    }
+
     private void OnTriggerPressed()
     {
-        Debug.Log(gameObject.name + " ???????????????????");
-
-        // 触发常规回调
         if (onTriggerDown != null)
         {
             onTriggerDown.Invoke();
         }
 
-        // 触发一次性回调（如果还未触发过）
         if (!hasTriggeredTriggerDownOnce && onTriggerDownOnce != null)
         {
             onTriggerDownOnce.Invoke();
@@ -89,35 +114,21 @@ public class MyInteractableSteamVR : Interactable
         }
     }
 
-    /// <summary>
-    /// ???????????????? onHoverBeginOnce?
-    /// </summary>
     public void ResetHoverBeginOnce()
     {
         hasTriggeredHoverBeginOnce = false;
     }
 
-    /// <summary>
-    /// ????????????
-    /// </summary>
-    /// <returns>?????</returns>
     public bool HasTriggeredHoverBeginOnce()
     {
         return hasTriggeredHoverBeginOnce;
     }
 
-    /// <summary>
-    /// 重置一次性触发器回调状态（允许再次触发 onTriggerDownOnce）
-    /// </summary>
     public void ResetTriggerDownOnce()
     {
         hasTriggeredTriggerDownOnce = false;
     }
 
-    /// <summary>
-    /// 检查一次性触发器回调是否已触发
-    /// </summary>
-    /// <returns>是否已触发</returns>
     public bool HasTriggeredTriggerDownOnce()
     {
         return hasTriggeredTriggerDownOnce;

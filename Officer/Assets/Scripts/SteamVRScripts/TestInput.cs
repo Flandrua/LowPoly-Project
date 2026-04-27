@@ -17,6 +17,11 @@ public class VRInputController : MonoBehaviour
     [Header("References")]
     public Transform playerTransform;
     public Transform headTransform;
+    public CharacterController characterController;
+
+    [Header("Collision")]
+    public float colliderRadius = 0.25f;
+    public float minColliderHeight = 1.0f;
 
     [Header("UI")]
     public Toggle snapToggle;
@@ -25,6 +30,19 @@ public class VRInputController : MonoBehaviour
 
     private void Awake()
     {
+        if (characterController == null && playerTransform != null)
+        {
+            characterController = playerTransform.GetComponent<CharacterController>();
+            if (characterController == null)
+            {
+                characterController = playerTransform.gameObject.AddComponent<CharacterController>();
+                characterController.skinWidth = 0.03f;
+                characterController.stepOffset = 0.2f;
+                characterController.slopeLimit = 45f;
+                characterController.minMoveDistance = 0f;
+            }
+        }
+
         if (snapToggle == null)
         {
             snapToggle = FindSnapToggle();
@@ -50,6 +68,7 @@ public class VRInputController : MonoBehaviour
 
     private void Update()
     {
+        UpdateCharacterController();
         HandleLeftHandMovement();
         HandleRightHandRotation();
     }
@@ -71,7 +90,15 @@ public class VRInputController : MonoBehaviour
         right.Normalize();
 
         Vector3 moveDirection = forward * axis.y + right * axis.x;
-        playerTransform.position += moveDirection * moveSpeed * Time.deltaTime;
+        Vector3 displacement = moveDirection * moveSpeed * Time.deltaTime;
+
+        if (characterController != null && characterController.enabled)
+        {
+            characterController.Move(displacement);
+            return;
+        }
+
+        playerTransform.position += displacement;
     }
 
     private void HandleRightHandRotation()
@@ -143,5 +170,26 @@ public class VRInputController : MonoBehaviour
         }
 
         return null;
+    }
+
+    private void UpdateCharacterController()
+    {
+        if (characterController == null || headTransform == null || playerTransform == null)
+        {
+            return;
+        }
+
+        Vector3 localHeadPosition = playerTransform.InverseTransformPoint(headTransform.position);
+        float controllerHeight = Mathf.Max(minColliderHeight, localHeadPosition.y);
+        float controllerRadius = Mathf.Min(colliderRadius, controllerHeight * 0.5f);
+
+        if (!characterController.enabled)
+        {
+            characterController.enabled = true;
+        }
+
+        characterController.height = controllerHeight;
+        characterController.radius = controllerRadius;
+        characterController.center = new Vector3(localHeadPosition.x, controllerHeight * 0.5f, localHeadPosition.z);
     }
 }

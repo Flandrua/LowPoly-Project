@@ -1,388 +1,1089 @@
 using System.Collections;
+
 using System.Collections.Generic;
+
 using Unity.VisualScripting;
+
 using UnityEngine;
+
 using UnityEngine.UI;
 
+
+
 public enum HamsterBehavior
-{
-    Attack,
-    Bounce,
-    Clicked,
-    Death,
-    Eat,
-    Fear,
-    Fly,
-    Hit,
-    Idle_A,
-    Idle_B,
-    Idle_C,
-    Jump,
-    Roll,
-    Run,
-    Sit,
-    Spin,
-    Swim,
-    Walk,
-};
-public enum HamsterEyes
-{
-    Eyes_Normal,
-    Eyes_Annoyed,
-    Eyes_Blink,
-    Eyes_Cry,
-    Eyes_Dead,
-    Eyes_Excited,
-    Eyes_Happy,
-    Eyes_LookDown,
-    Eyes_LookIn,
-    Eyes_LookOut,
-    Eyes_LookUp,
-    Eyes_Rabid,
-    Eyes_Sad,
-    Eyes_Shrink,
-    Eyes_Sleep,
-    Eyes_Spin,
-    Eyes_Squint,
-    Eyes_Trauma,
-    Sweat_L,
-    Sweat_R,
-    Teardrop_L,
-    Teardrop_R
-};
-public class HamsterController : MonoSingleton<HamsterController>
+
 {
 
+    Attack,
+
+    Bounce,
+
+    Clicked,
+
+    Death,
+
+    Eat,
+
+    Fear,
+
+    Fly,
+
+    Hit,
+
+    Idle_A,
+
+    Idle_B,
+
+    Idle_C,
+
+    Jump,
+
+    Roll,
+
+    Run,
+
+    Sit,
+
+    Spin,
+
+    Swim,
+
+    Walk,
+
+};
+
+public enum HamsterEyes
+
+{
+
+    Eyes_Normal,
+
+    Eyes_Annoyed,
+
+    Eyes_Blink,
+
+    Eyes_Cry,
+
+    Eyes_Dead,
+
+    Eyes_Excited,
+
+    Eyes_Happy,
+
+    Eyes_LookDown,
+
+    Eyes_LookIn,
+
+    Eyes_LookOut,
+
+    Eyes_LookUp,
+
+    Eyes_Rabid,
+
+    Eyes_Sad,
+
+    Eyes_Shrink,
+
+    Eyes_Sleep,
+
+    Eyes_Spin,
+
+    Eyes_Squint,
+
+    Eyes_Trauma,
+
+    Sweat_L,
+
+    Sweat_R,
+
+    Teardrop_L,
+
+    Teardrop_R
+
+};
+
+public class HamsterController : MonoSingleton<HamsterController>
+
+{
+
+
+
     //???????
+
     //???????
+
     //???????
+
+
+
 
 
     private Animator _animator;
+
     private Collider _col;
+
     private GameObject _favEffect;
+
     private Scrollbar _bar;//????????????
+
     private ParticleSystem _heart;
+
     private ParticleSystem _flame;
+
     [SerializeField] private bool onTrigger = false;
+
     [SerializeField] public bool isDead = false;
+
     [SerializeField] public bool isOut = false;
+
     [SerializeField] private bool isDamage = false;
+
     [SerializeField] private bool isPlay = false;
+
     [SerializeField] public bool isEating = false;
 
+
+
     public float stayRequireTime = 3;//??????????????
+
     private float stayTime = 0;//??????
+
     private AudioSource _as;
+
+    private GameManager _gameManager;
+
+    private bool _eventsRegistered = false;
+
     public AudioClip hit;
+
     public AudioClip eat;
+
+    private void Awake()
+
+    {
+
+        CacheComponents();
+
+    }
 
 
 
     void Start()
+
     {
-        EventManager.AddListener(EventCommon.DAMAGE, DamageFlag);
-        EventManager.AddListener(EventCommon.HAMSTER_TRIGGER, TriggerFlag);
-        EventManager.AddListener<SnackData>(EventCommon.HAMSTER_FINISH_EATING, HamsterFinishEating);
-        EventManager.AddListener(EventCommon.NEXT_STAGE, ResetToDefault);
-        _animator = transform.parent.GetComponent<Animator>();
-        _col = GetComponent<Collider>();
-        _favEffect = transform.parent.Find("Favorability").gameObject;
-        _heart = transform.parent.Find("Favorability").Find("heart").GetComponent<ParticleSystem>();
-        _bar = transform.parent.Find("Favorability").Find("Canvas").Find("Scrollbar").GetComponent<Scrollbar>();
-        _flame = transform.parent.Find("Flame").GetComponent<ParticleSystem>();
-        _as = GetComponent<AudioSource>();
+
+        CacheComponents();
 
     }
-    private void OnDestroy()    {
-        EventManager.RemoveListener(EventCommon.DAMAGE, DamageFlag);
-        EventManager.RemoveListener(EventCommon.HAMSTER_TRIGGER, TriggerFlag);
-        EventManager.RemoveListener<SnackData>(EventCommon.HAMSTER_FINISH_EATING, HamsterFinishEating);
-        EventManager.RemoveListener(EventCommon.NEXT_STAGE, ResetToDefault);
-    }
-    private void ResetToDefault()
+
+
+
+    private void OnEnable()
+
     {
+
+        CacheComponents();
+
+        RegisterEvents();
+
+    }
+
+
+
+    private void OnDisable()
+    {
+        UnregisterEvents();
         stayTime = 0;
-        _bar.size = 0;
         isPlay = false;
         onTrigger = false;
-        if (!isDead)
+        isEating = false;
+        isDamage = false;
+
+        if (_favEffect != null)
         {
-            _animator.Play("Sit");
-            _animator.Play("Eyes_Normal", _animator.GetLayerIndex("Shapekey"));
-            _animator.SetBool("Sour", false);
+            _favEffect.SetActive(false);
         }
-        if (!isOut)
+
+        if (_bar != null)
         {
-            _animator.SetBool("Move", false);
+            _bar.size = 0;
         }
-        _flame.Stop();
+
+        if (_heart != null)
+        {
+            _heart.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        if (_flame != null)
+        {
+            _flame.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        if (_as != null && _as.isPlaying)
+        {
+            _as.Stop();
+        }
+    }
+
+    private void OnDestroy()
+
+    {
+
+        UnregisterEvents();
 
     }
-    public void ResetMoveAnimation()
+
+
+
+    private void CacheComponents()
+
     {
-        isOut=false;
-        if (!isDead)
+
+        if (_gameManager == null)
+
         {
-            _animator.Play("Sit");
-            _animator.Play("Eyes_Normal", _animator.GetLayerIndex("Shapekey"));
+
+            _gameManager = FindObjectOfType<GameManager>(true);
+
         }
-    }
-    // Update is called once per frame
-    void Update()
-    {
-        if (isPlay)
+
+
+
+        Transform hamsterTransform = transform.parent != null ? transform.parent : transform;
+
+        if (_animator == null)
+
         {
-            stayTime += (float)Time.deltaTime;
-            _bar.size = (stayTime / stayRequireTime);
-            if (stayTime >= stayRequireTime)
+
+            _animator = hamsterTransform.GetComponent<Animator>();
+
+        }
+
+
+
+        if (_col == null)
+
+        {
+
+            _col = GetComponent<Collider>();
+
+        }
+
+
+
+        if (_favEffect == null)
+
+        {
+
+            Transform favorability = hamsterTransform.Find("Favorability");
+
+            if (favorability != null)
+
             {
-                isPlay = false;
-                _animator.Play("Sit");
-                _animator.Play("Eyes_Normal", _animator.GetLayerIndex("Shapekey"));
-                _heart.Play();
-                _bar.size = 1;
-                Debug.Log("get favor");
-                //??GM???????
-                EventManager.DispatchEvent(EventCommon.PREPARE_CHANGE_TIME,"play");
+
+                _favEffect = favorability.gameObject;
+
+                Transform heart = favorability.Find("heart");
+
+                if (heart != null)
+
+                {
+
+                    _heart = heart.GetComponent<ParticleSystem>();
+
+                }
+
+
+
+                Transform scrollbar = favorability.Find("Canvas/Scrollbar");
+
+                if (scrollbar != null)
+
+                {
+
+                    _bar = scrollbar.GetComponent<Scrollbar>();
+
+                }
+
             }
+
         }
+
+
+
+        if (_flame == null)
+
+        {
+
+            Transform flame = hamsterTransform.Find("Flame");
+
+            if (flame != null)
+
+            {
+
+                _flame = flame.GetComponent<ParticleSystem>();
+
+            }
+
+        }
+
+
+
+        if (_as == null)
+
+        {
+
+            _as = GetComponent<AudioSource>();
+
+        }
+
     }
+
+
+
+    private bool IsHamsterGameplayEnabled()
+
+    {
+
+        return _gameManager == null || _gameManager.IsHamsterGameplayEnabled;
+
+    }
+
+
+
+    private void RegisterEvents()
+
+    {
+
+        if (_eventsRegistered || !IsHamsterGameplayEnabled())
+
+        {
+
+            return;
+
+        }
+
+
+
+        EventManager.AddListener(EventCommon.DAMAGE, DamageFlag);
+
+        EventManager.AddListener(EventCommon.HAMSTER_TRIGGER, TriggerFlag);
+
+        EventManager.AddListener<SnackData>(EventCommon.HAMSTER_FINISH_EATING, HamsterFinishEating);
+
+        EventManager.AddListener(EventCommon.NEXT_STAGE, ResetToDefault);
+
+        _eventsRegistered = true;
+
+    }
+
+
+
+    private void UnregisterEvents()
+
+    {
+
+        if (!_eventsRegistered)
+
+        {
+
+            return;
+
+        }
+
+
+
+        EventManager.RemoveListener(EventCommon.DAMAGE, DamageFlag);
+
+        EventManager.RemoveListener(EventCommon.HAMSTER_TRIGGER, TriggerFlag);
+
+        EventManager.RemoveListener<SnackData>(EventCommon.HAMSTER_FINISH_EATING, HamsterFinishEating);
+
+        EventManager.RemoveListener(EventCommon.NEXT_STAGE, ResetToDefault);
+
+        _eventsRegistered = false;
+
+    }
+
+    private void ResetToDefault()
+
+    {
+
+        if (!IsHamsterGameplayEnabled())
+
+        {
+
+            return;
+
+        }
+
+
+
+        stayTime = 0;
+
+        if (_bar != null)
+
+        {
+
+            _bar.size = 0;
+
+        }
+
+        isPlay = false;
+
+        onTrigger = false;
+
+        if (!isDead)
+
+        {
+
+            _animator.Play("Sit");
+
+            _animator.Play("Eyes_Normal", _animator.GetLayerIndex("Shapekey"));
+
+            _animator.SetBool("Sour", false);
+
+        }
+
+        if (!isOut)
+
+        {
+
+            _animator.SetBool("Move", false);
+
+        }
+
+        if (_flame != null)
+
+        {
+
+            _flame.Stop();
+
+        }
+
+
+
+    }
+
+    public void ResetMoveAnimation()
+
+    {
+
+        if (!IsHamsterGameplayEnabled())
+
+        {
+
+            return;
+
+        }
+
+
+
+        isOut = false;
+
+        if (!isDead)
+
+        {
+
+            _animator.Play("Sit");
+
+            _animator.Play("Eyes_Normal", _animator.GetLayerIndex("Shapekey"));
+
+        }
+
+    }
+
+    // Update is called once per frame
+
+    void Update()
+
+    {
+
+        if (!IsHamsterGameplayEnabled())
+
+        {
+
+            return;
+
+        }
+
+
+
+        if (isPlay)
+
+        {
+
+            stayTime += (float)Time.deltaTime;
+
+            _bar.size = (stayTime / stayRequireTime);
+
+            if (stayTime >= stayRequireTime)
+
+            {
+
+                isPlay = false;
+
+                _animator.Play("Sit");
+
+                _animator.Play("Eyes_Normal", _animator.GetLayerIndex("Shapekey"));
+
+                _heart.Play();
+
+                _bar.size = 1;
+
+                Debug.Log("get favor");
+
+                //??GM???????
+
+                EventManager.DispatchEvent(EventCommon.PREPARE_CHANGE_TIME,"play");
+
+            }
+
+        }
+
+    }
+
+
+
 
 
     private void OnTriggerEnter(Collider other)
+
     {
-        if(isDead|| isOut) return;
+
+        if (!IsHamsterGameplayEnabled() || isDead || isOut) return;
+
         if (other.CompareTag("Player") && !isEating)
+
         {
+
             onTrigger = true;
+
             InstantaneousSpeedCalculator calculator = other.GetComponent<InstantaneousSpeedCalculator>();
+
             if (calculator != null)
+
             {
+
                 // ??????????
+
                 Vector3 velocity = calculator.InstantaneousSpeed;
+
                 float mag = velocity.magnitude;
+
                 if (mag > 2.5)//??????
+
                 {
+
                     GetDamage(-2);
+
                     GetFavorability(-1);
+
                     if (DataCenter.Instance.GameData.HamsterData.hp < 5)
+
                     {
+
                         _animator.Play("Eyes_Cry", _animator.GetLayerIndex("Shapekey"));
+
                     }
+
                 }
+
                 else if (stayTime < stayRequireTime&&MouseManager.Instance.canSwitchTime==false)//???????,???????????????????
+
                 {
+
                     isPlay = true;
+
                     _animator.Play("Idle_A");
+
                     _animator.Play("Eyes_Happy", _animator.GetLayerIndex("Shapekey"));
+
                     TimeManager.Instance.RemoveTask(BarHide, this);//???????????
+
                     _favEffect.SetActive(true);
+
                     TimeManager.Instance.AddTask(5,false, BarHide, this);//5???????Bar
+
                 }
+
+
 
                 //Debug.Log("Player velocity: " + mag);
+
             }
+
         }
+
         else if (other.CompareTag("Snack") && !isPlay)
+
         {
+
             onTrigger = true;
+
             isEating = true;
+
             _animator.Play("Eyes_Excited", _animator.GetLayerIndex("Shapekey"));
+
             _as.clip = eat;
+
             _as.Play();
+
             EventManager.DispatchEvent(EventCommon.HAMSTER_EATING, true);//??SnackManager???????????
 
+
+
         }
+
     }
+
     private void BarHide()
+
     {
+
         _favEffect.SetActive(false);
+
     }
+
     private void OnTriggerExit(Collider other)
+
     {
+
+        if (!IsHamsterGameplayEnabled())
+
+        {
+
+            return;
+
+        }
+
         if (other.CompareTag("Player"))
+
         {
+
             onTrigger = false;
+
             isPlay = false;
+
             if (stayTime < stayRequireTime)//?????????????3?????????
+
             {
+
                 stayTime= 0;
+
                 //_favEffect.SetActive(false);
+
             }
+
             Debug.Log("player exit ");
+
         }
+
         else if (other.CompareTag("Snack"))
+
         {
+
             onTrigger = false;
+
             isEating = false;
+
             EventManager.DispatchEvent(EventCommon.HAMSTER_EATING, false);//??SnackManager???????????
+
         }
+
     }
+
+
+
 
 
     /// <summary>
+
     /// ????hover????????????????
+
     /// </summary>
+
     /// <param name="animationName"></param>
+
+
 
     public void ChangeBehaviorAnimationByStr(string animationName)
+
     {
-        if (!onTrigger && !isDead && !isDamage && !isPlay&&!isOut)
+
+        if (!IsHamsterGameplayEnabled() || _animator == null)
+
         {
+
+            return;
+
+        }
+
+
+
+        if (!onTrigger && !isDead && !isDamage && !isPlay&&!isOut)
+
+        {
+
             _animator.Play(animationName);
+
             //Debug.Log(animationName);
+
+        }
+
+
+
+    }
+
+    /// <summary>
+
+    /// ????hover?????????????????
+
+    /// </summary>
+
+    /// <param name="animationName"></param>
+
+    public void ChangeEyesAnimationByStr(string animationName)
+
+    {
+
+        if (!IsHamsterGameplayEnabled() || _animator == null)
+
+        {
+
+            return;
+
+        }
+
+
+
+        if (!onTrigger && !isDead && !isDamage && !isPlay&&!isOut)
+
+        {
+
+            _animator.Play(animationName, _animator.GetLayerIndex("Shapekey"));
+
         }
 
     }
-    /// <summary>
-    /// ????hover?????????????????
-    /// </summary>
-    /// <param name="animationName"></param>
-    public void ChangeEyesAnimationByStr(string animationName)
-    {
-        if (!onTrigger && !isDead && !isDamage && !isPlay&&!isOut)
-        {
-            _animator.Play(animationName, _animator.GetLayerIndex("Shapekey"));
-        }
-    }
+
+
 
     //public void ChangeBehaviorAnimation(HamsterBehavior animationName)
+
     //{
+
     //    if (!onTrigger && !isDead)
+
     //    {
+
     //        string animation = animationName.ToString();
+
     //        _animator.Play(animation);
+
     //    }
-    //}
-    //public void ChangeEyesAnimation(HamsterEyes animationName)
-    //{
-    //    if (!onTrigger && !isDead)
-    //    {
-    //        string animation = animationName.ToString();
-    //        _animator.Play(animation, _animator.GetLayerIndex("Shapekey"));
-    //    }
+
     //}
 
+    //public void ChangeEyesAnimation(HamsterEyes animationName)
+
+    //{
+
+    //    if (!onTrigger && !isDead)
+
+    //    {
+
+    //        string animation = animationName.ToString();
+
+    //        _animator.Play(animation, _animator.GetLayerIndex("Shapekey"));
+
+    //    }
+
+    //}
+
+
+
     /// <summary>
+
     /// ?????
+
     /// </summary>
+
     /// <param name="value"></param>
+
     public void GetFavorability(int value)
+
     {
-        DataCenter.Instance.GetFavorability(value);
-    }
-    /// <summary>
-    /// ??????HP,?????+=value??????????value????????
-    /// </summary>
-    /// <param name="value"></param>
-    public void GetDamage(int value)
-    {
-        //????????????????????????????????
-        _as.clip = hit;
-        _as.Play();
-        DataCenter.Instance.GetDamage(value);
-        if (DataCenter.Instance.GameData.HamsterData.hp <= 0)
+
+        if (!IsHamsterGameplayEnabled())
+
         {
-            PlayRandomTTS("TTS/HamsterDead");
-            Death();
-        }
-        else
-        {
-            isDamage = true;
-            _animator.SetTrigger("damage");
-            // ????HamsterHit??
-            PlayRandomTTS("TTS/HamsterHit");
-        }
-    }
-    public void Death()
-    {
-        //??????????????????
-        DataCenter.Instance.GameData.HamsterData.hp = 0;
-        _animator.Play("Eyes_Dead", _animator.GetLayerIndex("Shapekey"));
-        _animator.Play("Death");
-        isDead = true;
-    }
-    public void DamageFlag()
-    {
-        isDamage = false;
-        //Debug.Log("damage false");
-    }
-    public void TriggerFlag()
-    {
-        onTrigger = false;
-        //Debug.Log("trigger false");
-    }
-    public void HamsterFinishEating(SnackData snack)
-    {
-        isOut = true;
-        onTrigger = false;
-        GetFavorability(snack.extraFavorability);
-        //???????????????????
-        if(snack.isPoisonous)
-        {
-            TTSManager.Instance.PlayTTS("TTS/Special/ChocolateDead");
-            Death();
+
             return;
+
         }
-        else if (snack.isSour)
+
+
+
+        DataCenter.Instance.GetFavorability(value);
+
+    }
+
+    /// <summary>
+
+    /// ??????HP,?????+=value??????????value????????
+
+    /// </summary>
+
+    /// <param name="value"></param>
+
+    public void GetDamage(int value)
+
+    {
+
+        if (!IsHamsterGameplayEnabled() || _as == null || _animator == null)
+
         {
+
+            return;
+
+        }
+
+
+
+        //????????????????????????????????
+
+        _as.clip = hit;
+
+        _as.Play();
+
+        DataCenter.Instance.GetDamage(value);
+
+        if (DataCenter.Instance.GameData.HamsterData.hp <= 0)
+
+        {
+
+            PlayRandomTTS("TTS/HamsterDead");
+
+            Death();
+
+        }
+
+        else
+
+        {
+
+            isDamage = true;
+
+            _animator.SetTrigger("damage");
+
+            // ????HamsterHit??
+
+            PlayRandomTTS("TTS/HamsterHit");
+
+        }
+
+    }
+
+    public void Death()
+
+    {
+
+        if (!IsHamsterGameplayEnabled() || _animator == null)
+
+        {
+
+            return;
+
+        }
+
+
+
+        //??????????????????
+
+        DataCenter.Instance.GameData.HamsterData.hp = 0;
+
+        _animator.Play("Eyes_Dead", _animator.GetLayerIndex("Shapekey"));
+
+        _animator.Play("Death");
+
+        isDead = true;
+
+    }
+
+    public void DamageFlag()
+
+    {
+
+        isDamage = false;
+
+        //Debug.Log("damage false");
+
+    }
+
+    public void TriggerFlag()
+
+    {
+
+        onTrigger = false;
+
+        //Debug.Log("trigger false");
+
+    }
+
+    public void HamsterFinishEating(SnackData snack)
+
+    {
+
+        if (!IsHamsterGameplayEnabled() || snack == null || _animator == null)
+
+        {
+
+            return;
+
+        }
+
+
+
+        isOut = true;
+
+        onTrigger = false;
+
+        GetFavorability(snack.extraFavorability);
+
+        //???????????????????
+
+        if(snack.isPoisonous)
+
+        {
+
+            TTSManager.Instance.PlayTTS("TTS/Special/ChocolateDead");
+
+            Death();
+
+            return;
+
+        }
+
+        else if (snack.isSour)
+
+        {
+
             TTSManager.Instance.PlayTTS("TTS/Special/LemonHamster");
+
             _animator.SetBool("Sour", true);
+
             _animator.Play("Eyes_Trauma", _animator.GetLayerIndex("Shapekey"));
+
             _animator.Play("Walk");
+
             _animator.SetBool("Move", true);
 
+
+
             TimeManager.Instance.AddTask(8, false, () => { _animator.Play("Jump"); }, this);
+
             TimeManager.Instance.AddTask(9.1f, false, () => { _animator.Play("Walk"); }, this);
+
             return;
+
         }
+
         else if (snack.isWine)
+
         {
+
             TTSManager.Instance.PlayTTS("TTS/Special/BeerHamster");
+
             _animator.Play("Eyes_Spin", _animator.GetLayerIndex("Shapekey"));
+
         }
+
         else if (snack.isSpicy)
+
         {
+
             TTSManager.Instance.PlayTTS("TTS/Special/PeperHamster");
+
             _animator.Play("Eyes_Shrink", _animator.GetLayerIndex("Shapekey"));
+
             _flame.Play();
+
         }
+
         //??????????????
+
         _animator.Play("Walk");
+
         _animator.SetBool("Move",true);
+
         
+
         TimeManager.Instance.AddTask(3, false, () => { _animator.Play("Jump"); }, this);
+
         TimeManager.Instance.AddTask(4.1f, false, () => { _animator.Play("Walk"); }, this);
+
     }
+
+
 
     /// <summary>
+
     /// ?????????TTS??
+
     /// </summary>
+
     /// <param name="resourcePath">Resources??????????????</param>
+
     private void PlayRandomTTS(string resourcePath)
+
     {
+
         // ??????????????
+
         AudioClip[] clips = Resources.LoadAll<AudioClip>(resourcePath);
+
         
+
         if (clips == null || clips.Length == 0)
+
         {
+
             Debug.LogWarning($"HamsterController: ??? {resourcePath} ????????");
+
             return;
+
         }
+
+
 
         // ????????
+
         int randomIndex = Random.Range(0, clips.Length);
+
         AudioClip selectedClip = clips[randomIndex];
 
+
+
         // ??TTSManager??
+
         if (TTSManager.Instance != null && selectedClip != null)
+
         {
+
             TTSManager.Instance.PlayTTS(selectedClip);
+
         }
+
         else
+
         {
+
             Debug.LogWarning("HamsterController: TTSManager???????????");
+
         }
+
     }
+
 }
+
