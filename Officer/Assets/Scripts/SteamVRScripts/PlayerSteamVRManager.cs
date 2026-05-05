@@ -12,7 +12,7 @@ public class PlayerSteamVRManager : MonoSingleton<PlayerSteamVRManager>
     [SerializeField] private LayerMask centerGazeLayers = Physics.DefaultRaycastLayers;
     [SerializeField] [Range(0.01f, 100f)] private float centerGazeMaxDistance = 20f;
     [SerializeField] [Range(0f, 1f)] private float centerGazeRayRadius = 0f;
-    private float height = 1;
+    public float height = 0.5f;
     private ParticleSystem _flame;
     public int tempEfficiency = 0;
     private AudioSource _as;

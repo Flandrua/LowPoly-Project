@@ -10,7 +10,8 @@ public class GameManager : MonoSingleton<GameManager>
 
 {
 
-    private int curTimeStage = 0;//0???1???2??
+    private int curTimeStage = 0;//0 = morning, 1 = afternoon, 2 = night
+    public float countDown = 60f;
 
     private Animator _animator;
 
@@ -34,6 +35,10 @@ public class GameManager : MonoSingleton<GameManager>
 
     public int goalWorkProgress = 50;
 
+    public int currentWorkProgress = 0;
+
+    public bool debugDecreaseWorkProgress = false;
+
     public GameObject ending;
 
     [SerializeField] private bool enableHamster = true;
@@ -42,9 +47,19 @@ public class GameManager : MonoSingleton<GameManager>
 
     [SerializeField] private HamsterController hamsterController;
 
+    private float _remainingCountDown;
+
+    private bool _hasTimedOutThisStage;
+
+    private bool _hasTimedOutToday;
+
+    private int _lastSyncedWorkProgress;
+
     public int TotalDays => Mathf.Max(1, totaldays);
 
     public bool IsHamsterGameplayEnabled => enableHamster;
+
+    public string CurrentTimeDisplay => GetCurrentTimeDisplay();
 
 
 
@@ -71,6 +86,8 @@ public class GameManager : MonoSingleton<GameManager>
         _animator = GetComponent<Animator>();
 
         ApplyHamsterFeatureState();
+        SyncExposedWorkProgressFromData(false);
+        ResetStageCountDown();
 
     }
 
@@ -103,6 +120,8 @@ public class GameManager : MonoSingleton<GameManager>
 
 
         SetHamsterEnabled(enableHamster);
+        SyncExposedWorkProgressFromData(true);
+        TryConsumeDebugDecreaseWorkProgress();
 
     }
 
@@ -240,6 +259,7 @@ public class GameManager : MonoSingleton<GameManager>
         {
 
             DataCenter.Instance.GetWorkProgress(DataCenter.Instance.GetTotalWorkEfficiency());
+            SyncExposedWorkProgressFromData(false);
 
             EventManager.DispatchEvent(EventCommon.UPDATE_MONITOR);
 
@@ -259,17 +279,9 @@ public class GameManager : MonoSingleton<GameManager>
 
 
 
-    private void ChangeTime()//??????
+    private void ChangeTime()//Advance the time-of-day stage
 
     {
-
-        //????????????bool?????
-
-        //?????????
-
-        //?????????????
-
-        //?????????
 
         if (curTimeStage == 0)
 
@@ -293,7 +305,7 @@ public class GameManager : MonoSingleton<GameManager>
 
         }
 
-        else if (curTimeStage == 2)//?????
+        else if (curTimeStage == 2)//Advance to the next day
 
         {
 
@@ -329,11 +341,11 @@ public class GameManager : MonoSingleton<GameManager>
 
             curTimeStage = 0;
 
-            //?????????,????????????????
+            // Reset the player location after a full day cycle.
 
             PlayerSteamVRManager.Instance.ResetLocation();
 
-            //??????
+            // Refresh the snack selection for the new day.
 
             SnackManager.Instance.RandomSnack();
 
@@ -349,11 +361,16 @@ public class GameManager : MonoSingleton<GameManager>
 
             {
 
+                bool shouldShowSnackContainerNextDay = !_hasTimedOutToday;
                 DataCenter.Instance.GameData.PlayerData.days++;
+                SnackManager.Instance.SetContainerVisible(shouldShowSnackContainerNextDay);
+                _hasTimedOutToday = false;
 
             }
 
         }
+
+        ResetStageCountDown();
 
         EventManager.DispatchEvent(EventCommon.UPDATE_MONITOR);
 
@@ -372,6 +389,223 @@ public class GameManager : MonoSingleton<GameManager>
     void Update()
 
     {
+        TickStageCountDown();
+        SyncWorkProgressBinding();
+        TryConsumeDebugDecreaseWorkProgress();
+    }
+
+    private void SyncWorkProgressBinding()
+
+    {
+
+        if (!HasPlayerProgressData())
+
+        {
+
+            return;
+
+        }
+
+
+
+        int dataProgress = Mathf.Max(0, DataCenter.Instance.GameData.PlayerData.workProgress);
+        int exposedProgress = Mathf.Max(0, currentWorkProgress);
+
+        if (dataProgress != _lastSyncedWorkProgress)
+
+        {
+
+            currentWorkProgress = dataProgress;
+            _lastSyncedWorkProgress = dataProgress;
+            return;
+
+        }
+
+
+
+        if (exposedProgress == _lastSyncedWorkProgress)
+
+        {
+
+            return;
+
+        }
+
+
+
+        SetCurrentWorkProgress(exposedProgress);
+
+    }
+
+    private void TickStageCountDown()
+
+    {
+
+        if (!ShouldRunStageCountDown() || _hasTimedOutThisStage)
+
+        {
+
+            return;
+
+        }
+
+
+
+        _remainingCountDown -= Time.deltaTime;
+
+        if (_remainingCountDown > 0f)
+
+        {
+
+            return;
+
+        }
+
+
+
+        _remainingCountDown = 0f;
+        _hasTimedOutThisStage = true;
+        _hasTimedOutToday = true;
+
+    }
+
+
+
+    private bool ShouldRunStageCountDown()
+
+    {
+
+        return DataCenter.Instance != null &&
+               DataCenter.Instance.GameData != null &&
+               DataCenter.Instance.GameData.PlayerData != null &&
+               DataCenter.Instance.GameData.PlayerData.days >= 2;
+
+    }
+
+
+
+    private void ResetStageCountDown()
+
+    {
+
+        _remainingCountDown = Mathf.Max(0f, countDown);
+        _hasTimedOutThisStage = false;
+
+    }
+
+
+
+    public void SetCurrentWorkProgress(int progress)
+
+    {
+
+        if (!HasPlayerProgressData())
+
+        {
+
+            currentWorkProgress = Mathf.Max(0, progress);
+            _lastSyncedWorkProgress = currentWorkProgress;
+            return;
+
+        }
+
+
+
+        int clampedProgress = Mathf.Max(0, progress);
+        DataCenter.Instance.GameData.PlayerData.workProgress = clampedProgress;
+        currentWorkProgress = clampedProgress;
+        _lastSyncedWorkProgress = clampedProgress;
+        EventManager.DispatchEvent(EventCommon.UPDATE_MONITOR);
+
+    }
+
+
+
+    private void SyncExposedWorkProgressFromData(bool dispatchEvent)
+
+    {
+
+        if (!HasPlayerProgressData())
+
+        {
+
+            currentWorkProgress = Mathf.Max(0, currentWorkProgress);
+            _lastSyncedWorkProgress = currentWorkProgress;
+            return;
+
+        }
+
+
+
+        currentWorkProgress = Mathf.Max(0, DataCenter.Instance.GameData.PlayerData.workProgress);
+        _lastSyncedWorkProgress = currentWorkProgress;
+
+        if (dispatchEvent)
+
+        {
+
+            EventManager.DispatchEvent(EventCommon.UPDATE_MONITOR);
+
+        }
+
+    }
+
+
+
+    private bool HasPlayerProgressData()
+
+    {
+
+        return DataCenter.Instance != null &&
+               DataCenter.Instance.GameData != null &&
+               DataCenter.Instance.GameData.PlayerData != null;
+
+    }
+
+
+
+    private void TryConsumeDebugDecreaseWorkProgress()
+
+    {
+
+        if (!debugDecreaseWorkProgress)
+
+        {
+
+            return;
+
+        }
+
+
+
+        debugDecreaseWorkProgress = false;
+        SetCurrentWorkProgress(currentWorkProgress - 1);
+
+    }
+
+
+
+    private string GetCurrentTimeDisplay()
+
+    {
+
+        switch (curTimeStage)
+
+        {
+
+            case 0:
+                return "09:00";
+
+            case 1:
+                return "18:00";
+
+            case 2:
+                return "21:00";
+
+            default:
+                return "09:00";
+
+        }
 
     }
 

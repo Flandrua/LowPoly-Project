@@ -131,6 +131,22 @@ public class CenterGazeCallback : MonoBehaviour
         animator.SetBool(boolName, false);
     }
 
+    public void SetBoxColliderEnabled(bool enabled)
+    {
+        BoxCollider boxCollider = GetComponent<BoxCollider>();
+        if (boxCollider == null && targetRoot != null)
+        {
+            boxCollider = targetRoot.GetComponent<BoxCollider>();
+        }
+
+        if (boxCollider == null)
+        {
+            return;
+        }
+
+        boxCollider.enabled = enabled;
+    }
+
     private void CacheTargets()
     {
         if (targetRoot == null)

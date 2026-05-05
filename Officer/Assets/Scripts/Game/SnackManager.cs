@@ -100,6 +100,24 @@ public class SnackManager : MonoSingleton<SnackManager>
         NotifySnackHint(false);
     }
 
+    public void SetContainerVisible(bool visible)
+    {
+        _lastGrabState = false;
+        NotifySnackHint(false);
+
+        if (container == null)
+        {
+            return;
+        }
+
+        if (container.activeSelf == visible)
+        {
+            return;
+        }
+
+        container.SetActive(visible);
+    }
+
     private void ResetToDefault()
     {
         _lastGrabState = false;

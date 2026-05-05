@@ -20,6 +20,7 @@ public class MainMonitorData : ItemData
         initialPosition = transform.position;
         initialRotation = transform.rotation;
         EventManager.AddListener(EventCommon.UPDATE_MONITOR, UpdateInfo);
+        UpdateInfo();
     }
     private void OnDestroy()
     {
@@ -32,7 +33,7 @@ public class MainMonitorData : ItemData
     }
     public void UpdateInfo()
     {
-        day.text = $"Day:{DataCenter.Instance.GameData.PlayerData.days}/{GameManager.Instance.TotalDays}";
+        day.text = $"Day:{DataCenter.Instance.GameData.PlayerData.days}/{GameManager.Instance.TotalDays} {GameManager.Instance.CurrentTimeDisplay}";
         float size = (DataCenter.Instance.GameData.PlayerData.workProgress*1.0f) / (GameManager.Instance.goalWorkProgress*1.0f);
         bar.size = size;
     }

@@ -136,7 +136,13 @@ public class VRInputController : MonoBehaviour
         if (Mathf.Abs(axis.x) > 0.7f && canSnapTurn)
         {
             float angle = axis.x > 0 ? snapTurnAngle : -snapTurnAngle;
-            playerTransform.Rotate(0, angle, 0);
+            Vector3 pivot = new Vector3(
+    headTransform.position.x,
+    playerTransform.position.y,
+    headTransform.position.z
+);
+            playerTransform.RotateAround(pivot, Vector3.up, angle);
+            //playerTransform.Rotate(0, angle, 0);
             canSnapTurn = false;
         }
 

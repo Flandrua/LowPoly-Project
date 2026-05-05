@@ -51,24 +51,33 @@
 - 同时存在 `SteamVR`、`OpenXR`、`XR Interaction Toolkit`、`PICO` 相关依赖
 - 主业务脚本集中在 `Assets/Scripts/`
 - 当前项目已有 VR 输入控制脚本，如 `TestInput.cs`、`LaserPointerHandler.cs`、`PlayerSteamVRManager.cs`
+- 当前 `GameManager` 已暴露 `countDown` 倒计时参数，默认 60 秒；从第 2 天开始，阶段内会在 `Update` 中持续计时
+- 当前 `GameManager` 已暴露 `currentWorkProgress` 调试字段，并与 `DataCenter.GameData.PlayerData.workProgress` 和主监视器进度条保持同步
 - 当前项目已新增“头显中心视野检测”项目侧实现：统一射线入口在 `PlayerSteamVRManager`，目标回调组件为 `CenterGazeCallback`
 - 当前项目同时保留了官方示例和自定义实现，修改前需分清“示例代码”与“项目实际使用代码”
 - `Assets/SteamVR/Simple Sample.unity` 是目前正常作业和默认回归测试场景
 - `Assets/SteamVR/Simple Sample.unity` 当前实际验证链路使用 `PlayerSteamVRManager` 与 `MyInteractableSteamVR`，不是 `XRGrabInteractable`
 
 ## 当前交互链路说明
+- 工作进度链路：`GameManager.currentWorkProgress` ↔ `DataCenter.GameData.PlayerData.workProgress` → `EventCommon.UPDATE_MONITOR` → `MainMonitorData.UpdateInfo()` → 主监视器 `Scrollbar`
+- 阶段倒计时链路：`GameManager.countDown` → `GameManager.Update()` → `TickStageCountDown()`；仅从第 2 天开始生效，每次推进到下一阶段后重置
+- 超时奖惩链路：当天任意阶段超时后，`GameManager` 会记录当日超时状态；跨到下一天时调用 `SnackManager.SetContainerVisible(bool)`，超时则隐藏 `Container`，未超时则显示 `Container`
 - 零食提示链路：`MyInteractableSteamVR` → `EventCommon.PLAYER_SNACK_HINT` → `PlayerSteamVRManager.SetSnackHintVisible(bool)`
 - 提示区域挂点：`Player/Container/SteamVRObjects/VRCamera/FollowHead/HeadCollider`
 - `HeadCollider` 下会在运行时创建 `HeadColliderVisual` 子物体，并挂载球体 MeshRenderer 作为提示显示
 - 当前提示样式为淡蓝色半透明球体；默认隐藏，玩家拿起零食时显示，放下或吃掉后隐藏
 - 头显中心视野链路：`PlayerSteamVRManager` 统一缓存头显中心射线与命中结果 → `CenterGazeCallback` 复用该结果判断是否看向目标 → 触发 `onGazeEnter` / `onGazeExit`
 - 当前中心视野检测优先使用 `Player.instance.hmdTransform`，拿不到时回退到 `Camera.main`
+- 传送区域回调链路：`TeleportAreaCallback` 监听 `Teleport.Player`；玩家传送到当前区域时触发 `onTeleportComplete`，离开当前区域时触发 `onPlayerExitArea`
+- 当前离开区域判定同时覆盖两种情况：传送到其他 `TeleportArea`，或玩家传送到该区域后通过房间尺度实际走出区域边界
+- `TeleportAreaCallback` 当前还支持在离开区域时直接调用 `TeleportArea.SetLocked(true)` 锁定自身区域，适合做一次性传送点
 - 当前可视提示与正常玩法链路都以 `Assets/SteamVR/Simple Sample.unity` 为准；若要同步到 `SteamVer.unity`，需分别确认 XRI 链路
 
 ## 修改策略
 - 小改动：优先改单个脚本并保持 Inspector 字段兼容
 - 交互改动：先确认目标场景实际挂载的是哪个脚本，再动代码
 - UI/Toggle/按钮改动：优先提供可从 Inspector 绑定的方法，如 `public void OnXChanged(bool value)`
+- 数据调试改动：若要暴露可手动修改的运行时数据，优先在 `GameManager` 或对应管理器提供 Inspector 可见字段，并保持与 `DataCenter` 和现有 UI 刷新链路同步
 - VR 输入改动：明确区分左手/右手输入源、平滑移动、Snap Turn、传送、抓取
 - 视线/注视改动：优先复用 `PlayerSteamVRManager` 中统一的中心视线结果，不要在每个目标组件里重复发同样的 `Raycast`
 - 场景相关问题：优先查组件引用、事件回调、Layer/Collider、Toggle 状态，再改代码
@@ -94,6 +103,10 @@
    - 移动是否正常
    - 平滑转向 / Snap Turn 是否符合预期
    - 射线悬停、点击、抓取是否正常
+   - 若涉及 `GameManager.currentWorkProgress`：运行时手动修改该值后，确认 `DataCenter.GameData.PlayerData.workProgress` 与主监视器进度条同步变化
+   - 若涉及阶段倒计时：从第 2 天开始确认阶段内倒计时会运行，推进到下一阶段后确认计时器重置
+   - 若涉及超时奖惩：确认某天内任意阶段超时后，下一天 `SnackManager.container` 被隐藏；若当天全程未超时，则下一天显示
+   - 若涉及传送区域回调：传送到目标区域时，`onTeleportComplete` 是否触发；传送到其他区域或实际走出区域后，`onPlayerExitArea` 是否触发；若开启离开即锁定，确认该区域后续不可再次传送进入
    - 头显中心视线看向目标时，`onGazeEnter` 是否触发；移开后，`onGazeExit` 是否触发
    - 相关 UI Toggle / Button 是否触发正确逻辑
 4. 检查是否误改第三方 SDK 或样例资源
@@ -104,6 +117,7 @@
 - **改输入逻辑**：先确认使用的是 `SteamVR` 还是 `XRI` 输入链路，再改对应脚本
 - **改中心视野逻辑**：优先修改 `PlayerSteamVRManager` 的统一视线检测参数或 `CenterGazeCallback` 的目标判定，不要为每个目标单独复制一套头显射线检测
 - **改 UI 交互**：优先增加 Inspector 可绑定入口，不要把 UI 查找逻辑写死
+- **改进度显示/调试入口**：优先复用 `DataCenter.GameData.PlayerData.workProgress` 与 `EventCommon.UPDATE_MONITOR` 链路；若需要手动调试，优先暴露 `GameManager.currentWorkProgress`
 - **改场景行为**：先确认对象挂载脚本、事件回调、引用对象
 - **修 SDK 问题**：先尝试项目层兜底；只有项目层无法解决时再改 SDK
 - **修 NaN/Transform 报错**：优先在输入数据入口和赋值出口做合法性保护
