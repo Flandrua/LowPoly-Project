@@ -351,7 +351,7 @@ public class TeleportAreaCallback : MonoBehaviour
 
     private bool IsInsideArea(Vector3 worldPosition)
     {
-        if (areaCollider != null)
+        if (CanUseClosestPoint(areaCollider))
         {
             Vector3 closestPoint = areaCollider.ClosestPoint(worldPosition);
             return (closestPoint - worldPosition).sqrMagnitude <= ExitCheckTolerance * ExitCheckTolerance;
@@ -361,6 +361,22 @@ public class TeleportAreaCallback : MonoBehaviour
         Bounds localBounds = teleportArea.meshBounds;
         localBounds.Expand(ExitCheckTolerance * 2f);
         return localBounds.Contains(localPosition);
+    }
+
+    private bool CanUseClosestPoint(Collider targetCollider)
+    {
+        if (targetCollider == null || !targetCollider.enabled)
+        {
+            return false;
+        }
+
+        if (targetCollider is BoxCollider || targetCollider is SphereCollider || targetCollider is CapsuleCollider)
+        {
+            return true;
+        }
+
+        MeshCollider meshCollider = targetCollider as MeshCollider;
+        return meshCollider != null && meshCollider.convex;
     }
 
     public void LockCurrentTeleportArea()

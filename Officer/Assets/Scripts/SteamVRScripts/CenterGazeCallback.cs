@@ -204,6 +204,30 @@ public class CenterGazeCallback : MonoBehaviour
         return playerManager.TryGetCenterGazeState(out gazeRay, out hasHit, out hitInfo, out _);
     }
 
+    private bool HasConfiguredTargetColliders()
+    {
+        return targetColliders != null && targetColliders.Length > 0;
+    }
+
+    private bool HasAnyEnabledTargetCollider()
+    {
+        if (!HasConfiguredTargetColliders())
+        {
+            return false;
+        }
+
+        for (int index = 0; index < targetColliders.Length; index++)
+        {
+            Collider targetCollider = targetColliders[index];
+            if (targetCollider != null && targetCollider.enabled)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private bool IsLookingAtTarget(Ray gazeRay, bool hasHit, RaycastHit hitInfo)
     {
         bool hitTarget;
@@ -214,6 +238,11 @@ public class CenterGazeCallback : MonoBehaviour
         }
         else
         {
+            if (HasConfiguredTargetColliders() && !HasAnyEnabledTargetCollider())
+            {
+                return false;
+            }
+
             if (!useRendererBoundsFallback)
             {
                 return false;
