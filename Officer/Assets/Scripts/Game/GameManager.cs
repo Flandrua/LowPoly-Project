@@ -345,10 +345,6 @@ public class GameManager : MonoSingleton<GameManager>
 
             PlayerSteamVRManager.Instance.ResetLocation();
 
-            // Refresh the snack selection for the new day.
-
-            SnackManager.Instance.RandomSnack();
-
             if (DataCenter.Instance.GameData.PlayerData.days >= TotalDays)
 
             {
@@ -363,7 +359,17 @@ public class GameManager : MonoSingleton<GameManager>
 
                 bool shouldShowSnackContainerNextDay = !_hasTimedOutToday;
                 DataCenter.Instance.GameData.PlayerData.days++;
-                SnackManager.Instance.SetContainerVisible(shouldShowSnackContainerNextDay);
+                if (shouldShowSnackContainerNextDay)
+                {
+                    SnackManager.Instance.SetContainerVisible(true);
+                    SnackManager.Instance.RandomSnack();
+                }
+                else
+                {
+                    SnackManager.Instance.ClearCurrentSnack();
+                    SnackManager.Instance.SetContainerVisible(false);
+                }
+
                 _hasTimedOutToday = false;
 
             }

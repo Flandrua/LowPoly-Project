@@ -72,7 +72,7 @@ public class SnackManager : MonoSingleton<SnackManager>
 
     public void RandomSnack()
     {
-        if (_curSnacks != null && _curSnacks.activeInHierarchy)
+        if (_curSnacks != null)
         {
             _curSnacks.SetActive(false);
         }
@@ -98,6 +98,32 @@ public class SnackManager : MonoSingleton<SnackManager>
         audioAsset = $"TTS/SnackIteraction/{_snackName}";
         _lastGrabState = false;
         NotifySnackHint(false);
+    }
+
+    public void ClearCurrentSnack()
+    {
+        _lastGrabState = false;
+        NotifySnackHint(false);
+
+        if (_curSnacks != null)
+        {
+            _curSnacks.SetActive(false);
+        }
+
+        if (_animation != null)
+        {
+            _animation.enabled = false;
+        }
+
+        if (container != null)
+        {
+            container.transform.localScale = Vector3.one;
+        }
+
+        if (_col != null)
+        {
+            _col.enabled = false;
+        }
     }
 
     public void SetContainerVisible(bool visible)
