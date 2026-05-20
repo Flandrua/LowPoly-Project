@@ -20,6 +20,7 @@ public class PlayerManager : MonoBehaviour
     private AudioSource _as;
     [SerializeField] private Color snackHintColor = new Color(0.68f, 0.87f, 1f, 0.1f);
     [SerializeField] private float snackHintRadius = 0.12f;
+    [SerializeField] private Material snackHintMaterialTemplate;
     private GameObject _snackHintVisual;
     private MeshRenderer _snackHintRenderer;
     private Material _snackHintMaterial;
@@ -76,7 +77,7 @@ public class PlayerManager : MonoBehaviour
     {
         MeshRenderer baseRenderer = GetComponent<MeshRenderer>();
         Material baseMaterial = baseRenderer != null ? baseRenderer.sharedMaterial : null;
-        _snackHintMaterial = baseMaterial != null ? new Material(baseMaterial) : CreateFallbackSnackHintMaterial();
+        _snackHintMaterial = CreateSnackHintMaterial(baseMaterial);
         if (_snackHintMaterial == null)
         {
             return;
@@ -115,10 +116,57 @@ public class PlayerManager : MonoBehaviour
         SetSnackHintVisible(false);
     }
 
-    private Material CreateFallbackSnackHintMaterial()
+    private Material CreateSnackHintMaterial(Material baseMaterial)
     {
-        Shader shader = Shader.Find("Standard");
-        return shader != null ? new Material(shader) : null;
+        if (snackHintMaterialTemplate != null)
+        {
+            return new Material(snackHintMaterialTemplate);
+        }
+
+        Shader shader = FindPreferredSnackHintShader();
+        if (shader != null)
+        {
+            return new Material(shader);
+        }
+
+        if (baseMaterial != null)
+        {
+            return new Material(baseMaterial);
+        }
+
+        return null;
+    }
+
+    private Shader FindPreferredSnackHintShader()
+    {
+        RenderPipelineAsset currentPipeline = GraphicsSettings.currentRenderPipeline;
+        bool isUrp = currentPipeline != null
+            && currentPipeline.GetType().Name.Contains("UniversalRenderPipelineAsset");
+        string[] shaderNames = isUrp
+            ? new[]
+            {
+                "Universal Render Pipeline/Unlit",
+                "Unlit/Transparent",
+                "Legacy Shaders/Transparent/Diffuse",
+                "Standard"
+            }
+            : new[]
+            {
+                "Legacy Shaders/Transparent/Diffuse",
+                "Unlit/Transparent",
+                "Standard"
+            };
+
+        for (int i = 0; i < shaderNames.Length; i++)
+        {
+            Shader shader = Shader.Find(shaderNames[i]);
+            if (shader != null)
+            {
+                return shader;
+            }
+        }
+
+        return null;
     }
 
     private void ApplySnackHintStyle(Material material)
@@ -148,6 +196,16 @@ public class PlayerManager : MonoBehaviour
             material.SetInt("_DstBlend", (int)BlendMode.OneMinusSrcAlpha);
         }
 
+        if (material.HasProperty("_Blend"))
+        {
+            material.SetFloat("_Blend", 0f);
+        }
+
+        if (material.HasProperty("_AlphaClip"))
+        {
+            material.SetFloat("_AlphaClip", 0f);
+        }
+
         if (material.HasProperty("_ZWrite"))
         {
             material.SetInt("_ZWrite", 0);
@@ -167,6 +225,7 @@ public class PlayerManager : MonoBehaviour
         material.DisableKeyword("_ALPHATEST_ON");
         material.EnableKeyword("_ALPHABLEND_ON");
         material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        material.SetOverrideTag("RenderType", "Transparent");
         material.renderQueue = (int)RenderQueue.Transparent;
 
         if (material.HasProperty("_Mode"))
@@ -235,3 +294,5 @@ public class PlayerManager : MonoBehaviour
         }
     }
 }
+
+

@@ -1,4 +1,4 @@
-using System.Collections;
+锘縰sing System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,7 +8,7 @@ public class KeyboardController : MonoSingleton<KeyboardController>
     public int requireHit = 6;
     private int actualHit = 0;
     private GameObject _workEffect;
-    private Scrollbar _bar;//交互条
+    private Scrollbar _bar; // Interaction progress bar.
     private ParticleSystem _star;
     public List<AudioClip> sounds = new List<AudioClip>();
     private AudioSource _as;
@@ -41,16 +41,16 @@ public class KeyboardController : MonoSingleton<KeyboardController>
     {
         if (other.CompareTag("Player"))
         {
-            TimeManager.Instance.RemoveTask(BarHide,this);//移除该类计时器
+            TimeManager.Instance.RemoveTask(BarHide,this); // Clear any pending hide task.
             _workEffect.SetActive(true);
-            TimeManager.Instance.AddTask(5, false, BarHide, this);//5秒后隐藏Bar
+            TimeManager.Instance.AddTask(5, false, BarHide, this); // Hide the bar after 5 seconds.
             InstantaneousSpeedCalculator calculator = other.GetComponent<InstantaneousSpeedCalculator>();
             if (calculator != null)
             {
-                // 获取速度并输出
+                // Read the current hit speed.
                 Vector3 velocity = calculator.InstantaneousSpeed;
                 float mag = velocity.magnitude;
-                if (mag > 2.5)//打击行为
+                if (mag > 2.5) // Treat this as a hit.
                     HitHandle();
             }
         }
@@ -71,7 +71,7 @@ public class KeyboardController : MonoSingleton<KeyboardController>
 
     private void HitHandle()
     {
-        //声音处理
+        // Play a random key hit sound.
         int randomIndex = Random.Range(0, sounds.Count);
         _as.clip = sounds[randomIndex];
         _as.Play();
@@ -84,9 +84,9 @@ public class KeyboardController : MonoSingleton<KeyboardController>
         }
         else if(actualHit == requireHit)
         {
-            actualHit++;//让再次打击键盘的时候，不触发这个if
+            actualHit++; // Prevent this branch from firing again on extra hits.
             _star.Play();
-            //发送工作完成通知
+            // Notify that work for this stage is complete.
             EventManager.DispatchEvent<string>(EventCommon.PREPARE_CHANGE_TIME,"work");
         }
     }

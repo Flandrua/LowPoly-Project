@@ -1,4 +1,4 @@
-using System.Collections;
+锘縰sing System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -27,7 +27,7 @@ public class MainItemManager : MonoSingleton<MainItemManager>
     {
         if (_item.Count == 0)
         {
-            Debug.LogWarning("item 已用完");
+            Debug.LogWarning("Item pool is empty.");
             return;
         }
         int randomIndex = Random.Range(0, _item.Count);
@@ -36,7 +36,7 @@ public class MainItemManager : MonoSingleton<MainItemManager>
         _item.RemoveAt(randomIndex);
         ItemData itemData = _nextItem.GetComponent<ItemData>();
         if (itemData.isPad) {
-            //如果是鼠标垫，就让实际需要工作的次数除以2
+            // A mouse pad halves the required number of keyboard hits.
             KeyboardController.Instance.requireHit = (KeyboardController.Instance.requireHit / 2);
         }
     }

@@ -1,10 +1,10 @@
-using System.Collections;
+锘縰sing System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class FSMOnExit : StateMachineBehaviour
 {
-    //事件去EventCommon注册，此处msg填事件的string名字，
+    // Register event names in EventCommon; fill each entry with the string event key.
     public string[] onExitMessage;
     // OnStateEnter is called when a transition starts and the state machine starts to evaluate this state
     //override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)

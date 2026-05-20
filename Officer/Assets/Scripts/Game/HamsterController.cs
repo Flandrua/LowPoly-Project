@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 
 using System.Collections.Generic;
 
@@ -108,11 +108,11 @@ public class HamsterController : MonoSingleton<HamsterController>
 
 
 
-    //???????
+    // Cached references.
 
-    //???????
+    // Runtime state.
 
-    //???????
+    // Timers and audio.
 
 
 
@@ -124,7 +124,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
     private GameObject _favEffect;
 
-    private Scrollbar _bar;//????????????
+    private Scrollbar _bar; // Favorability progress bar.
 
     private ParticleSystem _heart;
 
@@ -144,9 +144,9 @@ public class HamsterController : MonoSingleton<HamsterController>
 
 
 
-    public float stayRequireTime = 3;//??????????????
+    public float stayRequireTime = 3; // Required petting time before the interaction completes.
 
-    private float stayTime = 0;//??????
+    private float stayTime = 0; // Accumulated petting time.
 
     private AudioSource _as;
 
@@ -533,7 +533,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
                 Debug.Log("get favor");
 
-                //??GM???????
+                // Notify the GameManager that this stage can advance.
 
                 EventManager.DispatchEvent(EventCommon.PREPARE_CHANGE_TIME,"play");
 
@@ -565,13 +565,13 @@ public class HamsterController : MonoSingleton<HamsterController>
 
             {
 
-                // ??????????
+                // Read the player's current movement speed.
 
                 Vector3 velocity = calculator.InstantaneousSpeed;
 
                 float mag = velocity.magnitude;
 
-                if (mag > 2.5)//??????
+                if (mag > 2.5) // Treat a fast collision as a hit.
 
                 {
 
@@ -589,7 +589,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
                 }
 
-                else if (stayTime < stayRequireTime&&MouseManager.Instance.canSwitchTime==false)//???????,???????????????????
+                else if (stayTime < stayRequireTime&&MouseManager.Instance.canSwitchTime==false) // Enter play mode only before petting is complete and before time can advance.
 
                 {
 
@@ -599,11 +599,11 @@ public class HamsterController : MonoSingleton<HamsterController>
 
                     _animator.Play("Eyes_Happy", _animator.GetLayerIndex("Shapekey"));
 
-                    TimeManager.Instance.RemoveTask(BarHide, this);//???????????
+                    TimeManager.Instance.RemoveTask(BarHide, this); // Cancel any pending bar hide task.
 
                     _favEffect.SetActive(true);
 
-                    TimeManager.Instance.AddTask(5,false, BarHide, this);//5???????Bar
+                    TimeManager.Instance.AddTask(5,false, BarHide, this); // Hide the bar after 5 seconds.
 
                 }
 
@@ -629,7 +629,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
             _as.Play();
 
-            EventManager.DispatchEvent(EventCommon.HAMSTER_EATING, true);//??SnackManager???????????
+            EventManager.DispatchEvent(EventCommon.HAMSTER_EATING, true); // Pause snack visuals while the hamster is eating.
 
 
 
@@ -665,7 +665,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
             isPlay = false;
 
-            if (stayTime < stayRequireTime)//?????????????3?????????
+            if (stayTime < stayRequireTime) // Reset progress if the player leaves before finishing the petting timer.
 
             {
 
@@ -687,7 +687,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
             isEating = false;
 
-            EventManager.DispatchEvent(EventCommon.HAMSTER_EATING, false);//??SnackManager???????????
+            EventManager.DispatchEvent(EventCommon.HAMSTER_EATING, false); // Resume snack visuals after eating ends.
 
         }
 
@@ -699,7 +699,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
     /// <summary>
 
-    /// ????hover????????????????
+    /// Switch the body animation while the hamster is idle and not being interacted with.
 
     /// </summary>
 
@@ -737,7 +737,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
     /// <summary>
 
-    /// ????hover?????????????????
+    /// Switch the eye animation while the hamster is idle and not being interacted with.
 
     /// </summary>
 
@@ -805,7 +805,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
     /// <summary>
 
-    /// ?????
+    /// Adjust favorability.
 
     /// </summary>
 
@@ -831,7 +831,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
     /// <summary>
 
-    /// ??????HP,?????+=value??????????value????????
+    /// Adjust HP. Positive values heal, negative values deal damage.
 
     /// </summary>
 
@@ -851,7 +851,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
 
 
-        //????????????????????????????????
+        // Play hit feedback before applying the HP change.
 
         _as.clip = hit;
 
@@ -877,7 +877,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
             _animator.SetTrigger("damage");
 
-            // ????HamsterHit??
+            // Play a random HamsterHit voice line.
 
             PlayRandomTTS("TTS/HamsterHit");
 
@@ -899,7 +899,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
 
 
-        //??????????????????
+        // Keep the saved HP in sync with the death state.
 
         DataCenter.Instance.GameData.HamsterData.hp = 0;
 
@@ -951,7 +951,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
         GetFavorability(snack.extraFavorability);
 
-        //???????????????????
+        // Apply special snack effects before the hamster walks away.
 
         if(snack.isPoisonous)
 
@@ -1011,7 +1011,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
         }
 
-        //??????????????
+        // Default finish-eating movement sequence.
 
         _animator.Play("Walk");
 
@@ -1029,17 +1029,17 @@ public class HamsterController : MonoSingleton<HamsterController>
 
     /// <summary>
 
-    /// ?????????TTS??
+    /// Play a random TTS clip from a Resources folder.
 
     /// </summary>
 
-    /// <param name="resourcePath">Resources??????????????</param>
+    /// <param name="resourcePath">Resources path without the file extension.</param>
 
     private void PlayRandomTTS(string resourcePath)
 
     {
 
-        // ??????????????
+        // Load every candidate clip in the folder.
 
         AudioClip[] clips = Resources.LoadAll<AudioClip>(resourcePath);
 
@@ -1049,7 +1049,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
         {
 
-            Debug.LogWarning($"HamsterController: ??? {resourcePath} ????????");
+            Debug.LogWarning($"HamsterController: no TTS clips found at {resourcePath}.");
 
             return;
 
@@ -1057,7 +1057,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
 
 
-        // ????????
+        // Pick one clip at random.
 
         int randomIndex = Random.Range(0, clips.Length);
 
@@ -1065,7 +1065,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
 
 
-        // ??TTSManager??
+        // Hand the clip off to the shared TTS manager.
 
         if (TTSManager.Instance != null && selectedClip != null)
 
@@ -1079,7 +1079,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
         {
 
-            Debug.LogWarning("HamsterController: TTSManager???????????");
+            Debug.LogWarning("HamsterController: TTSManager is missing or the selected clip is null.");
 
         }
 

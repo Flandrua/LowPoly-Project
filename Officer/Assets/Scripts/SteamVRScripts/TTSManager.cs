@@ -1,30 +1,30 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// TTSÓïÒô¹ÜÀíÆ÷£¬µ¥ÀıÄ£Ê½
-/// ÓÃÓÚ²¥·ÅÎÄ±¾×ªÓïÒô£¨TTS£©ÒôÆµ
+/// TTSè¯­éŸ³ç®¡ç†å™¨ï¼Œå•ä¾‹æ¨¡å¼
+/// ç”¨äºæ’­æ”¾æ–‡æœ¬è½¬è¯­éŸ³ï¼ˆTTSï¼‰éŸ³é¢‘
 /// </summary>
 public class TTSManager : MonoSingleton<TTSManager>
 {
-    [Header("ÒôÆµÉèÖÃ")]
-    [Tooltip("ÓÃÓÚ²¥·ÅTTSÒôÆµµÄAudioSource×é¼ş")]
+    [Header("éŸ³é¢‘è®¾ç½®")]
+    [Tooltip("ç”¨äºæ’­æ”¾TTSéŸ³é¢‘çš„AudioSourceç»„ä»¶")]
     private AudioSource audioSource;
 
-    [Tooltip("ÊÇ·ñÔÚ²¥·ÅÊ±ÔİÍ£ÆäËûÒôÆµ")]
+    [Tooltip("æ˜¯å¦åœ¨æ’­æ”¾æ—¶æš‚åœå…¶ä»–éŸ³é¢‘")]
     public bool pauseOtherAudio = false;
 
-    [Header("ÒôÁ¿ÉèÖÃ")]
+    [Header("éŸ³é‡è®¾ç½®")]
     [Range(0f, 1f)]
-    [Tooltip("TTSÒôÁ¿")]
+    [Tooltip("TTSéŸ³é‡")]
     public float volume = 1f;
 
     private AudioSource[] allAudioSources;
     private const string DefaultCategory = "";
     private string currentCategory = DefaultCategory;
 
-    // ÒôÆµ²¥·Å¶ÓÁĞÊı¾İ½á¹¹
+    // éŸ³é¢‘æ’­æ”¾é˜Ÿåˆ—æ•°æ®ç»“æ„
     private class QueuedAudio
     {
         public AudioClip clip;
@@ -39,38 +39,38 @@ public class TTSManager : MonoSingleton<TTSManager>
         }
     }
 
-    // ÒôÆµ²¥·Å¶ÓÁĞ
+    // éŸ³é¢‘æ’­æ”¾é˜Ÿåˆ—
     private Queue<QueuedAudio> audioQueue = new Queue<QueuedAudio>();
-    private bool isProcessingQueue = false; // ±ê¼ÇÊÇ·ñÕıÔÚ´¦Àí¶ÓÁĞ
+    private bool isProcessingQueue = false; // æ ‡è®°æ˜¯å¦æ­£åœ¨å¤„ç†é˜Ÿåˆ—
 
     /// <summary>
-    /// ³õÊ¼»¯TTS¹ÜÀíÆ÷
+    /// åˆå§‹åŒ–TTSç®¡ç†å™¨
     /// </summary>
     public override void Init()
     {
         base.Init();
 
-        // È·±£¶ÔÏóÔÚ³¡¾°ÇĞ»»Ê±²»±»Ïú»Ù
+        // ç¡®ä¿å¯¹è±¡åœ¨åœºæ™¯åˆ‡æ¢æ—¶ä¸è¢«é”€æ¯
         DontDestroyOnLoad(gameObject);
 
-        // ´´½¨»ò»ñÈ¡AudioSource×é¼ş
+        // åˆ›å»ºæˆ–è·å–AudioSourceç»„ä»¶
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
         {
             audioSource = gameObject.AddComponent<AudioSource>();
         }
 
-        // ÅäÖÃAudioSource
+        // é…ç½®AudioSource
         audioSource.playOnAwake = false;
         audioSource.volume = volume;
-        audioSource.spatialBlend = 0f; // 2DÒôĞ§
+        audioSource.spatialBlend = 0f; // 2DéŸ³æ•ˆ
     }
 
     /// <summary>
-    /// ²¥·ÅTTSÓïÒô
+    /// æ’­æ”¾TTSè¯­éŸ³
     /// </summary>
-    /// <param name="audioClip">Òª²¥·ÅµÄÒôÆµÆ¬¶Î</param>
-    /// <param name="onComplete">²¥·ÅÍê³ÉºóµÄ»Øµ÷£¨¿ÉÑ¡£©</param>
+    /// <param name="audioClip">è¦æ’­æ”¾çš„éŸ³é¢‘ç‰‡æ®µ</param>
+    /// <param name="onComplete">æ’­æ”¾å®Œæˆåçš„å›è°ƒï¼ˆå¯é€‰ï¼‰</param>
     public void PlayTTS(AudioClip audioClip, System.Action onComplete = null)
     {
         PlayTTS(audioClip, DefaultCategory, onComplete);
@@ -86,7 +86,7 @@ public class TTSManager : MonoSingleton<TTSManager>
 
         if (audioSource == null)
         {
-            Debug.LogError("TTSManager: AudioSource?????????");
+            Debug.LogError("TTSManager: AudioSource is missing.");
             return;
         }
 
@@ -119,16 +119,16 @@ public class TTSManager : MonoSingleton<TTSManager>
         PlayTTS(audioClip, DefaultCategory, null);
     }
     /// <summary>
-    /// ²¥·ÅTTSÓïÒô£¨Í¨¹ı×ÊÔ´Â·¾¶£©
+    /// æ’­æ”¾TTSè¯­éŸ³ï¼ˆé€šè¿‡èµ„æºè·¯å¾„ï¼‰
     /// </summary>
-    /// <param name="audioPath">ResourcesÎÄ¼ş¼ĞÏÂµÄÒôÆµ×ÊÔ´Â·¾¶£¨²»º¬À©Õ¹Ãû£©</param>
-    /// <param name="onComplete">²¥·ÅÍê³ÉºóµÄ»Øµ÷£¨¿ÉÑ¡£©</param>
+    /// <param name="audioPath">Resourcesæ–‡ä»¶å¤¹ä¸‹çš„éŸ³é¢‘èµ„æºè·¯å¾„ï¼ˆä¸å«æ‰©å±•åï¼‰</param>
+    /// <param name="onComplete">æ’­æ”¾å®Œæˆåçš„å›è°ƒï¼ˆå¯é€‰ï¼‰</param>
     public void PlayTTS(string audioPath, System.Action onComplete = null)
     {
         AudioClip clip = Resources.Load<AudioClip>(audioPath);
         if (clip == null)
         {
-            Debug.LogError($"TTSManager: ÎŞ·¨¼ÓÔØÒôÆµ×ÊÔ´: {audioPath}");
+            Debug.LogError($"TTSManager: æ— æ³•åŠ è½½éŸ³é¢‘èµ„æº: {audioPath}");
             return;
         }
 
@@ -137,7 +137,7 @@ public class TTSManager : MonoSingleton<TTSManager>
 
 
     /// <summary>
-    /// Í£Ö¹µ±Ç°²¥·ÅµÄÒôÆµ£¨ÄÚ²¿·½·¨£¬²»Ó°Ïì¶ÓÁĞ£©
+    /// åœæ­¢å½“å‰æ’­æ”¾çš„éŸ³é¢‘ï¼ˆå†…éƒ¨æ–¹æ³•ï¼Œä¸å½±å“é˜Ÿåˆ—ï¼‰
     /// </summary>
     private void StopCurrentPlayback()
     {
@@ -146,10 +146,10 @@ public class TTSManager : MonoSingleton<TTSManager>
             audioSource.Stop();
         }
 
-        // Í£Ö¹ËùÓĞµÈ´ıĞ­³Ì
+        // åœæ­¢æ‰€æœ‰ç­‰å¾…åç¨‹
         StopAllCoroutines();
 
-        // »Ö¸´ÆäËûÒôÆµ
+        // æ¢å¤å…¶ä»–éŸ³é¢‘
         if (pauseOtherAudio)
         {
             ResumeOtherAudio();
@@ -157,19 +157,19 @@ public class TTSManager : MonoSingleton<TTSManager>
     }
 
     /// <summary>
-    /// Í£Ö¹µ±Ç°²¥·ÅµÄTTS²¢Çå¿Õ¶ÓÁĞ
+    /// åœæ­¢å½“å‰æ’­æ”¾çš„TTSå¹¶æ¸…ç©ºé˜Ÿåˆ—
     /// </summary>
     public void StopTTS()
     {
         StopCurrentPlayback();
         
-        // Çå¿Õ¶ÓÁĞ
+        // æ¸…ç©ºé˜Ÿåˆ—
         ClearQueue();
         isProcessingQueue = false;
     }
 
     /// <summary>
-    /// ÔİÍ£µ±Ç°²¥·ÅµÄTTS
+    /// æš‚åœå½“å‰æ’­æ”¾çš„TTS
     /// </summary>
     public void PauseTTS()
     {
@@ -180,7 +180,7 @@ public class TTSManager : MonoSingleton<TTSManager>
     }
 
     /// <summary>
-    /// »Ö¸´²¥·ÅTTS
+    /// æ¢å¤æ’­æ”¾TTS
     /// </summary>
     public void ResumeTTS()
     {
@@ -191,18 +191,18 @@ public class TTSManager : MonoSingleton<TTSManager>
     }
 
     /// <summary>
-    /// ¼ì²éÊÇ·ñÕıÔÚ²¥·ÅTTS
+    /// æ£€æŸ¥æ˜¯å¦æ­£åœ¨æ’­æ”¾TTS
     /// </summary>
-    /// <returns>ÊÇ·ñÕıÔÚ²¥·Å</returns>
+    /// <returns>æ˜¯å¦æ­£åœ¨æ’­æ”¾</returns>
     public bool IsPlaying()
     {
         return audioSource != null && audioSource.isPlaying;
     }
 
     /// <summary>
-    /// ÉèÖÃTTSÒôÁ¿
+    /// è®¾ç½®TTSéŸ³é‡
     /// </summary>
-    /// <param name="newVolume">ĞÂÒôÁ¿Öµ£¨0-1£©</param>
+    /// <param name="newVolume">æ–°éŸ³é‡å€¼ï¼ˆ0-1ï¼‰</param>
     public void SetVolume(float newVolume)
     {
         volume = Mathf.Clamp01(newVolume);
@@ -213,7 +213,7 @@ public class TTSManager : MonoSingleton<TTSManager>
     }
 
     /// <summary>
-    /// ÔİÍ£³¡¾°ÖĞÆäËûËùÓĞÒôÆµ
+    /// æš‚åœåœºæ™¯ä¸­å…¶ä»–æ‰€æœ‰éŸ³é¢‘
     /// </summary>
     private void PauseOtherAudio()
     {
@@ -228,7 +228,7 @@ public class TTSManager : MonoSingleton<TTSManager>
     }
 
     /// <summary>
-    /// »Ö¸´³¡¾°ÖĞÆäËûËùÓĞÒôÆµ
+    /// æ¢å¤åœºæ™¯ä¸­å…¶ä»–æ‰€æœ‰éŸ³é¢‘
     /// </summary>
     private void ResumeOtherAudio()
     {
@@ -245,54 +245,54 @@ public class TTSManager : MonoSingleton<TTSManager>
     }
 
     /// <summary>
-    /// ²¥·ÅµÚÒ»¸öÒôÆµ£¬Íê³ÉºóÁ¢¼´²¥·ÅµÚ¶ş¸öÒôÆµ
+    /// æ’­æ”¾ç¬¬ä¸€ä¸ªéŸ³é¢‘ï¼Œå®Œæˆåç«‹å³æ’­æ”¾ç¬¬äºŒä¸ªéŸ³é¢‘
     /// </summary>
-    /// <param name="firstClip">µÚÒ»¸öÒôÆµÆ¬¶Î</param>
-    /// <param name="nextClip">µÚ¶ş¸öÒôÆµÆ¬¶Î£¨µÚÒ»¸ö²¥·ÅÍêºó²¥·Å£©</param>
-    /// <param name="onComplete">ËùÓĞÒôÆµ²¥·ÅÍê³ÉºóµÄ»Øµ÷£¨¿ÉÑ¡£©</param>
+    /// <param name="firstClip">ç¬¬ä¸€ä¸ªéŸ³é¢‘ç‰‡æ®µ</param>
+    /// <param name="nextClip">ç¬¬äºŒä¸ªéŸ³é¢‘ç‰‡æ®µï¼ˆç¬¬ä¸€ä¸ªæ’­æ”¾å®Œåæ’­æ”¾ï¼‰</param>
+    /// <param name="onComplete">æ‰€æœ‰éŸ³é¢‘æ’­æ”¾å®Œæˆåçš„å›è°ƒï¼ˆå¯é€‰ï¼‰</param>
     public void PlayTTSChain(AudioClip firstClip, AudioClip nextClip, System.Action onComplete = null)
     {
         if (firstClip == null)
         {
-            Debug.LogWarning("TTSManager: µÚÒ»¸öÒôÆµÆ¬¶ÎÎª¿Õ£¬ÎŞ·¨²¥·Å");
+            Debug.LogWarning("TTSManager: ç¬¬ä¸€ä¸ªéŸ³é¢‘ç‰‡æ®µä¸ºç©ºï¼Œæ— æ³•æ’­æ”¾");
             return;
         }
 
         if (nextClip == null)
         {
-            Debug.LogWarning("TTSManager: µÚ¶ş¸öÒôÆµÆ¬¶ÎÎª¿Õ£¬½«Ö»²¥·ÅµÚÒ»¸öÒôÆµ");
+            Debug.LogWarning("TTSManager: ç¬¬äºŒä¸ªéŸ³é¢‘ç‰‡æ®µä¸ºç©ºï¼Œå°†åªæ’­æ”¾ç¬¬ä¸€ä¸ªéŸ³é¢‘");
             PlayTTS(firstClip, onComplete);
             return;
         }
 
-        // ²¥·ÅµÚÒ»¸öÒôÆµ£¬Íê³Éºó²¥·ÅµÚ¶ş¸ö
+        // æ’­æ”¾ç¬¬ä¸€ä¸ªéŸ³é¢‘ï¼Œå®Œæˆåæ’­æ”¾ç¬¬äºŒä¸ª
         PlayTTS(firstClip, () =>
         {
-            // µÚÒ»¸öÒôÆµ²¥·ÅÍê³Éºó£¬Á¢¼´²¥·ÅµÚ¶ş¸ö
+            // ç¬¬ä¸€ä¸ªéŸ³é¢‘æ’­æ”¾å®Œæˆåï¼Œç«‹å³æ’­æ”¾ç¬¬äºŒä¸ª
             PlayTTS(nextClip, onComplete);
         });
     }
 
     /// <summary>
-    /// ²¥·ÅµÚÒ»¸öÒôÆµ£¬Íê³ÉºóÁ¢¼´²¥·ÅµÚ¶ş¸öÒôÆµ£¨Í¨¹ı×ÊÔ´Â·¾¶£©
+    /// æ’­æ”¾ç¬¬ä¸€ä¸ªéŸ³é¢‘ï¼Œå®Œæˆåç«‹å³æ’­æ”¾ç¬¬äºŒä¸ªéŸ³é¢‘ï¼ˆé€šè¿‡èµ„æºè·¯å¾„ï¼‰
     /// </summary>
-    /// <param name="firstPath">µÚÒ»¸öÒôÆµ×ÊÔ´Â·¾¶</param>
-    /// <param name="nextPath">µÚ¶ş¸öÒôÆµ×ÊÔ´Â·¾¶£¨µÚÒ»¸ö²¥·ÅÍêºó²¥·Å£©</param>
-    /// <param name="onComplete">ËùÓĞÒôÆµ²¥·ÅÍê³ÉºóµÄ»Øµ÷£¨¿ÉÑ¡£©</param>
+    /// <param name="firstPath">ç¬¬ä¸€ä¸ªéŸ³é¢‘èµ„æºè·¯å¾„</param>
+    /// <param name="nextPath">ç¬¬äºŒä¸ªéŸ³é¢‘èµ„æºè·¯å¾„ï¼ˆç¬¬ä¸€ä¸ªæ’­æ”¾å®Œåæ’­æ”¾ï¼‰</param>
+    /// <param name="onComplete">æ‰€æœ‰éŸ³é¢‘æ’­æ”¾å®Œæˆåçš„å›è°ƒï¼ˆå¯é€‰ï¼‰</param>
     public void PlayTTSChain(string firstPath, string nextPath, System.Action onComplete = null)
     {
         AudioClip firstClip = Resources.Load<AudioClip>(firstPath);
         if (firstClip == null)
         {
-            Debug.LogError($"TTSManager: ÎŞ·¨¼ÓÔØµÚÒ»¸öÒôÆµ×ÊÔ´: {firstPath}");
+            Debug.LogError($"TTSManager: æ— æ³•åŠ è½½ç¬¬ä¸€ä¸ªéŸ³é¢‘èµ„æº: {firstPath}");
             return;
         }
 
         AudioClip nextClip = Resources.Load<AudioClip>(nextPath);
         if (nextClip == null)
         {
-            Debug.LogError($"TTSManager: ÎŞ·¨¼ÓÔØµÚ¶ş¸öÒôÆµ×ÊÔ´: {nextPath}");
-            // Èç¹ûµÚ¶ş¸ö¼ÓÔØÊ§°Ü£¬ÖÁÉÙ²¥·ÅµÚÒ»¸ö
+            Debug.LogError($"TTSManager: æ— æ³•åŠ è½½ç¬¬äºŒä¸ªéŸ³é¢‘èµ„æº: {nextPath}");
+            // å¦‚æœç¬¬äºŒä¸ªåŠ è½½å¤±è´¥ï¼Œè‡³å°‘æ’­æ”¾ç¬¬ä¸€ä¸ª
             PlayTTS(firstClip, onComplete);
             return;
         }
@@ -301,15 +301,15 @@ public class TTSManager : MonoSingleton<TTSManager>
     }
 
     /// <summary>
-    /// ²¥·ÅÒôÆµ¶ÓÁĞ£¨°´Ë³Ğò²¥·Å¶à¸öÒôÆµ£©
+    /// æ’­æ”¾éŸ³é¢‘é˜Ÿåˆ—ï¼ˆæŒ‰é¡ºåºæ’­æ”¾å¤šä¸ªéŸ³é¢‘ï¼‰
     /// </summary>
-    /// <param name="audioClips">ÒôÆµÆ¬¶ÎÊı×é</param>
-    /// <param name="onComplete">ËùÓĞÒôÆµ²¥·ÅÍê³ÉºóµÄ»Øµ÷£¨¿ÉÑ¡£©</param>
+    /// <param name="audioClips">éŸ³é¢‘ç‰‡æ®µæ•°ç»„</param>
+    /// <param name="onComplete">æ‰€æœ‰éŸ³é¢‘æ’­æ”¾å®Œæˆåçš„å›è°ƒï¼ˆå¯é€‰ï¼‰</param>
     public void PlayTTSQueue(AudioClip[] audioClips, System.Action onComplete = null)
     {
         if (audioClips == null || audioClips.Length == 0)
         {
-            Debug.LogWarning("TTSManager: ÒôÆµ¶ÓÁĞÎª¿Õ");
+            Debug.LogWarning("TTSManager: éŸ³é¢‘é˜Ÿåˆ—ä¸ºç©º");
             onComplete?.Invoke();
             return;
         }
@@ -318,13 +318,13 @@ public class TTSManager : MonoSingleton<TTSManager>
     }
 
     /// <summary>
-    /// ²¥·ÅÒôÆµ¶ÓÁĞĞ­³Ì
+    /// æ’­æ”¾éŸ³é¢‘é˜Ÿåˆ—åç¨‹
     /// </summary>
     private IEnumerator PlayTTSQueueCoroutine(AudioClip[] audioClips, int currentIndex, System.Action onComplete)
     {
         if (currentIndex >= audioClips.Length)
         {
-            // ËùÓĞÒôÆµ²¥·ÅÍê³É
+            // æ‰€æœ‰éŸ³é¢‘æ’­æ”¾å®Œæˆ
             onComplete?.Invoke();
             yield break;
         }
@@ -332,40 +332,40 @@ public class TTSManager : MonoSingleton<TTSManager>
         AudioClip currentClip = audioClips[currentIndex];
         if (currentClip == null)
         {
-            Debug.LogWarning($"TTSManager: ÒôÆµ¶ÓÁĞÖĞË÷Òı {currentIndex} µÄÒôÆµÆ¬¶ÎÎª¿Õ£¬Ìø¹ı");
-            // Ìø¹ı¿ÕÒôÆµ£¬²¥·ÅÏÂÒ»¸ö
+            Debug.LogWarning($"TTSManager: éŸ³é¢‘é˜Ÿåˆ—ä¸­ç´¢å¼• {currentIndex} çš„éŸ³é¢‘ç‰‡æ®µä¸ºç©ºï¼Œè·³è¿‡");
+            // è·³è¿‡ç©ºéŸ³é¢‘ï¼Œæ’­æ”¾ä¸‹ä¸€ä¸ª
             StartCoroutine(PlayTTSQueueCoroutine(audioClips, currentIndex + 1, onComplete));
             yield break;
         }
 
-        // ²¥·Åµ±Ç°ÒôÆµ
+        // æ’­æ”¾å½“å‰éŸ³é¢‘
         bool isPlaying = true;
         PlayTTS(currentClip, () => { isPlaying = false; });
 
-        // µÈ´ıµ±Ç°ÒôÆµ²¥·ÅÍê³É
+        // ç­‰å¾…å½“å‰éŸ³é¢‘æ’­æ”¾å®Œæˆ
         yield return new WaitWhile(() => isPlaying);
 
-        // ²¥·ÅÏÂÒ»¸öÒôÆµ
+        // æ’­æ”¾ä¸‹ä¸€ä¸ªéŸ³é¢‘
         StartCoroutine(PlayTTSQueueCoroutine(audioClips, currentIndex + 1, onComplete));
     }
 
     /// <summary>
-    /// ½«ÒôÆµÌí¼Óµ½²¥·Å¶ÓÁĞ
+    /// å°†éŸ³é¢‘æ·»åŠ åˆ°æ’­æ”¾é˜Ÿåˆ—
     /// </summary>
-    /// <param name="audioClip">ÒªÌí¼ÓµÄÒôÆµÆ¬¶Î</param>
-    /// <param name="onComplete">¸ÃÒôÆµ²¥·ÅÍê³ÉºóµÄ»Øµ÷£¨¿ÉÑ¡£©</param>
+    /// <param name="audioClip">è¦æ·»åŠ çš„éŸ³é¢‘ç‰‡æ®µ</param>
+    /// <param name="onComplete">è¯¥éŸ³é¢‘æ’­æ”¾å®Œæˆåçš„å›è°ƒï¼ˆå¯é€‰ï¼‰</param>
     public void EnqueueTTS(AudioClip audioClip, System.Action onComplete = null)
     {
         if (audioClip == null)
         {
-            Debug.LogWarning("TTSManager: ÒôÆµÆ¬¶ÎÎª¿Õ£¬ÎŞ·¨Ìí¼Óµ½¶ÓÁĞ");
+            Debug.LogWarning("TTSManager: éŸ³é¢‘ç‰‡æ®µä¸ºç©ºï¼Œæ— æ³•æ·»åŠ åˆ°é˜Ÿåˆ—");
             return;
         }
 
-        // ½«ÒôÆµºÍ»Øµ÷Ìí¼Óµ½¶ÓÁĞ
+        // å°†éŸ³é¢‘å’Œå›è°ƒæ·»åŠ åˆ°é˜Ÿåˆ—
         audioQueue.Enqueue(new QueuedAudio(audioClip, DefaultCategory, onComplete));
 
-        // Èç¹ûµ±Ç°Ã»ÓĞ²¥·ÅÒôÆµ£¬Á¢¼´¿ªÊ¼´¦Àí¶ÓÁĞ
+        // å¦‚æœå½“å‰æ²¡æœ‰æ’­æ”¾éŸ³é¢‘ï¼Œç«‹å³å¼€å§‹å¤„ç†é˜Ÿåˆ—
         if (!isProcessingQueue && !IsPlaying())
         {
             ProcessQueue();
@@ -373,16 +373,16 @@ public class TTSManager : MonoSingleton<TTSManager>
     }
 
     /// <summary>
-    /// ½«ÒôÆµÌí¼Óµ½²¥·Å¶ÓÁĞ£¨Í¨¹ı×ÊÔ´Â·¾¶£©
+    /// å°†éŸ³é¢‘æ·»åŠ åˆ°æ’­æ”¾é˜Ÿåˆ—ï¼ˆé€šè¿‡èµ„æºè·¯å¾„ï¼‰
     /// </summary>
-    /// <param name="audioPath">ResourcesÎÄ¼ş¼ĞÏÂµÄÒôÆµ×ÊÔ´Â·¾¶£¨²»º¬À©Õ¹Ãû£©</param>
-    /// <param name="onComplete">¸ÃÒôÆµ²¥·ÅÍê³ÉºóµÄ»Øµ÷£¨¿ÉÑ¡£©</param>
+    /// <param name="audioPath">Resourcesæ–‡ä»¶å¤¹ä¸‹çš„éŸ³é¢‘èµ„æºè·¯å¾„ï¼ˆä¸å«æ‰©å±•åï¼‰</param>
+    /// <param name="onComplete">è¯¥éŸ³é¢‘æ’­æ”¾å®Œæˆåçš„å›è°ƒï¼ˆå¯é€‰ï¼‰</param>
     public void EnqueueTTS(string audioPath, System.Action onComplete = null)
     {
         AudioClip clip = Resources.Load<AudioClip>(audioPath);
         if (clip == null)
         {
-            Debug.LogError($"TTSManager: ÎŞ·¨¼ÓÔØÒôÆµ×ÊÔ´: {audioPath}");
+            Debug.LogError($"TTSManager: æ— æ³•åŠ è½½éŸ³é¢‘èµ„æº: {audioPath}");
             return;
         }
 
@@ -390,24 +390,24 @@ public class TTSManager : MonoSingleton<TTSManager>
     }
 
     /// <summary>
-    /// ´¦Àí²¥·Å¶ÓÁĞ£¬²¥·ÅÏÂÒ»¸öÒôÆµ
+    /// å¤„ç†æ’­æ”¾é˜Ÿåˆ—ï¼Œæ’­æ”¾ä¸‹ä¸€ä¸ªéŸ³é¢‘
     /// </summary>
     private void ProcessQueue()
     {
-        // Èç¹û¶ÓÁĞÎª¿Õ£¬Í£Ö¹´¦Àí
+        // å¦‚æœé˜Ÿåˆ—ä¸ºç©ºï¼Œåœæ­¢å¤„ç†
         if (audioQueue.Count == 0)
         {
             isProcessingQueue = false;
             return;
         }
 
-        // Èç¹ûÕıÔÚ²¥·Å£¬µÈ´ıµ±Ç°²¥·ÅÍê³É£¨ProcessQueue»áÔÚ²¥·ÅÍê³Éºó±»µ÷ÓÃ£©
+        // å¦‚æœæ­£åœ¨æ’­æ”¾ï¼Œç­‰å¾…å½“å‰æ’­æ”¾å®Œæˆï¼ˆProcessQueueä¼šåœ¨æ’­æ”¾å®Œæˆåè¢«è°ƒç”¨ï¼‰
         if (IsPlaying())
         {
             return;
         }
 
-        // ´Ó¶ÓÁĞÖĞÈ¡³öÏÂÒ»¸öÒôÆµ²¢²¥·Å
+        // ä»é˜Ÿåˆ—ä¸­å–å‡ºä¸‹ä¸€ä¸ªéŸ³é¢‘å¹¶æ’­æ”¾
         QueuedAudio queuedAudio = audioQueue.Dequeue();
         if (queuedAudio != null && queuedAudio.clip != null)
         {
@@ -415,13 +415,13 @@ public class TTSManager : MonoSingleton<TTSManager>
         }
         else
         {
-            // Èç¹ûÒôÆµÎª¿Õ£¬¼ÌĞø´¦Àí¶ÓÁĞ
+            // å¦‚æœéŸ³é¢‘ä¸ºç©ºï¼Œç»§ç»­å¤„ç†é˜Ÿåˆ—
             ProcessQueue();
         }
     }
 
     /// <summary>
-    /// Çå¿Õ²¥·Å¶ÓÁĞ
+    /// æ¸…ç©ºæ’­æ”¾é˜Ÿåˆ—
     /// </summary>
     public void ClearQueue()
     {
@@ -451,37 +451,37 @@ public class TTSManager : MonoSingleton<TTSManager>
     }
 
     /// <summary>
-    /// »ñÈ¡¶ÓÁĞÖĞÊ£ÓàµÄÒôÆµÊıÁ¿
+    /// è·å–é˜Ÿåˆ—ä¸­å‰©ä½™çš„éŸ³é¢‘æ•°é‡
     /// </summary>
-    /// <returns>¶ÓÁĞÖĞÊ£ÓàµÄÒôÆµÊıÁ¿</returns>
+    /// <returns>é˜Ÿåˆ—ä¸­å‰©ä½™çš„éŸ³é¢‘æ•°é‡</returns>
     public int GetQueueCount()
     {
         return audioQueue.Count;
     }
 
     /// <summary>
-    /// ¼ì²é¶ÓÁĞÊÇ·ñÎª¿Õ
+    /// æ£€æŸ¥é˜Ÿåˆ—æ˜¯å¦ä¸ºç©º
     /// </summary>
-    /// <returns>¶ÓÁĞÊÇ·ñÎª¿Õ</returns>
+    /// <returns>é˜Ÿåˆ—æ˜¯å¦ä¸ºç©º</returns>
     public bool IsQueueEmpty()
     {
         return audioQueue.Count == 0;
     }
 
     /// <summary>
-    /// µÈ´ıÒôÆµ²¥·ÅÍê³ÉµÄĞ­³Ì
+    /// ç­‰å¾…éŸ³é¢‘æ’­æ”¾å®Œæˆçš„åç¨‹
     /// </summary>
     private IEnumerator WaitForAudioComplete(System.Action onComplete)
     {
         yield return new WaitWhile(() => audioSource.isPlaying);
 
-        // »Ö¸´ÆäËûÒôÆµ
+        // æ¢å¤å…¶ä»–éŸ³é¢‘
         if (pauseOtherAudio)
         {
             ResumeOtherAudio();
         }
 
-        // µ÷ÓÃ»Øµ÷
+        // è°ƒç”¨å›è°ƒ
         onComplete?.Invoke();
     }
 

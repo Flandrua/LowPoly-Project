@@ -1,4 +1,4 @@
-using UnityEngine;
+锘縰sing UnityEngine;
 
 public class InstantaneousSpeedCalculator : MonoBehaviour
 {
@@ -11,20 +11,20 @@ public class InstantaneousSpeedCalculator : MonoBehaviour
 
     void Start()
     {
-        // 初始化前一个位置为物体的初始位置
+        // Cache the starting position as the previous frame position.
         parent = transform.parent;
         previousPosition = parent.position;
     }
 
     void Update()
     {
-        // 获取当前帧的位置
+        // Read the current frame position.
         currentPosition = transform.position;
 
-        // 计算瞬时速度
+        // Compute instantaneous speed.
         instantaneousSpeed = (currentPosition - previousPosition) / Time.deltaTime;
 
-        // 更新前一个位置为当前帧的位置
+        // Store this frame position for the next update.
         previousPosition = currentPosition;
     }
 }

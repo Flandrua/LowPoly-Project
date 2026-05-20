@@ -1,4 +1,4 @@
-using System.Collections;
+锘縰sing System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using LitJson;
@@ -37,7 +37,7 @@ public class DataCenter : Singleton<DataCenter>
     GameData _gameData;
     public GameData GameData { get => _gameData; set => _gameData = value; }
     /// <summary>
-    /// 在PlayerManager初始化
+    /// Initialize player save data.
     /// </summary>
     public void InitData()
     {
@@ -55,7 +55,7 @@ public class DataCenter : Singleton<DataCenter>
     }
 
     /// <summary>
-    /// 储存数据
+    /// Save data to PlayerPrefs.
     /// </summary>
     public void SaveData()
     {
@@ -67,7 +67,7 @@ public class DataCenter : Singleton<DataCenter>
     }
 
     /// <summary>
-    /// 建立新的游戏数据
+    /// Create a new game data snapshot.
     /// </summary>
     public void NewData()
     {

@@ -1,4 +1,4 @@
-using System.Collections;
+锘縰sing System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -32,7 +32,7 @@ public class MouseManager : MonoSingleton<MouseManager>
     }
     private void CanSwitchTime(string str)
     {
-        //得让鼠标有高亮或者提示
+        // TODO: highlight the mouse or show a hint when time can advance.
         canSwitchTime = true;
     }
     private void OnTriggerEnter(Collider other)
@@ -42,10 +42,10 @@ public class MouseManager : MonoSingleton<MouseManager>
             InstantaneousSpeedCalculator calculator = other.GetComponent<InstantaneousSpeedCalculator>();
             if (calculator != null)
             {
-                // 获取速度并输出
+                // Read the current hit speed.
                 Vector3 velocity = calculator.InstantaneousSpeed;
                 float mag = velocity.magnitude;
-                if (mag > 2.5 && canSwitchTime)//打击行为
+                if (mag > 2.5 && canSwitchTime) // Treat this as a hit.
                 {
                     _as.Play();
                     EventManager.DispatchEvent<bool>(EventCommon.CHANGE_TIME, true);

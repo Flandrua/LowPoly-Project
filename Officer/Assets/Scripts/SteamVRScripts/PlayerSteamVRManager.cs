@@ -19,6 +19,7 @@ public class PlayerSteamVRManager : MonoSingleton<PlayerSteamVRManager>
     private Vector3 initialPosition;
     private Quaternion initialRotation;
     [SerializeField] private Color snackHintColor = new Color(0.68f, 0.87f, 1f, 0.1f);
+    [SerializeField] private Material snackHintMaterialTemplate;
     private MeshRenderer _snackHintRenderer;
     private Material _snackHintMaterial;
     private Ray _centerGazeRay;
@@ -126,7 +127,7 @@ public class PlayerSteamVRManager : MonoSingleton<PlayerSteamVRManager>
         }
 
         Material baseMaterial = _snackHintRenderer.sharedMaterial;
-        _snackHintMaterial = baseMaterial != null ? new Material(baseMaterial) : CreateFallbackSnackHintMaterial();
+        _snackHintMaterial = CreateSnackHintMaterial(baseMaterial);
         if (_snackHintMaterial == null)
         {
             return;
@@ -159,10 +160,57 @@ public class PlayerSteamVRManager : MonoSingleton<PlayerSteamVRManager>
         return null;
     }
 
-    private Material CreateFallbackSnackHintMaterial()
+    private Material CreateSnackHintMaterial(Material baseMaterial)
     {
-        Shader shader = Shader.Find("Standard");
-        return shader != null ? new Material(shader) : null;
+        if (snackHintMaterialTemplate != null)
+        {
+            return new Material(snackHintMaterialTemplate);
+        }
+
+        Shader shader = FindPreferredSnackHintShader();
+        if (shader != null)
+        {
+            return new Material(shader);
+        }
+
+        if (baseMaterial != null)
+        {
+            return new Material(baseMaterial);
+        }
+
+        return null;
+    }
+
+    private Shader FindPreferredSnackHintShader()
+    {
+        RenderPipelineAsset currentPipeline = GraphicsSettings.currentRenderPipeline;
+        bool isUrp = currentPipeline != null
+            && currentPipeline.GetType().Name.Contains("UniversalRenderPipelineAsset");
+        string[] shaderNames = isUrp
+            ? new[]
+            {
+                "Universal Render Pipeline/Unlit",
+                "Unlit/Transparent",
+                "Legacy Shaders/Transparent/Diffuse",
+                "Standard"
+            }
+            : new[]
+            {
+                "Legacy Shaders/Transparent/Diffuse",
+                "Unlit/Transparent",
+                "Standard"
+            };
+
+        for (int i = 0; i < shaderNames.Length; i++)
+        {
+            Shader shader = Shader.Find(shaderNames[i]);
+            if (shader != null)
+            {
+                return shader;
+            }
+        }
+
+        return null;
     }
 
     private void ApplySnackHintStyle(Material material)
@@ -192,6 +240,16 @@ public class PlayerSteamVRManager : MonoSingleton<PlayerSteamVRManager>
             material.SetFloat("_Surface", 1f);
         }
 
+        if (material.HasProperty("_Blend"))
+        {
+            material.SetFloat("_Blend", 0f);
+        }
+
+        if (material.HasProperty("_AlphaClip"))
+        {
+            material.SetFloat("_AlphaClip", 0f);
+        }
+
         if (material.HasProperty("_SrcBlend"))
         {
             material.SetInt("_SrcBlend", (int)BlendMode.SrcAlpha);
@@ -210,6 +268,7 @@ public class PlayerSteamVRManager : MonoSingleton<PlayerSteamVRManager>
         material.DisableKeyword("_ALPHATEST_ON");
         material.EnableKeyword("_ALPHABLEND_ON");
         material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        material.SetOverrideTag("RenderType", "Transparent");
         material.renderQueue = (int)RenderQueue.Transparent;
     }
 
@@ -324,3 +383,5 @@ public class PlayerSteamVRManager : MonoSingleton<PlayerSteamVRManager>
         return false;
     }
 }
+
+

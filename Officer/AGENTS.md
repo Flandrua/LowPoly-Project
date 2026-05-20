@@ -53,6 +53,7 @@
 - 当前项目已有 VR 输入控制脚本，如 `TestInput.cs`、`LaserPointerHandler.cs`、`PlayerSteamVRManager.cs`
 - 当前 `GameManager` 已暴露 `countDown` 倒计时参数，默认 60 秒；从第 2 天开始，阶段内会在 `Update` 中持续计时
 - 当前 `GameManager` 已暴露 `currentWorkProgress` 调试字段，并与 `DataCenter.GameData.PlayerData.workProgress` 和主监视器进度条保持同步
+- 当前 `GameManager` 已改为通过场景内 `No snack` 对象做超时后的次日提示，不再依赖外部音频资源路径；该提示只会被触发一次
 - 当前项目已新增“头显中心视野检测”项目侧实现：统一射线入口在 `PlayerSteamVRManager`，目标回调组件为 `CenterGazeCallback`
 - 当前项目同时保留了官方示例和自定义实现，修改前需分清“示例代码”与“项目实际使用代码”
 - `Assets/SteamVR/Simple Sample.unity` 是目前正常作业和默认回归测试场景
@@ -62,6 +63,7 @@
 - 工作进度链路：`GameManager.currentWorkProgress` ↔ `DataCenter.GameData.PlayerData.workProgress` → `EventCommon.UPDATE_MONITOR` → `MainMonitorData.UpdateInfo()` → 主监视器 `Scrollbar`
 - 阶段倒计时链路：`GameManager.countDown` → `GameManager.Update()` → `TickStageCountDown()`；仅从第 2 天开始生效，每次推进到下一阶段后重置
 - 超时奖惩链路：当天任意阶段超时后，`GameManager` 会记录当日超时状态；跨到下一天时调用 `SnackManager.SetContainerVisible(bool)`，超时则隐藏 `Container`，未超时则显示 `Container`
+- 超时提示链路：首次发生“前一天超时”并进入下一天时，`GameManager` 会显示场景内 `No snack` 对象；该对象依赖自身 `AudioSource.playOnAwake` 播放提示，并且只触发一次，后续不再由 `GameManager` 重复 show/hide
 - 零食提示链路：`MyInteractableSteamVR` → `EventCommon.PLAYER_SNACK_HINT` → `PlayerSteamVRManager.SetSnackHintVisible(bool)`
 - 提示区域挂点：`Player/Container/SteamVRObjects/VRCamera/FollowHead/HeadCollider`
 - `HeadCollider` 下会在运行时创建 `HeadColliderVisual` 子物体，并挂载球体 MeshRenderer 作为提示显示
@@ -106,6 +108,7 @@
    - 若涉及 `GameManager.currentWorkProgress`：运行时手动修改该值后，确认 `DataCenter.GameData.PlayerData.workProgress` 与主监视器进度条同步变化
    - 若涉及阶段倒计时：从第 2 天开始确认阶段内倒计时会运行，推进到下一阶段后确认计时器重置
    - 若涉及超时奖惩：确认某天内任意阶段超时后，下一天 `SnackManager.container` 被隐藏；若当天全程未超时，则下一天显示
+   - 若涉及 `No snack` 提示：确认第一次超时后的次日会显示场景内 `No snack` 对象并播放其自身音频；后续天数中不应被 `GameManager` 反复触发
    - 若涉及传送区域回调：传送到目标区域时，`onTeleportComplete` 是否触发；传送到其他区域或实际走出区域后，`onPlayerExitArea` 是否触发；若开启离开即锁定，确认该区域后续不可再次传送进入
    - 头显中心视线看向目标时，`onGazeEnter` 是否触发；移开后，`onGazeExit` 是否触发
    - 相关 UI Toggle / Button 是否触发正确逻辑

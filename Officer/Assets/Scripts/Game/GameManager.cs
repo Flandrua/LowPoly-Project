@@ -1,6 +1,9 @@
 using UnityEditor;
+using System;
+using System.Collections.Generic;
 
 using UnityEngine;
+using UnityEngine.Events;
 
 using UnityEngine.Serialization;
 
@@ -9,6 +12,29 @@ using UnityEngine.Serialization;
 public class GameManager : MonoSingleton<GameManager>
 
 {
+
+    private enum TimeStage
+    {
+        Morning = 0,
+        Afternoon = 1,
+        Night = 2
+    }
+
+    [Serializable]
+    private class TimeStageCallbackEntry
+    {
+        public TimeStage stage = TimeStage.Morning;
+        [Tooltip("0 means every day. 1+ means trigger only on that day.")]
+        [Min(0)] public int day = 0;
+        public UnityEvent onTriggered;
+
+        public bool Matches(int currentStage, int currentDay)
+        {
+            bool stageMatches = (int)stage == currentStage;
+            bool dayMatches = day <= 0 || day == currentDay;
+            return stageMatches && dayMatches;
+        }
+    }
 
     private int curTimeStage = 0;//0 = morning, 1 = afternoon, 2 = night
     public float countDown = 60f;
@@ -42,16 +68,21 @@ public class GameManager : MonoSingleton<GameManager>
     public GameObject ending;
 
     [SerializeField] private bool enableHamster = true;
+    [SerializeField] private List<TimeStageCallbackEntry> stageAdvanceCallbacks = new List<TimeStageCallbackEntry>();
 
     [SerializeField] private GameObject hamsterRoot;
 
     [SerializeField] private HamsterController hamsterController;
+
+    [SerializeField] private GameObject noSnackObject;
 
     private float _remainingCountDown;
 
     private bool _hasTimedOutThisStage;
 
     private bool _hasTimedOutToday;
+
+    private bool _hasShownNoSnackObject;
 
     private int _lastSyncedWorkProgress;
 
@@ -72,7 +103,10 @@ public class GameManager : MonoSingleton<GameManager>
         ResolveHamsterReferences();
 
     }
-
+    public void DecreaseWorkProcess()
+    {
+        debugDecreaseWorkProgress = true;
+    }
 
 
     void Start()
@@ -85,6 +119,8 @@ public class GameManager : MonoSingleton<GameManager>
 
         _animator = GetComponent<Animator>();
 
+        ResolveNoSnackObjectReference();
+        _hasShownNoSnackObject = noSnackObject != null && noSnackObject.activeSelf;
         ApplyHamsterFeatureState();
         SyncExposedWorkProgressFromData(false);
         ResetStageCountDown();
@@ -108,6 +144,8 @@ public class GameManager : MonoSingleton<GameManager>
     private void OnValidate()
 
     {
+
+        ResolveNoSnackObjectReference();
 
         if (!Application.isPlaying)
 
@@ -368,6 +406,7 @@ public class GameManager : MonoSingleton<GameManager>
                 {
                     SnackManager.Instance.ClearCurrentSnack();
                     SnackManager.Instance.SetContainerVisible(false);
+                    ShowNoSnackObject();
                 }
 
                 _hasTimedOutToday = false;
@@ -376,6 +415,7 @@ public class GameManager : MonoSingleton<GameManager>
 
         }
 
+        InvokeStageAdvanceCallbacks();
         ResetStageCountDown();
 
         EventManager.DispatchEvent(EventCommon.UPDATE_MONITOR);
@@ -385,6 +425,64 @@ public class GameManager : MonoSingleton<GameManager>
 
 
         TimeManager.Instance.AddTask(1, false, () => { SendAnimatorPostSignal(false); }, this);
+
+    }
+
+    private void InvokeStageAdvanceCallbacks()
+
+    {
+
+        if (stageAdvanceCallbacks == null || stageAdvanceCallbacks.Count == 0)
+
+        {
+
+            return;
+
+        }
+
+
+
+        int currentDay = GetCurrentDaySafe();
+
+        for (int i = 0; i < stageAdvanceCallbacks.Count; i++)
+
+        {
+
+            TimeStageCallbackEntry entry = stageAdvanceCallbacks[i];
+
+            if (entry == null || !entry.Matches(curTimeStage, currentDay))
+
+            {
+
+                continue;
+
+            }
+
+
+
+            entry.onTriggered?.Invoke();
+
+        }
+
+    }
+
+    private int GetCurrentDaySafe()
+
+    {
+
+        if (DataCenter.Instance == null ||
+            DataCenter.Instance.GameData == null ||
+            DataCenter.Instance.GameData.PlayerData == null)
+
+        {
+
+            return 1;
+
+        }
+
+
+
+        return Mathf.Max(1, DataCenter.Instance.GameData.PlayerData.days);
 
     }
 
@@ -585,7 +683,7 @@ public class GameManager : MonoSingleton<GameManager>
 
 
         debugDecreaseWorkProgress = false;
-        SetCurrentWorkProgress(currentWorkProgress - 1);
+        SetCurrentWorkProgress(currentWorkProgress - 3);
 
     }
 
@@ -610,6 +708,79 @@ public class GameManager : MonoSingleton<GameManager>
 
             default:
                 return "09:00";
+
+        }
+
+    }
+
+    private void ShowNoSnackObject()
+
+    {
+
+        ResolveNoSnackObjectReference();
+
+        if (noSnackObject == null)
+
+        {
+
+            return;
+
+        }
+
+        if (_hasShownNoSnackObject)
+
+        {
+
+            return;
+
+        }
+
+
+
+        noSnackObject.SetActive(true);
+        _hasShownNoSnackObject = true;
+
+    }
+
+
+
+    private void ResolveNoSnackObjectReference()
+
+    {
+
+        if (noSnackObject != null)
+        {
+            return;
+        }
+
+        GameObject[] sceneObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+
+        foreach (GameObject candidate in sceneObjects)
+
+        {
+
+            if (candidate == null || candidate.name != "No snack")
+
+            {
+
+                continue;
+
+            }
+
+
+
+            if (!candidate.scene.IsValid())
+
+            {
+
+                continue;
+
+            }
+
+
+
+            noSnackObject = candidate;
+            return;
 
         }
 
