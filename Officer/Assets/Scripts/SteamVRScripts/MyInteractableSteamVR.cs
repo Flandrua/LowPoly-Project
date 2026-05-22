@@ -19,6 +19,14 @@ public class MyInteractableSteamVR : Interactable
     [Header("是否可移动")]
     public bool canBeMoved = true;
 
+    [Header("零食抓取吸附")]
+    [Tooltip("开启后，Tag=Snack 的物体在抓起时会吸附到手部锚点。")]
+    public bool snapSnackToHandOnAttach = true;
+    [Tooltip("吸附时相对手部的本地位置偏移。")]
+    public Vector3 snackLocalPositionOffset = Vector3.zero;
+    [Tooltip("吸附时相对手部的本地旋转偏移（欧拉角）。")]
+    public Vector3 snackLocalEulerOffset = Vector3.zero;
+
     private bool hasTriggeredHoverBeginOnce = false;
     private bool hasTriggeredTriggerDownOnce = false;
     private bool lastAttachedState = false;
@@ -52,6 +60,7 @@ public class MyInteractableSteamVR : Interactable
     protected override void OnAttachedToHand(Hand hand)
     {
         base.OnAttachedToHand(hand);
+        SnapSnackToHand(hand);
         lastAttachedState = true;
         NotifySnackHint(true);
     }
@@ -132,5 +141,44 @@ public class MyInteractableSteamVR : Interactable
     public bool HasTriggeredTriggerDownOnce()
     {
         return hasTriggeredTriggerDownOnce;
+    }
+
+    public bool ShouldSnapSnackToHand()
+    {
+        return snapSnackToHandOnAttach && CompareTag("Snack");
+    }
+
+    public Vector3 GetSnackLocalPositionOffset()
+    {
+        return snackLocalPositionOffset;
+    }
+
+    public Quaternion GetSnackLocalRotationOffset()
+    {
+        return Quaternion.Euler(snackLocalEulerOffset);
+    }
+
+    private void SnapSnackToHand(Hand hand)
+    {
+        if (!ShouldSnapSnackToHand() || hand == null)
+        {
+            return;
+        }
+
+        Transform handTransform = hand.transform;
+        if (handTransform == null)
+        {
+            return;
+        }
+
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        transform.position = handTransform.TransformPoint(GetSnackLocalPositionOffset());
+        transform.rotation = handTransform.rotation * GetSnackLocalRotationOffset();
     }
 }

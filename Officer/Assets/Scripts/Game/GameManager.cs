@@ -85,10 +85,14 @@ public class GameManager : MonoSingleton<GameManager>
     private bool _hasShownNoSnackObject;
 
     private int _lastSyncedWorkProgress;
+    private bool _advanceBySleeping;
+    private bool _hasTriggeredDeathEnding;
 
     public int TotalDays => Mathf.Max(1, totaldays);
 
     public bool IsHamsterGameplayEnabled => enableHamster;
+    public bool IsNightStage => curTimeStage == (int)TimeStage.Night;
+    public int CurrentFatigue => GetCurrentFatigueSafe();
 
     public string CurrentTimeDisplay => GetCurrentTimeDisplay();
 
@@ -124,6 +128,7 @@ public class GameManager : MonoSingleton<GameManager>
         ApplyHamsterFeatureState();
         SyncExposedWorkProgressFromData(false);
         ResetStageCountDown();
+        ApplyHalfOnByFatigue();
 
     }
 
@@ -347,6 +352,9 @@ public class GameManager : MonoSingleton<GameManager>
 
         {
 
+            bool sleptThisNight = _advanceBySleeping;
+            _advanceBySleeping = false;
+
             RenderSettings.skybox = morning;
 
             if (IsHamsterGameplayEnabled)
@@ -383,34 +391,47 @@ public class GameManager : MonoSingleton<GameManager>
 
             PlayerSteamVRManager.Instance.ResetLocation();
 
-            if (DataCenter.Instance.GameData.PlayerData.days >= TotalDays)
-
+            if (sleptThisNight)
             {
-
-                EndingManager.Instance.Ending();
-
+                DataCenter.Instance.ResetFatigue();
+            }
+            else
+            {
+                DataCenter.Instance.AddFatigue(1);
             }
 
-            else
-
+            bool isDeathEnding = EvaluateDailyFatigueState();
+            if (!isDeathEnding)
             {
+                if (DataCenter.Instance.GameData.PlayerData.days >= TotalDays)
 
-                bool shouldShowSnackContainerNextDay = !_hasTimedOutToday;
-                DataCenter.Instance.GameData.PlayerData.days++;
-                if (shouldShowSnackContainerNextDay)
                 {
-                    SnackManager.Instance.SetContainerVisible(true);
-                    SnackManager.Instance.RandomSnack();
+
+                    EndingManager.Instance.Ending();
+
                 }
+
                 else
+
                 {
-                    SnackManager.Instance.ClearCurrentSnack();
-                    SnackManager.Instance.SetContainerVisible(false);
-                    ShowNoSnackObject();
+
+                    bool shouldShowSnackContainerNextDay = !_hasTimedOutToday;
+                    DataCenter.Instance.GameData.PlayerData.days++;
+                    if (shouldShowSnackContainerNextDay)
+                    {
+                        SnackManager.Instance.SetContainerVisible(true);
+                        SnackManager.Instance.RandomSnack();
+                    }
+                    else
+                    {
+                        SnackManager.Instance.ClearCurrentSnack();
+                        SnackManager.Instance.SetContainerVisible(false);
+                        ShowNoSnackObject();
+                    }
+
+                    _hasTimedOutToday = false;
+
                 }
-
-                _hasTimedOutToday = false;
-
             }
 
         }
@@ -484,6 +505,18 @@ public class GameManager : MonoSingleton<GameManager>
 
         return Mathf.Max(1, DataCenter.Instance.GameData.PlayerData.days);
 
+    }
+
+    public bool TrySleepToNextDay()
+    {
+        if (!IsNightStage)
+        {
+            return false;
+        }
+
+        _advanceBySleeping = true;
+        EventManager.DispatchEvent<bool>(EventCommon.CHANGE_TIME, true);
+        return true;
     }
 
 
@@ -664,6 +697,47 @@ public class GameManager : MonoSingleton<GameManager>
                DataCenter.Instance.GameData != null &&
                DataCenter.Instance.GameData.PlayerData != null;
 
+    }
+
+    private int GetCurrentFatigueSafe()
+    {
+        if (DataCenter.Instance == null ||
+            DataCenter.Instance.GameData == null ||
+            DataCenter.Instance.GameData.PlayerData == null)
+        {
+            return 0;
+        }
+
+        return Mathf.Max(0, DataCenter.Instance.GameData.PlayerData.fatigue);
+    }
+
+    private void ApplyHalfOnByFatigue()
+    {
+        if (_animator == null)
+        {
+            return;
+        }
+
+        _animator.SetBool("halfOn", GetCurrentFatigueSafe() >= 3);
+    }
+
+    private bool EvaluateDailyFatigueState()
+    {
+        ApplyHalfOnByFatigue();
+
+        if (_hasTriggeredDeathEnding || GetCurrentFatigueSafe() < 4)
+        {
+            return false;
+        }
+
+        if (EndingManager.Instance == null)
+        {
+            return false;
+        }
+
+        _hasTriggeredDeathEnding = true;
+        EndingManager.Instance.EndingDeath();
+        return true;
     }
 
 

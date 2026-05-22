@@ -122,8 +122,16 @@ public class LaserPointerHandler : MonoBehaviour
         }
 
         attachedObject = lastHoveredInteractable.gameObject;
-        posOffset = handTransform.InverseTransformPoint(attachedObject.transform.position);
-        rotOffset = Quaternion.Inverse(handTransform.rotation) * attachedObject.transform.rotation;
+        if (lastHoveredInteractable.ShouldSnapSnackToHand())
+        {
+            posOffset = lastHoveredInteractable.GetSnackLocalPositionOffset();
+            rotOffset = lastHoveredInteractable.GetSnackLocalRotationOffset();
+        }
+        else
+        {
+            posOffset = handTransform.InverseTransformPoint(attachedObject.transform.position);
+            rotOffset = Quaternion.Inverse(handTransform.rotation) * attachedObject.transform.rotation;
+        }
 
         Rigidbody rb = attachedObject.GetComponent<Rigidbody>();
         if (rb != null)

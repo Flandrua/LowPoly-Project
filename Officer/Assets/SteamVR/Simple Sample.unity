@@ -14639,7 +14639,6 @@ Transform:
   - {fileID: 136129373}
   - {fileID: 358920465}
   - {fileID: 38436508}
-  - {fileID: 1738028826}
   - {fileID: 287932112}
   - {fileID: 1570300329}
   - {fileID: 1601587437}
@@ -34343,7 +34342,9 @@ Transform:
   - {fileID: 1347829376}
   - {fileID: 188896178}
   - {fileID: 4509633109395342}
+  - {fileID: 1080765824}
   - {fileID: 4400123851366326}
+  - {fileID: 1738028826}
   - {fileID: 1331778942}
   - {fileID: 1847606347}
   - {fileID: 507145287}
@@ -34354,6 +34355,7 @@ Transform:
   - {fileID: 1489513248}
   - {fileID: 1948213478}
   - {fileID: 7378140879676265844}
+  - {fileID: 1368371012}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &464945189
@@ -34381,7 +34383,7 @@ MonoBehaviour:
   currentWorkProgress: 0
   debugDecreaseWorkProgress: 0
   ending: {fileID: 1946770139}
-  enableHamster: 0
+  enableHamster: 1
   stageAdvanceCallbacks:
   - stage: 2
     day: 1
@@ -39696,6 +39698,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   canBeMoved: 0
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &547695649 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4837329652793204, guid: 88498815dea432045b6eaa9875ec268a, type: 3}
@@ -76276,6 +76281,60 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4169780530555398, guid: 94179664ac141d742b2bebeeb5e09184, type: 3}
   m_PrefabInstance: {fileID: 1102453014}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1080765823
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1080765824}
+  - component: {fileID: 1080765825}
+  - component: {fileID: 2080765826}
+  m_Layer: 0
+  m_Name: TutorialTriggerBox
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1080765824
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1080765823}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0.007563541, z: -0, w: 0.9999714}
+  m_LocalPosition: {x: -22.5351, y: 0.9582, z: 12.4446}
+  m_LocalScale: {x: 0.9347, y: 0.39599553, z: 0.9221}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 464945188}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &1080765825
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1080765823}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!4 &1081190539 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4216595945015474, guid: b98a4494db02cf949be3cbf86c335ed0, type: 3}
@@ -93313,6 +93372,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   canBeMoved: 0
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!1001 &1250406710
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -101798,6 +101860,85 @@ Transform:
 Transform:
   m_CorrespondingSourceObject: {fileID: 4691041870842080, guid: ff9c2729da310ae42bacbaab418826d6, type: 3}
   m_PrefabInstance: {fileID: 953749212}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &1368371011
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 464945188}
+    m_Modifications:
+    - target: {fileID: 1295359657651894, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+      propertyPath: m_Name
+      value: DeadBody
+      objectReference: {fileID: 0}
+    - target: {fileID: 1295359657651894, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4800856644408790, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -22.512
+      objectReference: {fileID: 0}
+    - target: {fileID: 4800856644408790, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.867
+      objectReference: {fileID: 0}
+    - target: {fileID: 4800856644408790, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 13.263
+      objectReference: {fileID: 0}
+    - target: {fileID: 4800856644408790, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.005949209
+      objectReference: {fileID: 0}
+    - target: {fileID: 4800856644408790, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4800856644408790, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.9999823
+      objectReference: {fileID: 0}
+    - target: {fileID: 4800856644408790, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4800856644408790, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4800856644408790, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 180.682
+      objectReference: {fileID: 0}
+    - target: {fileID: 4800856644408790, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 95469641307362512, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 62d8b90cd4819cb4ebe8d180489586e8, type: 2}
+    - target: {fileID: 95469641307362512, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+--- !u!4 &1368371012 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4800856644408790, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+  m_PrefabInstance: {fileID: 1368371011}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1368371013 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1295359657651894, guid: 32b926586df8d6f49b0136c82d26645f, type: 3}
+  m_PrefabInstance: {fileID: 1368371011}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &1368864194 stripped
 Transform:
@@ -111902,67 +112043,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   onTeleportComplete:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 349044691}
-        m_TargetAssemblyTypeName: TTSManager, Assembly-CSharp
-        m_MethodName: PlayTTSByClip
-        m_Mode: 2
-        m_Arguments:
-          m_ObjectArgument: {fileID: 8300000, guid: d6dd0a22a0b7c7e43bc90bbd9dcbd290, type: 3}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.AudioClip, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 88068905}
-        m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
-        m_MethodName: SetTrigger
-        m_Mode: 5
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: Shining
-          m_BoolArgument: 1
-        m_CallState: 2
-      - m_Target: {fileID: 1424603741}
-        m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
-        m_MethodName: SetTrigger
-        m_Mode: 5
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: Shining
-          m_BoolArgument: 1
-        m_CallState: 2
-      - m_Target: {fileID: 1182111876}
-        m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
-        m_MethodName: SetTrigger
-        m_Mode: 5
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: Shining
-          m_BoolArgument: 1
-        m_CallState: 2
-      - m_Target: {fileID: 1360798317}
-        m_TargetAssemblyTypeName: CenterGazeCallback, Assembly-CSharp
-        m_MethodName: SetBoxColliderEnabled
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: Shining
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   onPlayerExitArea:
     m_PersistentCalls:
       m_Calls: []
@@ -118387,6 +118468,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   canBeMoved: 1
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!1 &1541227780
 GameObject:
   m_ObjectHideFlags: 0
@@ -120151,6 +120235,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   canBeMoved: 1
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!1001 &1563112633
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -133405,7 +133492,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 188896178}
+    m_TransformParent: {fileID: 464945188}
     m_Modifications:
     - target: {fileID: 6479137908057868918, guid: c78b068d06d936540835ce2788ae7bcd, type: 3}
       propertyPath: m_Name
@@ -133813,6 +133900,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   canBeMoved: 1
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!1001 &1739290105
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -147815,6 +147905,7 @@ MonoBehaviour:
   hamsterDead: {fileID: 1510466395}
   arrowIcon: {fileID: 1380480829}
   endingTxt: {fileID: 805035553}
+  deadBodyObject: {fileID: 1368371013}
 --- !u!4 &1947782330 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4298977661147258, guid: ce316fc7c9c5d8e4c8a221a8959c57f3, type: 3}
@@ -153994,6 +154085,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   canBeMoved: 1
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!1001 &1961854443
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -161909,6 +162003,84 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 88498815dea432045b6eaa9875ec268a, type: 3}
+--- !u!114 &2080765826
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1080765823}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ebe9c54126643f2b4f2d11aeaa7ac2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gazeDuration: 3
+  triggerOnce: 1
+  onGazeStayComplete:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 349044691}
+        m_TargetAssemblyTypeName: TTSManager, Assembly-CSharp
+        m_MethodName: PlayTTSByClip
+        m_Mode: 2
+        m_Arguments:
+          m_ObjectArgument: {fileID: 8300000, guid: d6dd0a22a0b7c7e43bc90bbd9dcbd290, type: 3}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.AudioClip, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 88068905}
+        m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
+        m_MethodName: SetTrigger
+        m_Mode: 5
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: Shining
+          m_BoolArgument: 1
+        m_CallState: 2
+      - m_Target: {fileID: 1424603741}
+        m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
+        m_MethodName: SetTrigger
+        m_Mode: 5
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: Shining
+          m_BoolArgument: 1
+        m_CallState: 2
+      - m_Target: {fileID: 1182111876}
+        m_TargetAssemblyTypeName: UnityEngine.Animator, UnityEngine
+        m_MethodName: SetTrigger
+        m_Mode: 5
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: Shining
+          m_BoolArgument: 1
+        m_CallState: 2
+      - m_Target: {fileID: 1360798317}
+        m_TargetAssemblyTypeName: CenterGazeCallback, Assembly-CSharp
+        m_MethodName: SetBoxColliderEnabled
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: Shining
+          m_BoolArgument: 0
+        m_CallState: 2
+  debugLog: 0
 --- !u!4 &2081648920 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4878683769498654, guid: 500d87a30a0bcbf48b8e1d706ef647ed, type: 3}
@@ -167184,6 +167356,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   canBeMoved: 1
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &4100189212985083
 Transform:
   m_ObjectHideFlags: 0
@@ -167284,6 +167459,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   canBeMoved: 1
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &4200516049668929 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6357398720830396766, guid: 7aec42976b9ca0940a4542cff288279c, type: 3}
@@ -167369,6 +167547,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   canBeMoved: 1
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &4244429815624925 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 990146264567807827, guid: 821b2c2ed94f0864dbcccf3aba7e517e, type: 3}
@@ -167454,6 +167635,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   canBeMoved: 1
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &4400123851366326 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8396283803762731845, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
@@ -167527,6 +167711,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   canBeMoved: 0
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &4400124840953899 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6711599963352301078, guid: 3ea5478adf713b64c8925877a4ef784f, type: 3}
@@ -167635,6 +167822,9 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   canBeMoved: 0
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &4436210086885120 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4405231336490128350, guid: 656c9004a8cc2a847aa49b799f272bb0, type: 3}
@@ -167720,6 +167910,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   canBeMoved: 1
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &4504025047194366 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4212528792255867785, guid: 8e19835560b8b464e84814914bdb19c7, type: 3}
@@ -167805,6 +167998,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   canBeMoved: 1
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &4509633109395342 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1261451984992238269, guid: 4dffbca06ec0ef8449ce4781a63dc255, type: 3}
@@ -167878,6 +168074,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   canBeMoved: 0
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &4916959809864384 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4931738051772956032, guid: eaa1c853d32faa8418b37248dd01a754, type: 3}
@@ -167963,6 +168162,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   canBeMoved: 1
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!23 &23096494555381421
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -180128,6 +180330,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   canBeMoved: 0
+  snapSnackToHandOnAttach: 1
+  snackLocalPositionOffset: {x: 0, y: 0, z: 0}
+  snackLocalEulerOffset: {x: 0, y: 0, z: 0}
 --- !u!114 &7303196169906915384
 MonoBehaviour:
   m_ObjectHideFlags: 0

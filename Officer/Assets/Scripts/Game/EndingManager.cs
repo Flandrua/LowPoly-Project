@@ -6,6 +6,7 @@ using Valve.VR.InteractionSystem;
 
 public class EndingManager : MonoSingleton<EndingManager>
 {
+    private const string TeleportAreaStartName = "TeleportAreaStart";
     private string hamsterEnding;
     private string workEnding;
 
@@ -15,6 +16,7 @@ public class EndingManager : MonoSingleton<EndingManager>
     public GameObject hamsterDead;
     public GameObject arrowIcon;
     public Text endingTxt;
+    [SerializeField] private GameObject deadBodyObject;
 
     void Start()
     {
@@ -52,9 +54,23 @@ public class EndingManager : MonoSingleton<EndingManager>
 
     public void Ending()
     {
+        LockTeleportAreasForEnding();
+        SetDeadBodyVisible(false);
         HandleEndingTextAndGameObjects();
         arrowIcon.SetActive(false);
         endingTxt.text = string.IsNullOrEmpty(hamsterEnding) ? workEnding : workEnding + "\r" + hamsterEnding;
+        Container.SetActive(true);
+    }
+
+    public void EndingDeath()
+    {
+        LockTeleportAreasForEnding();
+        SetDeadBodyVisible(true);
+        ResetHamsterEndingVisuals();
+        hamsterEnding = string.Empty;
+        LoadWorkEndingText("TTS/Ending/Work/WorkDead");
+        arrowIcon.SetActive(false);
+        endingTxt.text = workEnding;
         Container.SetActive(true);
     }
 
@@ -119,5 +135,37 @@ public class EndingManager : MonoSingleton<EndingManager>
         hamsterLove.gameObject.SetActive(false);
         hamsterNormal.gameObject.SetActive(false);
         hamsterDead.gameObject.SetActive(false);
+    }
+
+    private void SetDeadBodyVisible(bool visible)
+    {
+        if (deadBodyObject == null)
+        {
+            Debug.LogWarning("EndingManager: deadBodyObject is not assigned in Inspector.");
+            return;
+        }
+
+        deadBodyObject.SetActive(visible);
+    }
+
+    private void LockTeleportAreasForEnding()
+    {
+        TeleportArea[] areas = FindObjectsOfType<TeleportArea>(true);
+        for (int i = 0; i < areas.Length; i++)
+        {
+            TeleportArea area = areas[i];
+            if (area == null || !area.gameObject.scene.IsValid())
+            {
+                continue;
+            }
+
+            if (area.name == TeleportAreaStartName)
+            {
+                area.SetLocked(false);
+                continue;
+            }
+
+            area.SetLocked(true);
+        }
     }
 }

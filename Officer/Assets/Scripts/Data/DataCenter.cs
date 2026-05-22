@@ -28,6 +28,7 @@ public class PlayerData
 {
     public int workProgress = 0;
     public int days = 1;
+    public int fatigue = 0;
     public int workEfficiency = 1;
     public int favorabilityAbility = 1;
     public List<ItemData> ownedItem = new List<ItemData>();
@@ -51,6 +52,7 @@ public class DataCenter : Singleton<DataCenter>
         else
         {
             _gameData = JsonMapper.ToObject<GameData>(str);
+            EnsureDataIntegrity();
         }
     }
 
@@ -72,7 +74,35 @@ public class DataCenter : Singleton<DataCenter>
     public void NewData()
     {
         _gameData = new GameData();
+        EnsureDataIntegrity();
         SaveData();
+    }
+
+    private void EnsureDataIntegrity()
+    {
+        if (_gameData == null)
+        {
+            _gameData = new GameData();
+        }
+
+        if (_gameData.PlayerData == null)
+        {
+            _gameData.PlayerData = new PlayerData();
+        }
+
+        if (_gameData.HamsterData == null)
+        {
+            _gameData.HamsterData = new HamsterData();
+        }
+
+        if (_gameData.PlayerData.ownedItem == null)
+        {
+            _gameData.PlayerData.ownedItem = new List<ItemData>();
+        }
+
+        _gameData.PlayerData.days = Mathf.Max(1, _gameData.PlayerData.days);
+        _gameData.PlayerData.fatigue = Mathf.Max(0, _gameData.PlayerData.fatigue);
+        _gameData.PlayerData.workProgress = Mathf.Max(0, _gameData.PlayerData.workProgress);
     }
 
     private long GetTimeStamp()
@@ -134,5 +164,25 @@ public class DataCenter : Singleton<DataCenter>
     {
         GameData.PlayerData.workProgress += value;
         Debug.Log($"Progress:{value}");
+    }
+
+    public void AddFatigue(int value = 1)
+    {
+        if (GameData == null || GameData.PlayerData == null)
+        {
+            return;
+        }
+
+        GameData.PlayerData.fatigue = Mathf.Max(0, GameData.PlayerData.fatigue + value);
+    }
+
+    public void ResetFatigue()
+    {
+        if (GameData == null || GameData.PlayerData == null)
+        {
+            return;
+        }
+
+        GameData.PlayerData.fatigue = 0;
     }
 }
