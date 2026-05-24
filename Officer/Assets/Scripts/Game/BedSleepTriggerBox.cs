@@ -1,5 +1,6 @@
 using UnityEngine;
 using Valve.VR;
+using Valve.VR.InteractionSystem;
 
 [RequireComponent(typeof(Collider))]
 public class BedSleepTriggerBox : MonoBehaviour
@@ -8,6 +9,7 @@ public class BedSleepTriggerBox : MonoBehaviour
     [SerializeField] private bool requireNightStage = true;
     [SerializeField] private bool autoSleepOnEnter = false;
     [SerializeField] private bool enableKeyboardFallback = true;
+    [SerializeField] private bool acceptGrabGripAsInteract = true;
     [SerializeField] private float interactCooldown = 0.25f;
 
     private int _insideCount;
@@ -73,13 +75,36 @@ public class BedSleepTriggerBox : MonoBehaviour
             return false;
         }
 
-        return string.IsNullOrEmpty(requiredTag) || other.CompareTag(requiredTag);
+        if (string.IsNullOrEmpty(requiredTag) || other.CompareTag(requiredTag))
+        {
+            return true;
+        }
+
+        if (Player.instance != null && other.transform.IsChildOf(Player.instance.transform))
+        {
+            return true;
+        }
+
+        if (PlayerSteamVRManager.Instance != null &&
+            PlayerSteamVRManager.Instance.playerGO != null &&
+            other.transform.IsChildOf(PlayerSteamVRManager.Instance.playerGO.transform))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private bool IsInteractPressed()
     {
-        bool leftPressed = SteamVR_Actions.default_InteractUI.GetStateDown(SteamVR_Input_Sources.LeftHand);
-        bool rightPressed = SteamVR_Actions.default_InteractUI.GetStateDown(SteamVR_Input_Sources.RightHand);
+        bool leftPressed = IsActionDown(SteamVR_Actions.default_InteractUI, SteamVR_Input_Sources.LeftHand);
+        bool rightPressed = IsActionDown(SteamVR_Actions.default_InteractUI, SteamVR_Input_Sources.RightHand);
+
+        if (acceptGrabGripAsInteract)
+        {
+            leftPressed |= IsActionDown(SteamVR_Actions.default_GrabGrip, SteamVR_Input_Sources.LeftHand);
+            rightPressed |= IsActionDown(SteamVR_Actions.default_GrabGrip, SteamVR_Input_Sources.RightHand);
+        }
 
         if (leftPressed || rightPressed)
         {
@@ -87,6 +112,11 @@ public class BedSleepTriggerBox : MonoBehaviour
         }
 
         return enableKeyboardFallback && Input.GetKeyDown(KeyCode.E);
+    }
+
+    private static bool IsActionDown(SteamVR_Action_Boolean action, SteamVR_Input_Sources source)
+    {
+        return action != null && action.GetStateDown(source);
     }
 
     private void TrySleep()

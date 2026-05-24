@@ -12,6 +12,7 @@ public class KeyboardController : MonoSingleton<KeyboardController>
     private ParticleSystem _star;
     public List<AudioClip> sounds = new List<AudioClip>();
     private AudioSource _as;
+    public bool IsWorkInputCompleted => actualHit >= requireHit;
     // Start is called before the first frame update
 
     void Start()

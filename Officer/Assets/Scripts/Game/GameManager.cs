@@ -60,8 +60,10 @@ public class GameManager : MonoSingleton<GameManager>
     [FormerlySerializedAs("goalWorkPrgoress")]
 
     public int goalWorkProgress = 50;
+    [Min(0)] public int hamsterLoveEndingFavorabilityThreshold = 10;
 
     public int currentWorkProgress = 0;
+    public int currentFatigue = 0;
 
     public bool debugDecreaseWorkProgress = false;
 
@@ -85,10 +87,12 @@ public class GameManager : MonoSingleton<GameManager>
     private bool _hasShownNoSnackObject;
 
     private int _lastSyncedWorkProgress;
+    private int _lastSyncedFatigue;
     private bool _advanceBySleeping;
     private bool _hasTriggeredDeathEnding;
 
     public int TotalDays => Mathf.Max(1, totaldays);
+    public int HamsterLoveEndingFavorabilityThreshold => Mathf.Max(0, hamsterLoveEndingFavorabilityThreshold);
 
     public bool IsHamsterGameplayEnabled => enableHamster;
     public bool IsNightStage => curTimeStage == (int)TimeStage.Night;
@@ -127,6 +131,7 @@ public class GameManager : MonoSingleton<GameManager>
         _hasShownNoSnackObject = noSnackObject != null && noSnackObject.activeSelf;
         ApplyHamsterFeatureState();
         SyncExposedWorkProgressFromData(false);
+        SyncExposedFatigueFromData();
         ResetStageCountDown();
         ApplyHalfOnByFatigue();
 
@@ -164,6 +169,7 @@ public class GameManager : MonoSingleton<GameManager>
 
         SetHamsterEnabled(enableHamster);
         SyncExposedWorkProgressFromData(true);
+        ApplyInspectorFatigueDebugValue();
         TryConsumeDebugDecreaseWorkProgress();
 
     }
@@ -300,12 +306,6 @@ public class GameManager : MonoSingleton<GameManager>
         else if (type == "work")
 
         {
-
-            DataCenter.Instance.GetWorkProgress(DataCenter.Instance.GetTotalWorkEfficiency());
-            SyncExposedWorkProgressFromData(false);
-
-            EventManager.DispatchEvent(EventCommon.UPDATE_MONITOR);
-
         }
 
     }
@@ -399,6 +399,7 @@ public class GameManager : MonoSingleton<GameManager>
             {
                 DataCenter.Instance.AddFatigue(1);
             }
+            SyncExposedFatigueFromData();
 
             bool isDeathEnding = EvaluateDailyFatigueState();
             if (!isDeathEnding)
@@ -517,6 +518,23 @@ public class GameManager : MonoSingleton<GameManager>
         _advanceBySleeping = true;
         EventManager.DispatchEvent<bool>(EventCommon.CHANGE_TIME, true);
         return true;
+    }
+
+    public void SleepToNextDayFromInteraction()
+    {
+        TrySleepToNextDay();
+    }
+
+    public void ApplyWorkProgressFromMouseClick()
+    {
+        if (DataCenter.Instance == null || DataCenter.Instance.GameData == null || DataCenter.Instance.GameData.PlayerData == null)
+        {
+            return;
+        }
+
+        DataCenter.Instance.GetWorkProgress(DataCenter.Instance.GetTotalWorkEfficiency());
+        SyncExposedWorkProgressFromData(false);
+        EventManager.DispatchEvent(EventCommon.UPDATE_MONITOR);
     }
 
 
@@ -711,6 +729,45 @@ public class GameManager : MonoSingleton<GameManager>
         return Mathf.Max(0, DataCenter.Instance.GameData.PlayerData.fatigue);
     }
 
+    private void SyncExposedFatigueFromData()
+    {
+        int dataFatigue = GetCurrentFatigueSafe();
+        currentFatigue = dataFatigue;
+        _lastSyncedFatigue = dataFatigue;
+    }
+
+    private void ApplyInspectorFatigueDebugValue()
+    {
+        int dataFatigue = GetCurrentFatigueSafe();
+        int exposedFatigue = Mathf.Max(0, currentFatigue);
+
+        if (dataFatigue != _lastSyncedFatigue)
+        {
+            currentFatigue = dataFatigue;
+            _lastSyncedFatigue = dataFatigue;
+            return;
+        }
+
+        if (exposedFatigue == _lastSyncedFatigue)
+        {
+            return;
+        }
+
+        if (DataCenter.Instance == null ||
+            DataCenter.Instance.GameData == null ||
+            DataCenter.Instance.GameData.PlayerData == null)
+        {
+            currentFatigue = exposedFatigue;
+            _lastSyncedFatigue = exposedFatigue;
+            return;
+        }
+
+        DataCenter.Instance.GameData.PlayerData.fatigue = exposedFatigue;
+        _lastSyncedFatigue = exposedFatigue;
+        currentFatigue = exposedFatigue;
+        EvaluateDailyFatigueState();
+    }
+
     private void ApplyHalfOnByFatigue()
     {
         if (_animator == null)
@@ -718,7 +775,7 @@ public class GameManager : MonoSingleton<GameManager>
             return;
         }
 
-        _animator.SetBool("halfOn", GetCurrentFatigueSafe() >= 3);
+        _animator.SetBool("gray", GetCurrentFatigueSafe() >= 3);
     }
 
     private bool EvaluateDailyFatigueState()

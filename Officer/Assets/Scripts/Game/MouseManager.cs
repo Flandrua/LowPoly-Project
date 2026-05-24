@@ -6,6 +6,7 @@ public class MouseManager : MonoSingleton<MouseManager>
 {
     public bool canSwitchTime = false;
     private AudioSource _as;
+    private bool _pendingWorkProgress;
 
     // Start is called before the first frame update
     void Start()
@@ -29,11 +30,13 @@ public class MouseManager : MonoSingleton<MouseManager>
     public void ResetToDefault()
     {
         canSwitchTime = false;
+        _pendingWorkProgress = false;
     }
     private void CanSwitchTime(string str)
     {
         // TODO: highlight the mouse or show a hint when time can advance.
         canSwitchTime = true;
+        _pendingWorkProgress = str == "work";
     }
     private void OnTriggerEnter(Collider other)
     {
@@ -47,6 +50,22 @@ public class MouseManager : MonoSingleton<MouseManager>
                 float mag = velocity.magnitude;
                 if (mag > 2.5 && canSwitchTime) // Treat this as a hit.
                 {
+                    if (_pendingWorkProgress)
+                    {
+                        KeyboardController keyboardController = FindObjectOfType<KeyboardController>();
+                        if (keyboardController == null || !keyboardController.IsWorkInputCompleted)
+                        {
+                            return;
+                        }
+
+                        if (GameManager.Instance != null)
+                        {
+                            GameManager.Instance.ApplyWorkProgressFromMouseClick();
+                        }
+
+                        _pendingWorkProgress = false;
+                    }
+
                     _as.Play();
                     EventManager.DispatchEvent<bool>(EventCommon.CHANGE_TIME, true);
                 }

@@ -80,7 +80,9 @@ public class EndingManager : MonoSingleton<EndingManager>
         hamsterEnding = string.Empty;
 
         bool hamsterGameplayEnabled = GameManager.Instance.IsHamsterGameplayEnabled;
-        bool hamsterLoveEnding = hamsterGameplayEnabled && DataCenter.Instance.GameData.HamsterData.favorability >= 10 && !GameManager.Instance.IsHamsterDead();
+        bool hamsterLoveEnding = hamsterGameplayEnabled &&
+                                 DataCenter.Instance.GameData.HamsterData.favorability >= GameManager.Instance.HamsterLoveEndingFavorabilityThreshold &&
+                                 !GameManager.Instance.IsHamsterDead();
         bool hamsterDeadEnding = hamsterGameplayEnabled && GameManager.Instance.IsHamsterDead();
         bool workSuccess = DataCenter.Instance.GameData.PlayerData.workProgress >= GameManager.Instance.goalWorkProgress;
 
