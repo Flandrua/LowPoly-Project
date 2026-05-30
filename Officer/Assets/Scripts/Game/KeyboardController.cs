@@ -51,7 +51,7 @@ public class KeyboardController : MonoSingleton<KeyboardController>
                 // Read the current hit speed.
                 Vector3 velocity = calculator.InstantaneousSpeed;
                 float mag = velocity.magnitude;
-                if (mag > 2.5) // Treat this as a hit.
+                if (mag > 1.5) // Treat this as a hit.
                     HitHandle();
             }
         }
@@ -77,7 +77,7 @@ public class KeyboardController : MonoSingleton<KeyboardController>
         _as.clip = sounds[randomIndex];
         _as.Play();
 
-        if (actualHit < requireHit&&MouseManager.Instance.canSwitchTime==false)
+        if (actualHit < requireHit)
         {
             actualHit++;
             _bar.size = ((float)actualHit / (float)requireHit);

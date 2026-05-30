@@ -513,6 +513,16 @@ public class HamsterController : MonoSingleton<HamsterController>
 
         {
 
+            // Stop accumulating petting progress during the time-switching gap.
+
+            if (GameManager.Instance != null && GameManager.Instance.IsStageAdvanceRequested)
+
+            {
+
+                return;
+
+            }
+
             stayTime += (float)Time.deltaTime;
 
             _bar.size = (stayTime / stayRequireTime);
@@ -589,7 +599,7 @@ public class HamsterController : MonoSingleton<HamsterController>
 
                 }
 
-                else if (stayTime < stayRequireTime&&MouseManager.Instance.canSwitchTime==false) // Enter play mode only before petting is complete and before time can advance.
+                else if (stayTime < stayRequireTime) // Enter play mode only before petting is complete.
 
                 {
 

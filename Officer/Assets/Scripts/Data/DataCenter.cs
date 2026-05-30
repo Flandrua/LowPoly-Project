@@ -148,6 +148,7 @@ public class DataCenter : Singleton<DataCenter>
     {
         GameData.HamsterData.favorability += value;
         Debug.Log($"Favorability:{value}");
+        EventManager.DispatchEvent(EventCommon.UPDATE_MONITOR);
     }
 
     public void GetDamage(int value)
@@ -159,6 +160,7 @@ public class DataCenter : Singleton<DataCenter>
     {
         GameData.PlayerData.workEfficiency += value;
         Debug.Log($"Efficiency:{value}");
+        EventManager.DispatchEvent(EventCommon.UPDATE_MONITOR);
     }
     public void GetWorkProgress(int value)
     {

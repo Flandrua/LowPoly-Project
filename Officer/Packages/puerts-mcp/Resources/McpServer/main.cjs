@@ -31292,16 +31292,22 @@ var NodeStreamableHTTPServerTransport = class _NodeStreamableHTTPServerTransport
       this._initialized = true;
     }
     if (!isInit) {
-      const err = this._validateSession(req, res);
-      if (err) return;
+      const incomingSessionId = req.headers["mcp-session-id"];
+      if (incomingSessionId) {
+        const err = this._validateSession(req, res);
+        if (err) return;
+      }
     }
     const hasRequests = messages.some(isJSONRPCRequest2);
     if (!hasRequests) {
       for (const msg of messages) {
         this.onmessage?.(msg);
       }
-      res.writeHead(202);
-      res.end();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({
+        jsonrpc: "2.0",
+        method: "notifications/ack"
+      }));
       return;
     }
     const streamId = (0, import_node_crypto.randomUUID)();
@@ -31355,18 +31361,16 @@ var NodeStreamableHTTPServerTransport = class _NodeStreamableHTTPServerTransport
     if (this._sessionIdGenerator === void 0) {
       return false;
     }
+    // Compatibility mode: allow clients that call tools without an explicit initialize/session handshake.
     if (!this._initialized) {
-      this._jsonError(res, 400, -32e3, "Server not initialized");
-      return true;
+      return false;
     }
     const incoming = req.headers["mcp-session-id"];
     if (!incoming) {
-      this._jsonError(res, 400, -32e3, "Mcp-Session-Id header is required");
-      return true;
+      return false;
     }
     if (incoming !== this.sessionId) {
-      this._jsonError(res, 404, -32001, "Session not found");
-      return true;
+      return false;
     }
     return false;
   }

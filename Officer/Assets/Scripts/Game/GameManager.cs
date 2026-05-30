@@ -77,6 +77,9 @@ public class GameManager : MonoSingleton<GameManager>
     [SerializeField] private HamsterController hamsterController;
 
     [SerializeField] private GameObject noSnackObject;
+    [Header("Player Ray")]
+    [Min(0.05f)] public float playerRayLength = 100f;
+    [SerializeField] private List<LaserPointerHandler> playerLaserPointers = new List<LaserPointerHandler>();
 
     private float _remainingCountDown;
 
@@ -90,11 +93,14 @@ public class GameManager : MonoSingleton<GameManager>
     private int _lastSyncedFatigue;
     private bool _advanceBySleeping;
     private bool _hasTriggeredDeathEnding;
+    private bool _isStageAdvanceRequested;
 
     public int TotalDays => Mathf.Max(1, totaldays);
     public int HamsterLoveEndingFavorabilityThreshold => Mathf.Max(0, hamsterLoveEndingFavorabilityThreshold);
 
     public bool IsHamsterGameplayEnabled => enableHamster;
+    // True while a stage advance is in progress (the time-switching gap). Used to lock work/sleep/pet inputs.
+    public bool IsStageAdvanceRequested => _isStageAdvanceRequested;
     public bool IsNightStage => curTimeStage == (int)TimeStage.Night;
     public int CurrentFatigue => GetCurrentFatigueSafe();
 
@@ -109,6 +115,8 @@ public class GameManager : MonoSingleton<GameManager>
         DataCenter.Instance.InitData();
 
         ResolveHamsterReferences();
+        ResolvePlayerRayPointers();
+        ApplyPlayerRayLength();
 
     }
     public void DecreaseWorkProcess()
@@ -130,6 +138,8 @@ public class GameManager : MonoSingleton<GameManager>
         ResolveNoSnackObjectReference();
         _hasShownNoSnackObject = noSnackObject != null && noSnackObject.activeSelf;
         ApplyHamsterFeatureState();
+        ResolvePlayerRayPointers();
+        ApplyPlayerRayLength();
         SyncExposedWorkProgressFromData(false);
         SyncExposedFatigueFromData();
         ResetStageCountDown();
@@ -156,6 +166,7 @@ public class GameManager : MonoSingleton<GameManager>
     {
 
         ResolveNoSnackObjectReference();
+        ResolvePlayerRayPointers();
 
         if (!Application.isPlaying)
 
@@ -168,6 +179,7 @@ public class GameManager : MonoSingleton<GameManager>
 
 
         SetHamsterEnabled(enableHamster);
+        ApplyPlayerRayLength();
         SyncExposedWorkProgressFromData(true);
         ApplyInspectorFatigueDebugValue();
         TryConsumeDebugDecreaseWorkProgress();
@@ -194,6 +206,52 @@ public class GameManager : MonoSingleton<GameManager>
 
         SetHamsterEnabled(enabled);
 
+    }
+
+    public void SetPlayerRayLength(float rayLength)
+    {
+        playerRayLength = Mathf.Max(0.05f, rayLength);
+        ApplyPlayerRayLength();
+    }
+
+    private void ResolvePlayerRayPointers()
+    {
+        if (playerLaserPointers == null)
+        {
+            playerLaserPointers = new List<LaserPointerHandler>();
+        }
+
+        playerLaserPointers.RemoveAll(pointer => pointer == null);
+        if (playerLaserPointers.Count > 0)
+        {
+            return;
+        }
+
+        LaserPointerHandler[] foundPointers = FindObjectsOfType<LaserPointerHandler>(true);
+        if (foundPointers == null || foundPointers.Length == 0)
+        {
+            return;
+        }
+
+        playerLaserPointers.AddRange(foundPointers);
+    }
+
+    private void ApplyPlayerRayLength()
+    {
+        ResolvePlayerRayPointers();
+        float clampedLength = Mathf.Max(0.05f, playerRayLength);
+        playerRayLength = clampedLength;
+
+        for (int i = 0; i < playerLaserPointers.Count; i++)
+        {
+            LaserPointerHandler pointer = playerLaserPointers[i];
+            if (pointer == null)
+            {
+                continue;
+            }
+
+            pointer.SetMaxRayDistance(clampedLength);
+        }
     }
 
 
@@ -284,6 +342,10 @@ public class GameManager : MonoSingleton<GameManager>
     private void PrepareChangeTime(string type)
 
     {
+        if (_isStageAdvanceRequested)
+        {
+            return;
+        }
 
         if (type == "play")
 
@@ -306,7 +368,11 @@ public class GameManager : MonoSingleton<GameManager>
         else if (type == "work")
 
         {
+            ApplyWorkProgressFromMouseClick();
         }
+
+        _isStageAdvanceRequested = true;
+        EventManager.DispatchEvent<bool>(EventCommon.CHANGE_TIME, true);
 
     }
 
@@ -447,6 +513,7 @@ public class GameManager : MonoSingleton<GameManager>
 
 
         TimeManager.Instance.AddTask(1, false, () => { SendAnimatorPostSignal(false); }, this);
+        _isStageAdvanceRequested = false;
 
     }
 
@@ -515,7 +582,13 @@ public class GameManager : MonoSingleton<GameManager>
             return false;
         }
 
+        if (_isStageAdvanceRequested)
+        {
+            return false;
+        }
+
         _advanceBySleeping = true;
+        _isStageAdvanceRequested = true;
         EventManager.DispatchEvent<bool>(EventCommon.CHANGE_TIME, true);
         return true;
     }

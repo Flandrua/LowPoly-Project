@@ -5,19 +5,14 @@ using UnityEngine;
 public class MouseManager : MonoSingleton<MouseManager>
 {
     public bool canSwitchTime = false;
-    private AudioSource _as;
-    private bool _pendingWorkProgress;
 
     // Start is called before the first frame update
     void Start()
     {
-        EventManager.AddListener<string>(EventCommon.PREPARE_CHANGE_TIME, CanSwitchTime);
         EventManager.AddListener(EventCommon.NEXT_STAGE, ResetToDefault);
-        _as = GetComponent<AudioSource>();
     }
     private void OnDestroy()
     {
-        EventManager.RemoveListener<string>(EventCommon.PREPARE_CHANGE_TIME, CanSwitchTime);
         EventManager.RemoveListener(EventCommon.NEXT_STAGE, ResetToDefault);
     }
 
@@ -30,48 +25,12 @@ public class MouseManager : MonoSingleton<MouseManager>
     public void ResetToDefault()
     {
         canSwitchTime = false;
-        _pendingWorkProgress = false;
     }
-    private void CanSwitchTime(string str)
-    {
-        // TODO: highlight the mouse or show a hint when time can advance.
-        canSwitchTime = true;
-        _pendingWorkProgress = str == "work";
-    }
+
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
-        {
-            InstantaneousSpeedCalculator calculator = other.GetComponent<InstantaneousSpeedCalculator>();
-            if (calculator != null)
-            {
-                // Read the current hit speed.
-                Vector3 velocity = calculator.InstantaneousSpeed;
-                float mag = velocity.magnitude;
-                if (mag > 2.5 && canSwitchTime) // Treat this as a hit.
-                {
-                    if (_pendingWorkProgress)
-                    {
-                        KeyboardController keyboardController = FindObjectOfType<KeyboardController>();
-                        if (keyboardController == null || !keyboardController.IsWorkInputCompleted)
-                        {
-                            return;
-                        }
-
-                        if (GameManager.Instance != null)
-                        {
-                            GameManager.Instance.ApplyWorkProgressFromMouseClick();
-                        }
-
-                        _pendingWorkProgress = false;
-                    }
-
-                    _as.Play();
-                    EventManager.DispatchEvent<bool>(EventCommon.CHANGE_TIME, true);
-                }
-            }
-        }
-
+        // Mouse hit no longer advances time. Stage changes are now automatic
+        // after keyboard work or hamster interaction is completed.
     }
 }
 

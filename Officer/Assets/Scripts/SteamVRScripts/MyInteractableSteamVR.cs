@@ -16,6 +16,11 @@ public class MyInteractableSteamVR : Interactable
     [Tooltip("只触发一次的触发器按下回调")]
     public UnityEvent onTriggerDownOnce;
 
+    [Header("抓取回调")]
+    public UnityEvent onObjectAttached;
+    [Tooltip("只触发一次的抓取回调")]
+    public UnityEvent onObjectAttachedOnce;
+
     [Header("是否可移动")]
     public bool canBeMoved = true;
 
@@ -29,38 +34,37 @@ public class MyInteractableSteamVR : Interactable
 
     private bool hasTriggeredHoverBeginOnce = false;
     private bool hasTriggeredTriggerDownOnce = false;
+    private bool hasTriggeredAttachOnce = false;
     private bool lastAttachedState = false;
+    private int lastTriggerDispatchFrame = -1;
+    private bool isRayHovering = false;
+    private Hand rayHoverHand;
 
     protected override void OnHandHoverBegin(Hand hand)
     {
-        base.OnHandHoverBegin(hand);
-
-        ItemData itemData = GetComponent<ItemData>();
-        if (itemData != null) itemData.ShowUIDec(true);
-
-        if (onHoverBegin != null) onHoverBegin.Invoke();
-
-        if (!hasTriggeredHoverBeginOnce && onHoverBeginOnce != null)
-        {
-            onHoverBeginOnce.Invoke();
-            hasTriggeredHoverBeginOnce = true;
-        }
+        // Block direct proximity hover from hands; interaction is ray-only.
     }
 
     protected override void OnHandHoverEnd(Hand hand)
     {
-        base.OnHandHoverEnd(hand);
-
-        ItemData itemData = GetComponent<ItemData>();
-        if (itemData != null) itemData.ShowUIDec(false);
-
-        if (onHoverEnd != null) onHoverEnd.Invoke();
+        // Block direct proximity hover from hands; interaction is ray-only.
     }
 
     protected override void OnAttachedToHand(Hand hand)
     {
         base.OnAttachedToHand(hand);
         SnapSnackToHand(hand);
+        if (onObjectAttached != null)
+        {
+            onObjectAttached.Invoke();
+        }
+
+        if (!hasTriggeredAttachOnce && onObjectAttachedOnce != null)
+        {
+            onObjectAttachedOnce.Invoke();
+            hasTriggeredAttachOnce = true;
+        }
+
         lastAttachedState = true;
         NotifySnackHint(true);
     }
@@ -77,15 +81,14 @@ public class MyInteractableSteamVR : Interactable
         base.Update();
         SyncAttachedHintState();
 
-        if (isHovering)
+        if (attachedToHand != null)
         {
-            foreach (Hand hand in hoveringHands)
-            {
-                if (SteamVR_Actions.default_InteractUI.GetStateUp(hand.handType))
-                {
-                    OnTriggerPressed();
-                }
-            }
+            TryDispatchTriggerFromHand(attachedToHand);
+        }
+
+        if (isRayHovering && rayHoverHand != null)
+        {
+            TryDispatchTriggerFromHand(rayHoverHand);
         }
     }
 
@@ -123,6 +126,79 @@ public class MyInteractableSteamVR : Interactable
         }
     }
 
+    private void TryDispatchTriggerFromHand(Hand hand)
+    {
+        if (hand == null || Time.frameCount == lastTriggerDispatchFrame)
+        {
+            return;
+        }
+
+        if (!SteamVR_Actions.default_InteractUI.GetStateUp(hand.handType))
+        {
+            return;
+        }
+
+        lastTriggerDispatchFrame = Time.frameCount;
+        OnTriggerPressed();
+    }
+
+    public void OnRayHoverBegin(Hand hand)
+    {
+        rayHoverHand = hand;
+        if (isRayHovering)
+        {
+            return;
+        }
+
+        base.OnHandHoverBegin(hand);
+        isRayHovering = true;
+        HandleHoverBegin();
+    }
+
+    public void OnRayHoverEnd(Hand hand)
+    {
+        if (!isRayHovering)
+        {
+            return;
+        }
+
+        if (hand != null)
+        {
+            base.OnHandHoverEnd(hand);
+        }
+        isRayHovering = false;
+        rayHoverHand = null;
+        HandleHoverEnd();
+    }
+
+    private void HandleHoverBegin()
+    {
+        ItemData itemData = GetComponent<ItemData>();
+        if (itemData != null)
+        {
+            itemData.ShowUIDec(true);
+        }
+
+        onHoverBegin?.Invoke();
+
+        if (!hasTriggeredHoverBeginOnce && onHoverBeginOnce != null)
+        {
+            onHoverBeginOnce.Invoke();
+            hasTriggeredHoverBeginOnce = true;
+        }
+    }
+
+    private void HandleHoverEnd()
+    {
+        ItemData itemData = GetComponent<ItemData>();
+        if (itemData != null)
+        {
+            itemData.ShowUIDec(false);
+        }
+
+        onHoverEnd?.Invoke();
+    }
+
     public void ResetHoverBeginOnce()
     {
         hasTriggeredHoverBeginOnce = false;
@@ -141,6 +217,16 @@ public class MyInteractableSteamVR : Interactable
     public bool HasTriggeredTriggerDownOnce()
     {
         return hasTriggeredTriggerDownOnce;
+    }
+
+    public void ResetAttachedOnce()
+    {
+        hasTriggeredAttachOnce = false;
+    }
+
+    public bool HasTriggeredAttachedOnce()
+    {
+        return hasTriggeredAttachOnce;
     }
 
     public bool ShouldSnapSnackToHand()

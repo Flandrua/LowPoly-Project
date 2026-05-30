@@ -58,6 +58,11 @@
 - 当前项目同时保留了官方示例和自定义实现，修改前需分清“示例代码”与“项目实际使用代码”
 - `Assets/SteamVR/Simple Sample.unity` 是目前正常作业和默认回归测试场景
 - `Assets/SteamVR/Simple Sample.unity` 当前实际验证链路使用 `PlayerSteamVRManager` 与 `MyInteractableSteamVR`，不是 `XRGrabInteractable`
+- 当前射线交互已改为项目侧过滤：`LaserPointerHandler` 使用 `RaycastAll` + 距离排序，允许穿透非目标 Tag 物体，只对目标 Tag 生效
+- 当前射线目标 Tag 白名单：`RayInteractable`、`Snack`、`Snacks`
+- 当前近手悬停已被禁用：手部靠近不会触发 `OnHandHoverBegin/End` 交互，悬停高亮与 UI 由射线专用回调 `OnRayHoverBegin/End` 驱动
+- 当前 `GameManager` 已暴露 `playerRayLength`，可统一控制玩家左右手射线长度
+- 当前道具 TTS 链路为“双通道”：首次拿起走 `onObjectAttachedOnce -> ItemData.TryPlayPickupTTSOnce()`；按 Trigger 走 `onTriggerDown -> ItemData.PlayPickupTTS()`
 
 ## 当前交互链路说明
 - 工作进度链路：`GameManager.currentWorkProgress` ↔ `DataCenter.GameData.PlayerData.workProgress` → `EventCommon.UPDATE_MONITOR` → `MainMonitorData.UpdateInfo()` → 主监视器 `Scrollbar`
@@ -65,6 +70,9 @@
 - 超时奖惩链路：当天任意阶段超时后，`GameManager` 会记录当日超时状态；跨到下一天时调用 `SnackManager.SetContainerVisible(bool)`，超时则隐藏 `Container`，未超时则显示 `Container`
 - 超时提示链路：首次发生“前一天超时”并进入下一天时，`GameManager` 会显示场景内 `No snack` 对象；该对象依赖自身 `AudioSource.playOnAwake` 播放提示，并且只触发一次，后续不再由 `GameManager` 重复 show/hide
 - 零食提示链路：`MyInteractableSteamVR` → `EventCommon.PLAYER_SNACK_HINT` → `PlayerSteamVRManager.SetSnackHintVisible(bool)`
+- 射线悬停链路：`LaserPointerHandler.RaycastAll`（穿透非目标 Tag）→ `MyInteractableSteamVR.OnRayHoverBegin/End` → Interactable 高亮 / Item UI / Hover 回调
+- 射线点击链路：`LaserPointerHandler.HandleFilteredClick()` → `pointerDown/pointerClick/pointerUp`（仅对过滤后的目标触发）
+- Trigger 播放链路：`MyInteractableSteamVR` 在“射线悬停中”或“已抓在手上”时监听 `InteractUI` 抬起并触发 `onTriggerDown`
 - 提示区域挂点：`Player/Container/SteamVRObjects/VRCamera/FollowHead/HeadCollider`
 - `HeadCollider` 下会在运行时创建 `HeadColliderVisual` 子物体，并挂载球体 MeshRenderer 作为提示显示
 - 当前提示样式为淡蓝色半透明球体；默认隐藏，玩家拿起零食时显示，放下或吃掉后隐藏
@@ -82,6 +90,7 @@
 - 数据调试改动：若要暴露可手动修改的运行时数据，优先在 `GameManager` 或对应管理器提供 Inspector 可见字段，并保持与 `DataCenter` 和现有 UI 刷新链路同步
 - VR 输入改动：明确区分左手/右手输入源、平滑移动、Snap Turn、传送、抓取
 - 视线/注视改动：优先复用 `PlayerSteamVRManager` 中统一的中心视线结果，不要在每个目标组件里重复发同样的 `Raycast`
+- 射线可交互改动：优先在 `LaserPointerHandler` 维护“命中筛选 + 可视长度 + 点击派发”统一逻辑，避免在多个目标脚本重复判定
 - 场景相关问题：优先查组件引用、事件回调、Layer/Collider、Toggle 状态，再改代码
 - 第三方代码必须改时：尽量做最小补丁，并在本文档记录原因、影响范围、回退方式
 
@@ -105,6 +114,10 @@
    - 移动是否正常
    - 平滑转向 / Snap Turn 是否符合预期
    - 射线悬停、点击、抓取是否正常
+   - 手部靠近物体时不应触发交互高亮/Trigger；仅射线命中时触发
+   - 射线前方存在非目标 Tag 遮挡时，应能穿透并命中后方目标 Tag 物体
+   - `GameManager.playerRayLength` 在运行时调节后，左右手射线可见长度与命中距离应同步变化
+   - 抓起零食后按 Trigger 应播放对应零食 TTS；道具按 Trigger 应播放道具 TTS；首次拿起道具仍只触发一次首次拿起 TTS
    - 若涉及 `GameManager.currentWorkProgress`：运行时手动修改该值后，确认 `DataCenter.GameData.PlayerData.workProgress` 与主监视器进度条同步变化
    - 若涉及阶段倒计时：从第 2 天开始确认阶段内倒计时会运行，推进到下一阶段后确认计时器重置
    - 若涉及超时奖惩：确认某天内任意阶段超时后，下一天 `SnackManager.container` 被隐藏；若当天全程未超时，则下一天显示
