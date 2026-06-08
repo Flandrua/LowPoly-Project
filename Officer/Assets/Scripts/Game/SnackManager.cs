@@ -284,6 +284,20 @@ public class SnackManager : MonoSingleton<SnackManager>
         SetOutlineVisibleRecursive(_curSnacks, visible);
     }
 
+    // Called when the current snack's guide intro finishes. The guide component may live on a child
+    // of the snack, so HideSpawnOutlineForRayTarget(guideObject) can miss the yellow spawn-hint
+    // outline on the snack root. Hide it via the known current snack root instead.
+    public void HideCurrentSnackSpawnOutline()
+    {
+        if (_spawnOutlineHiddenBySnackGrab)
+        {
+            return;
+        }
+
+        _spawnOutlineHiddenBySnackGrab = true;
+        SetSpawnObjectOutlineVisible(false);
+    }
+
     private bool IsCurrentSnackGuidePending()
     {
         if (_curSnacks == null)

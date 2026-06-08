@@ -205,6 +205,18 @@ public class MyInteractableSteamVR : Interactable
         HandleHoverEnd();
     }
 
+    // Lets an external grab source (the hand grab sphere) fire this object's Trigger without
+    // touching the laser's hover state. Dispatch is frame-deduped inside TryDispatchTriggerFromHand.
+    public void DispatchTriggerFromExternalHand(Hand hand)
+    {
+        if (hand == null || !IsPlayerInteractionAllowed())
+        {
+            return;
+        }
+
+        TryDispatchTriggerFromHand(hand);
+    }
+
     private bool IsPlayerInteractionAllowed()
     {
         return GameManager.Instance == null || GameManager.Instance.IsPlayerInteractionEnabled;

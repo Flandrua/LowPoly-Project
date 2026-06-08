@@ -451,13 +451,21 @@ public class GameManager : MonoSingleton<GameManager>
 
             {
 
-                DataCenter.Instance.GameData.HamsterData.hp = 10;
-
-                if (IsHamsterOut())
+                // A dead hamster (e.g. fed chocolate) stays dead: don't refill its HP and
+                // don't let it bring an item back the next day.
+                if (!IsHamsterDead())
 
                 {
 
-                    MainItemManager.Instance.RandomItem();
+                    DataCenter.Instance.GameData.HamsterData.hp = 10;
+
+                    if (IsHamsterOut())
+
+                    {
+
+                        MainItemManager.Instance.RandomItem();
+
+                    }
 
                 }
 

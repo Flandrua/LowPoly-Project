@@ -69,10 +69,12 @@ public class SnackGuideIntroTrigger : MonoBehaviour
             guideAnimator.SetTrigger(guideAnimatorTrigger);
         }
 
-        // Guide done: immediately hand over to original snack outline behavior.
+        // Guide done: immediately hand over to original snack outline behavior. Hide via the current
+        // snack root so the yellow spawn-hint outline clears even when this guide sits on a child.
         if (SnackManager.Instance != null)
         {
             SnackManager.Instance.HideSpawnOutlineForRayTarget(gameObject);
+            SnackManager.Instance.HideCurrentSnackSpawnOutline();
         }
 
         SetGuideOutlineVisible(false);
