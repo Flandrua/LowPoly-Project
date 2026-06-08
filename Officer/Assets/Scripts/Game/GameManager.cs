@@ -64,6 +64,9 @@ public class GameManager : MonoSingleton<GameManager>
 
     public int currentWorkProgress = 0;
     public int currentFatigue = 0;
+    [Header("Fatigue Thresholds")]
+    [Min(0)] public int grayFatigueThreshold = 3;
+    [Min(0)] public int deathFatigueThreshold = 4;
 
     public bool debugDecreaseWorkProgress = false;
 
@@ -80,6 +83,9 @@ public class GameManager : MonoSingleton<GameManager>
     [Header("Player Ray")]
     [Min(0.05f)] public float playerRayLength = 100f;
     [SerializeField] private List<LaserPointerHandler> playerLaserPointers = new List<LaserPointerHandler>();
+    [Header("Player Interaction")]
+    [SerializeField] private bool manuallyDisablePlayerInteraction;
+    [SerializeField] private int playerInteractionLockCount;
 
     private float _remainingCountDown;
 
@@ -94,11 +100,14 @@ public class GameManager : MonoSingleton<GameManager>
     private bool _advanceBySleeping;
     private bool _hasTriggeredDeathEnding;
     private bool _isStageAdvanceRequested;
+    private bool _wasGrayFatigueActive;
+    private bool _hasEvaluatedDayOneGuides;
 
     public int TotalDays => Mathf.Max(1, totaldays);
     public int HamsterLoveEndingFavorabilityThreshold => Mathf.Max(0, hamsterLoveEndingFavorabilityThreshold);
 
     public bool IsHamsterGameplayEnabled => enableHamster;
+    public bool IsPlayerInteractionEnabled => !manuallyDisablePlayerInteraction && playerInteractionLockCount <= 0;
     // True while a stage advance is in progress (the time-switching gap). Used to lock work/sleep/pet inputs.
     public bool IsStageAdvanceRequested => _isStageAdvanceRequested;
     public bool IsNightStage => curTimeStage == (int)TimeStage.Night;
@@ -212,6 +221,21 @@ public class GameManager : MonoSingleton<GameManager>
     {
         playerRayLength = Mathf.Max(0.05f, rayLength);
         ApplyPlayerRayLength();
+    }
+
+    public void SetPlayerInteractionEnabled(bool enabled)
+    {
+        manuallyDisablePlayerInteraction = !enabled;
+    }
+
+    public void PushPlayerInteractionLock()
+    {
+        playerInteractionLockCount = Mathf.Max(0, playerInteractionLockCount) + 1;
+    }
+
+    public void PopPlayerInteractionLock()
+    {
+        playerInteractionLockCount = Mathf.Max(0, playerInteractionLockCount - 1);
     }
 
     private void ResolvePlayerRayPointers()
@@ -481,6 +505,7 @@ public class GameManager : MonoSingleton<GameManager>
                 else
 
                 {
+                    HandleDayOneGuideFallbackBeforeDayIncrement();
 
                     bool shouldShowSnackContainerNextDay = !_hasTimedOutToday;
                     DataCenter.Instance.GameData.PlayerData.days++;
@@ -573,6 +598,77 @@ public class GameManager : MonoSingleton<GameManager>
 
         return Mathf.Max(1, DataCenter.Instance.GameData.PlayerData.days);
 
+    }
+
+    private void HandleDayOneGuideFallbackBeforeDayIncrement()
+    {
+        if (_hasEvaluatedDayOneGuides)
+        {
+            return;
+        }
+
+        if (GetCurrentDaySafe() != 1)
+        {
+            return;
+        }
+
+        _hasEvaluatedDayOneGuides = true;
+        if (HasAnyGuideTriggeredInDayOne())
+        {
+            return;
+        }
+
+        ForceCompleteAllGuidesAsLearned();
+    }
+
+    private bool HasAnyGuideTriggeredInDayOne()
+    {
+        KeyboardController keyboard = FindObjectOfType<KeyboardController>(true);
+        if (keyboard != null && keyboard.HasTriggeredGuideIntro())
+        {
+            return true;
+        }
+
+        HamsterController hamster = FindObjectOfType<HamsterController>(true);
+        if (hamster != null && hamster.HasTriggeredGuideIntro())
+        {
+            return true;
+        }
+
+        SnackGuideIntroTrigger[] snackGuides = FindObjectsOfType<SnackGuideIntroTrigger>(true);
+        for (int i = 0; i < snackGuides.Length; i++)
+        {
+            if (snackGuides[i] != null && snackGuides[i].HasTriggeredGuideIntro())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void ForceCompleteAllGuidesAsLearned()
+    {
+        KeyboardController keyboard = FindObjectOfType<KeyboardController>(true);
+        if (keyboard != null)
+        {
+            keyboard.ForceCompleteGuideIntro();
+        }
+
+        HamsterController hamster = FindObjectOfType<HamsterController>(true);
+        if (hamster != null)
+        {
+            hamster.ForceCompleteGuideIntro();
+        }
+
+        SnackGuideIntroTrigger[] snackGuides = FindObjectsOfType<SnackGuideIntroTrigger>(true);
+        for (int i = 0; i < snackGuides.Length; i++)
+        {
+            if (snackGuides[i] != null)
+            {
+                snackGuides[i].ForceCompleteGuideIntro();
+            }
+        }
     }
 
     public bool TrySleepToNextDay()
@@ -843,19 +939,26 @@ public class GameManager : MonoSingleton<GameManager>
 
     private void ApplyHalfOnByFatigue()
     {
-        if (_animator == null)
+        bool isGrayFatigueActive = GetCurrentFatigueSafe() >= Mathf.Max(0, grayFatigueThreshold);
+
+        if (_animator != null)
         {
-            return;
+            _animator.SetBool("gray", isGrayFatigueActive);
         }
 
-        _animator.SetBool("gray", GetCurrentFatigueSafe() >= 3);
+        if (isGrayFatigueActive && !_wasGrayFatigueActive && TTSManager.Instance != null)
+        {
+            TTSManager.Instance.PlayTTS("TTS/Special/SuddenDeath");
+        }
+
+        _wasGrayFatigueActive = isGrayFatigueActive;
     }
 
     private bool EvaluateDailyFatigueState()
     {
         ApplyHalfOnByFatigue();
 
-        if (_hasTriggeredDeathEnding || GetCurrentFatigueSafe() < 4)
+        if (_hasTriggeredDeathEnding || GetCurrentFatigueSafe() < Mathf.Max(0, deathFatigueThreshold))
         {
             return false;
         }

@@ -24,12 +24,12 @@ public class LaserPointerHandler : MonoBehaviour
 
     [Header("Raycast Filter")]
     [SerializeField] private string rayInteractableTag = SnackManager.RayInteractableTag;
-    [SerializeField] private string snackRootTag = "Snack";
     [SerializeField] private float maxRayDistance = 100f;
     [SerializeField] private LayerMask raycastLayers = Physics.DefaultRaycastLayers;
     [SerializeField] private QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.Collide;
 
     private Hand hand;
+    private MainItemManager mainItemManager;
     private Transform currentFilteredHitTarget;
     private float currentFilteredHitDistance = 100f;
 
@@ -63,6 +63,8 @@ public class LaserPointerHandler : MonoBehaviour
             laserPointer.PointerIn += OnPointerIn;
             laserPointer.PointerOut += OnPointerOut;
         }
+
+        mainItemManager = FindObjectOfType<MainItemManager>(true);
     }
 
     private void OnDestroy()
@@ -94,6 +96,12 @@ public class LaserPointerHandler : MonoBehaviour
             return;
         }
 
+        if (!IsPlayerInteractionAllowed())
+        {
+            ClearInteractionState();
+            return;
+        }
+
         UpdateFilteredRayTarget();
         HandleFilteredClick();
 
@@ -110,6 +118,29 @@ public class LaserPointerHandler : MonoBehaviour
         if (attachedObject != null)
         {
             UpdateRemotePosition();
+        }
+    }
+
+    private bool IsPlayerInteractionAllowed()
+    {
+        return GameManager.Instance == null || GameManager.Instance.IsPlayerInteractionEnabled;
+    }
+
+    private void ClearInteractionState()
+    {
+        if (currentOverGameObject != null)
+        {
+            ExecuteEvents.Execute(currentOverGameObject, CreateEventData(), ExecuteEvents.pointerExitHandler);
+            currentOverGameObject = null;
+        }
+
+        currentFilteredHitTarget = null;
+        currentFilteredHitDistance = maxRayDistance;
+        SetHoveredInteractable(null);
+
+        if (attachedObject != null)
+        {
+            DetachRemote();
         }
     }
 
@@ -211,7 +242,7 @@ public class LaserPointerHandler : MonoBehaviour
     private System.Collections.IEnumerator ReleaseButton(GameObject target, PointerEventData data)
     {
         yield return new WaitForSeconds(0.1f);
-        ExecuteEvents.Execute(target, data, ExecuteEvents.pointerUpHandler);
+        ExecuteEvents.ExecuteHierarchy(target, data, ExecuteEvents.pointerUpHandler);
     }
 
     private bool TryGetRayInteractableTarget(Transform target, out GameObject rayTarget)
@@ -226,9 +257,9 @@ public class LaserPointerHandler : MonoBehaviour
         while (current != null)
         {
             bool isRayInteractable = !string.IsNullOrEmpty(rayInteractableTag) && current.tag == rayInteractableTag;
-            bool isSnackRootFromInspector = !string.IsNullOrEmpty(snackRootTag) && current.tag == snackRootTag;
-            bool isSnackRoot = current.tag == "Snack" || current.tag == "Snacks";
-            if (isRayInteractable || isSnackRootFromInspector || isSnackRoot)
+            bool isSnackRoot = current.CompareTag("Snack");
+            bool isGuideIntroTarget = current.GetComponent<KeyboardController>() != null || current.GetComponent<HamsterController>() != null;
+            if (isRayInteractable || isSnackRoot || isGuideIntroTarget)
             {
                 rayTarget = current.gameObject;
                 return true;
@@ -266,11 +297,53 @@ public class LaserPointerHandler : MonoBehaviour
         ExecuteEvents.Execute(currentOverGameObject, CreateEventData(), ExecuteEvents.pointerEnterHandler);
         SetHoveredInteractable(currentFilteredHitTarget.GetComponentInParent<MyInteractableSteamVR>());
 
-        // Only clear the outline for the specific object the ray actually hit, not every spawn hint.
-        if (SnackManager.Instance != null && TryGetRayInteractableTarget(currentFilteredHitTarget, out GameObject rayRoot))
+        if (!TryGetRayInteractableTarget(currentFilteredHitTarget, out GameObject rayRoot))
+        {
+            return;
+        }
+
+        // Snack spawn hint uses SnackManager rules.
+        if (SnackManager.Instance != null && IsSnackRayRoot(rayRoot))
         {
             SnackManager.Instance.HideSpawnOutlineForRayTarget(rayRoot);
+            return;
         }
+
+        // Item spawn hint is per-item and should clear once the ray reaches that item.
+        if (IsItemRayRoot(rayRoot))
+        {
+            if (mainItemManager == null)
+            {
+                mainItemManager = FindObjectOfType<MainItemManager>(true);
+            }
+
+            if (mainItemManager != null)
+            {
+                mainItemManager.HideSpawnOutlineForRayTarget(rayRoot);
+            }
+        }
+    }
+
+    private bool IsSnackRayRoot(GameObject rayRoot)
+    {
+        if (rayRoot == null)
+        {
+            return false;
+        }
+
+        return rayRoot.CompareTag("Snack");
+    }
+
+    private bool IsItemRayRoot(GameObject rayRoot)
+    {
+        if (rayRoot == null)
+        {
+            return false;
+        }
+
+        return rayRoot.GetComponent<ItemData>() != null
+            || rayRoot.GetComponentInChildren<ItemData>(true) != null
+            || rayRoot.GetComponentInParent<ItemData>() != null;
     }
 
     private Transform FindFirstAllowedHit(out float hitDistance)
@@ -315,8 +388,8 @@ public class LaserPointerHandler : MonoBehaviour
         }
 
         PointerEventData data = CreateEventData();
-        ExecuteEvents.Execute(currentOverGameObject, data, ExecuteEvents.pointerDownHandler);
-        ExecuteEvents.Execute(currentOverGameObject, data, ExecuteEvents.pointerClickHandler);
+        ExecuteEvents.ExecuteHierarchy(currentOverGameObject, data, ExecuteEvents.pointerDownHandler);
+        ExecuteEvents.ExecuteHierarchy(currentOverGameObject, data, ExecuteEvents.pointerClickHandler);
         StartCoroutine(ReleaseButton(currentOverGameObject, data));
     }
 

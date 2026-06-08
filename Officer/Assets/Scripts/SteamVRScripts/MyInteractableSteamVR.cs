@@ -79,6 +79,11 @@ public class MyInteractableSteamVR : Interactable
     protected override void Update()
     {
         base.Update();
+        if (!IsPlayerInteractionAllowed())
+        {
+            return;
+        }
+
         SyncAttachedHintState();
 
         if (attachedToHand != null)
@@ -114,6 +119,14 @@ public class MyInteractableSteamVR : Interactable
 
     private void OnTriggerPressed()
     {
+        if (ShouldSuppressSnackNormalTtsForGuide())
+        {
+            if (SnackManager.Instance != null)
+            {
+                SnackManager.Instance.SuppressNextNormalSnackTTS();
+            }
+        }
+
         if (onTriggerDown != null)
         {
             onTriggerDown.Invoke();
@@ -124,6 +137,22 @@ public class MyInteractableSteamVR : Interactable
             onTriggerDownOnce.Invoke();
             hasTriggeredTriggerDownOnce = true;
         }
+    }
+
+    private bool ShouldSuppressSnackNormalTtsForGuide()
+    {
+        if (!CompareTag("Snack") || hasTriggeredTriggerDownOnce)
+        {
+            return false;
+        }
+
+        SnackGuideIntroTrigger guideTrigger = GetComponent<SnackGuideIntroTrigger>();
+        if (guideTrigger == null)
+        {
+            guideTrigger = GetComponentInParent<SnackGuideIntroTrigger>();
+        }
+
+        return guideTrigger != null && guideTrigger.ShouldSuppressNormalSnackTtsOnFirstTrigger();
     }
 
     private void TryDispatchTriggerFromHand(Hand hand)
@@ -144,6 +173,11 @@ public class MyInteractableSteamVR : Interactable
 
     public void OnRayHoverBegin(Hand hand)
     {
+        if (!IsPlayerInteractionAllowed())
+        {
+            return;
+        }
+
         rayHoverHand = hand;
         if (isRayHovering)
         {
@@ -169,6 +203,11 @@ public class MyInteractableSteamVR : Interactable
         isRayHovering = false;
         rayHoverHand = null;
         HandleHoverEnd();
+    }
+
+    private bool IsPlayerInteractionAllowed()
+    {
+        return GameManager.Instance == null || GameManager.Instance.IsPlayerInteractionEnabled;
     }
 
     private void HandleHoverBegin()

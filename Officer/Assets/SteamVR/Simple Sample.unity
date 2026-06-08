@@ -7338,7 +7338,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &100748387
 Transform:
   m_ObjectHideFlags: 0
@@ -11387,12 +11387,11 @@ MonoBehaviour:
   currentHand: 1
   handTransform: {fileID: 1892792998}
   rayInteractableTag: RayInteractable
-  snackRootTag: Snacks
   maxRayDistance: 100
   raycastLayers:
     serializedVersion: 2
     m_Bits: 4294967291
-  queryTriggerInteraction: 1
+  queryTriggerInteraction: 2
 --- !u!135 &158819311
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -34197,6 +34196,8 @@ MonoBehaviour:
   hamsterLoveEndingFavorabilityThreshold: 5
   currentWorkProgress: 0
   currentFatigue: 0
+  grayFatigueThreshold: 3
+  deathFatigueThreshold: 4
   debugDecreaseWorkProgress: 0
   ending: {fileID: 1946770139}
   enableHamster: 1
@@ -34305,6 +34306,8 @@ MonoBehaviour:
   playerLaserPointers:
   - {fileID: 158819307}
   - {fileID: 1839549366}
+  manuallyDisablePlayerInteraction: 0
+  playerInteractionLockCount: 0
 --- !u!95 &464945190
 Animator:
   serializedVersion: 5
@@ -57800,7 +57803,7 @@ GameObject:
   - component: {fileID: 793867601}
   m_Layer: 0
   m_Name: Controller
-  m_TagString: Untagged
+  m_TagString: RayInteractable
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -57841,6 +57844,32 @@ MonoBehaviour:
   stayRequireTime: 3
   hit: {fileID: 8300000, guid: 505f095f84a4ed742b516c97c900edca, type: 3}
   eat: {fileID: 8300000, guid: 028495502e09ee5469a381a23b933a95, type: 3}
+  enableGuideIntro: 1
+  guideTriggered: 0
+  guideIntroTtsPath: TTS/Introduce/Hamster
+  guideAnimatorTrigger: Shining
+  guideAnimator: {fileID: 1925914628}
+  guideOutlines:
+  - {fileID: 1125398628}
+  onGuideTriggered:
+    m_PersistentCalls:
+      m_Calls: []
+  onTriggerEnterOnce:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 349044691}
+        m_TargetAssemblyTypeName: TTSManager, Assembly-CSharp
+        m_MethodName: PlayTTSByClip
+        m_Mode: 2
+        m_Arguments:
+          m_ObjectArgument: {fileID: 8300000, guid: 845e426834d590c4a82b66ffecb7ee68, type: 3}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.AudioClip, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  hasTriggeredOnTriggerEnterOnce: 0
 --- !u!65 &793867599
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -76400,7 +76429,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1080765824
 Transform:
   m_ObjectHideFlags: 0
@@ -83000,156 +83029,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 5974030681375158574, guid: 64805f52a03305d47aeb28b08c3d513f, type: 3}
   m_PrefabInstance: {fileID: 5974030681877831018}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1106549003
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1106548998}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a35f6cfbfba9b548aaa00d52cfe8a50, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_InteractionManager: {fileID: 0}
-  m_Colliders: []
-  m_InteractionLayerMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_InteractionLayers:
-    m_Bits: 1
-  m_DistanceCalculationMode: 1
-  m_SelectMode: 0
-  m_FocusMode: 1
-  m_CustomReticle: {fileID: 0}
-  m_AllowGazeInteraction: 0
-  m_AllowGazeSelect: 0
-  m_OverrideGazeTimeToSelect: 0
-  m_GazeTimeToSelect: 0.5
-  m_OverrideTimeToAutoDeselectGaze: 0
-  m_TimeToAutoDeselectGaze: 3
-  m_AllowGazeAssistance: 0
-  m_FirstHoverEntered:
-    m_PersistentCalls:
-      m_Calls: []
-  m_LastHoverExited:
-    m_PersistentCalls:
-      m_Calls: []
-  m_HoverEntered:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 793867598}
-        m_TargetAssemblyTypeName: HamsterController, Assembly-CSharp
-        m_MethodName: ChangeBehaviorAnimationByStr
-        m_Mode: 5
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: Idle_A
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 793867598}
-        m_TargetAssemblyTypeName: HamsterController, Assembly-CSharp
-        m_MethodName: ChangeEyesAnimationByStr
-        m_Mode: 5
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: Eyes_Excited
-          m_BoolArgument: 0
-        m_CallState: 2
-  m_HoverExited:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 793867598}
-        m_TargetAssemblyTypeName: HamsterController, Assembly-CSharp
-        m_MethodName: ChangeBehaviorAnimationByStr
-        m_Mode: 5
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: Sit
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 793867598}
-        m_TargetAssemblyTypeName: HamsterController, Assembly-CSharp
-        m_MethodName: ChangeEyesAnimationByStr
-        m_Mode: 5
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: Eyes_Normal
-          m_BoolArgument: 0
-        m_CallState: 2
-  m_FirstSelectEntered:
-    m_PersistentCalls:
-      m_Calls: []
-  m_LastSelectExited:
-    m_PersistentCalls:
-      m_Calls: []
-  m_SelectEntered:
-    m_PersistentCalls:
-      m_Calls: []
-  m_SelectExited:
-    m_PersistentCalls:
-      m_Calls: []
-  m_FirstFocusEntered:
-    m_PersistentCalls:
-      m_Calls: []
-  m_LastFocusExited:
-    m_PersistentCalls:
-      m_Calls: []
-  m_FocusEntered:
-    m_PersistentCalls:
-      m_Calls: []
-  m_FocusExited:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Activated:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Deactivated:
-    m_PersistentCalls:
-      m_Calls: []
-  m_StartingHoverFilters: []
-  m_StartingSelectFilters: []
-  m_StartingInteractionStrengthFilters: []
-  m_OnFirstHoverEntered:
-    m_PersistentCalls:
-      m_Calls: []
-  m_OnLastHoverExited:
-    m_PersistentCalls:
-      m_Calls: []
-  m_OnHoverEntered:
-    m_PersistentCalls:
-      m_Calls: []
-  m_OnHoverExited:
-    m_PersistentCalls:
-      m_Calls: []
-  m_OnSelectEntered:
-    m_PersistentCalls:
-      m_Calls: []
-  m_OnSelectExited:
-    m_PersistentCalls:
-      m_Calls: []
-  m_OnSelectCanceled:
-    m_PersistentCalls:
-      m_Calls: []
-  m_OnActivate:
-    m_PersistentCalls:
-      m_Calls: []
-  m_OnDeactivate:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!54 &1106549007
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -84205,6 +84084,29 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4676914170214726, guid: 833e136933ed4c04fbccff29bc05bcdb, type: 3}
   m_PrefabInstance: {fileID: 1124869752}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1125398627 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5974030681609081201, guid: 64805f52a03305d47aeb28b08c3d513f, type: 3}
+  m_PrefabInstance: {fileID: 5974030681877831018}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1125398628
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1125398627}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fea29bb7c508c244a1f805a5fd3fc4d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  outlineMode: 0
+  outlineColor: {r: 0.67051476, g: 0.9811321, b: 0.6247775, a: 1}
+  outlineWidth: 10
+  precomputeOutline: 0
+  bakeKeys: []
+  bakeValues: []
 --- !u!1001 &1126127421
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -105719,7 +105621,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 103471642}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 38e0958ae5f4e37458dde91f14518585, type: 3}
   m_Name: 
@@ -105742,7 +105644,7 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 1
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Size: {x: 0.11403594, y: 0.0392809, z: 0.16367002}
   m_Center: {x: 0.011950606, y: 0.01964045, z: 0.017153012}
@@ -105753,7 +105655,7 @@ AudioSource:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 103471642}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 8300000, guid: a55101d7f01c83a49a800da18fcba5bb, type: 3}
@@ -105850,7 +105752,7 @@ Animator:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 103471642}
-  m_Enabled: 1
+  m_Enabled: 0
   m_Avatar: {fileID: 0}
   m_Controller: {fileID: 9100000, guid: 113bdb00e8f15b54198f43108ad77a7d, type: 2}
   m_CullingMode: 0
@@ -132257,7 +132159,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: You must done you work before you go out
+  m_Text: You must done your work before you go out
 --- !u!222 &1711427911
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -133851,6 +133753,7 @@ GameObject:
   - component: {fileID: 1739159625}
   - component: {fileID: 1739159626}
   - component: {fileID: 1739159627}
+  - component: {fileID: 1739159628}
   m_Layer: 0
   m_Name: Snacks
   m_TagString: Snack
@@ -134060,7 +133963,19 @@ MonoBehaviour:
         m_CallState: 2
   onTriggerDownOnce:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1739159628}
+        m_TargetAssemblyTypeName: SnackGuideIntroTrigger, Assembly-CSharp
+        m_MethodName: TryTriggerGuideIntro
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   onObjectAttached:
     m_PersistentCalls:
       m_Calls: []
@@ -134071,6 +133986,28 @@ MonoBehaviour:
   snapSnackToHandOnAttach: 1
   snackLocalPositionOffset: {x: 0, y: 0, z: 0.2}
   snackLocalEulerOffset: {x: 0, y: 0, z: 0}
+--- !u!114 &1739159628
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1739159621}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0461e21684118ae4ab3bb9fc4077d584, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableGuideIntro: 1
+  guideTriggered: 0
+  guideIntroTtsPath: TTS/Introduce/Snack
+  guideAnimatorTrigger: Shining
+  guideAnimator: {fileID: 1182111876}
+  guideOutlines: []
+  onGuideTriggered:
+    m_PersistentCalls:
+      m_Calls: []
+  suppressNormalSnackTts: 1
 --- !u!1001 &1739290105
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -139690,12 +139627,11 @@ MonoBehaviour:
   currentHand: 2
   handTransform: {fileID: 1892783952}
   rayInteractableTag: RayInteractable
-  snackRootTag: Snacks
   maxRayDistance: 100
   raycastLayers:
     serializedVersion: 2
     m_Bits: 4294967291
-  queryTriggerInteraction: 1
+  queryTriggerInteraction: 2
 --- !u!135 &1839549370
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -167253,9 +167189,10 @@ GameObject:
   - component: {fileID: 33162650913113383}
   - component: {fileID: 33162650913113382}
   - component: {fileID: 33162650913113384}
+  - component: {fileID: 33162650913113385}
   m_Layer: 0
   m_Name: SM_Prop_Computer_Keyboard_01 (2)
-  m_TagString: Untagged
+  m_TagString: RayInteractable
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -168997,6 +168934,16 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 5d1dad50311121f41be30c6740e03d6e, type: 3}
   - {fileID: 8300000, guid: 679f9d8fb4ce5a74c98f639b38121c63, type: 3}
   - {fileID: 8300000, guid: 482bbdf2bae278341815cedb49f32960, type: 3}
+  enableGuideIntro: 1
+  guideTriggered: 0
+  guideIntroTtsPath: TTS/Introduce/keyboard
+  guideAnimatorTrigger: Shining
+  guideAnimator: {fileID: 88068905}
+  guideOutlines:
+  - {fileID: 33162650913113385}
+  onGuideTriggered:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!65 &33162650913113383
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -169114,6 +169061,24 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &33162650913113385
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1324922381410783}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fea29bb7c508c244a1f805a5fd3fc4d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  outlineMode: 0
+  outlineColor: {r: 0.67051476, g: 0.9811321, b: 0.6247775, a: 1}
+  outlineWidth: 10
+  precomputeOutline: 0
+  bakeKeys: []
+  bakeValues: []
 --- !u!114 &52416911237746133
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -180228,10 +180193,10 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 5974030681375158574, guid: 64805f52a03305d47aeb28b08c3d513f, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1106549003}
-    - targetCorrespondingSourceObject: {fileID: 5974030681375158574, guid: 64805f52a03305d47aeb28b08c3d513f, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 1106549007}
+    - targetCorrespondingSourceObject: {fileID: 5974030681609081201, guid: 64805f52a03305d47aeb28b08c3d513f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1125398628}
   m_SourcePrefab: {fileID: 100100000, guid: 64805f52a03305d47aeb28b08c3d513f, type: 3}
 --- !u!210 &6016779121718351791
 SortingGroup:

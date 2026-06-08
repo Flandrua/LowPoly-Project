@@ -161,6 +161,14 @@ public class EndingManager : MonoSingleton<EndingManager>
                 continue;
             }
 
+            // Inactive areas never ran Awake(), so their internal areaMesh is null and
+            // SetLocked() -> UpdateVisuals() would throw a NullReferenceException. They also
+            // can't be teleported to while inactive, so there is nothing to lock.
+            if (!area.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
             if (area.name == TeleportAreaStartName)
             {
                 area.SetLocked(false);

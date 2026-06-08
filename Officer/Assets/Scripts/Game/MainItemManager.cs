@@ -88,6 +88,16 @@ public class MainItemManager : MonoSingleton<MainItemManager>
         }
     }
 
+    public void HideSpawnOutlineForRayTarget(GameObject rayRoot)
+    {
+        if (rayRoot == null)
+        {
+            return;
+        }
+
+        SetOutlineVisibleRecursive(rayRoot, false);
+    }
+
     private void SetOutlineVisibleRecursive(GameObject target, bool visible)
     {
         if (target == null)

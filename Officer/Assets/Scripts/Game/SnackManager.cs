@@ -25,6 +25,7 @@ public class SnackManager : MonoSingleton<SnackManager>
     [SerializeField] private float rayHideOutlineDelayAfterSpawn = 0.35f;
     private float _rayHideOutlineEnableTime;
     private bool _hasPlayedPickupTtsForCurrentSnack;
+    private bool _suppressNormalSnackTtsOnce;
     private Vector3 initialPosition;
     private Quaternion initialRotation;
     private Rigidbody _rb;
@@ -93,6 +94,7 @@ public class SnackManager : MonoSingleton<SnackManager>
         ResetSnackRootState(true);
         _spawnOutlineHiddenBySnackGrab = false;
         _hasPlayedPickupTtsForCurrentSnack = false;
+        _suppressNormalSnackTtsOnce = false;
         _rayHideOutlineEnableTime = Time.time + Mathf.Max(0f, rayHideOutlineDelayAfterSpawn);
 
         if (_curSnacks != null)
@@ -129,6 +131,7 @@ public class SnackManager : MonoSingleton<SnackManager>
         _lastGrabState = false;
         _spawnOutlineHiddenBySnackGrab = false;
         _hasPlayedPickupTtsForCurrentSnack = false;
+        _suppressNormalSnackTtsOnce = false;
         NotifySnackHint(false);
         ResetSnackRootState(true);
 
@@ -180,6 +183,7 @@ public class SnackManager : MonoSingleton<SnackManager>
     {
         _lastGrabState = false;
         _spawnOutlineHiddenBySnackGrab = false;
+        _suppressNormalSnackTtsOnce = false;
         NotifySnackHint(false);
         ResetSnackRootState(true);
         if (_curSnacks != null && !_curSnacks.activeInHierarchy)
@@ -227,6 +231,12 @@ public class SnackManager : MonoSingleton<SnackManager>
             return;
         }
 
+        // While snack guide intro is still pending, keep its guide highlight alive until trigger.
+        if (IsCurrentSnackGuidePending())
+        {
+            return;
+        }
+
         _spawnOutlineHiddenBySnackGrab = true;
         SetSpawnObjectOutlineVisible(false);
     }
@@ -235,6 +245,12 @@ public class SnackManager : MonoSingleton<SnackManager>
     public void HideSpawnOutlineForRayTarget(GameObject rayRoot)
     {
         if (rayRoot == null)
+        {
+            return;
+        }
+
+        // Keep guide highlight persistent before the snack guide trigger is completed.
+        if (IsCurrentSnackGuidePending() && IsCurrentSnackRoot(rayRoot))
         {
             return;
         }
@@ -268,6 +284,22 @@ public class SnackManager : MonoSingleton<SnackManager>
         SetOutlineVisibleRecursive(_curSnacks, visible);
     }
 
+    private bool IsCurrentSnackGuidePending()
+    {
+        if (_curSnacks == null)
+        {
+            return false;
+        }
+
+        SnackGuideIntroTrigger guide = _curSnacks.GetComponent<SnackGuideIntroTrigger>();
+        if (guide == null)
+        {
+            guide = _curSnacks.GetComponentInParent<SnackGuideIntroTrigger>();
+        }
+
+        return guide != null && guide.IsGuidePending();
+    }
+
     private void SetOutlineVisibleRecursive(GameObject target, bool visible)
     {
         if (target == null)
@@ -287,6 +319,12 @@ public class SnackManager : MonoSingleton<SnackManager>
 
     public void PlaySnackTTS()
     {
+        if (_suppressNormalSnackTtsOnce)
+        {
+            _suppressNormalSnackTtsOnce = false;
+            return;
+        }
+
         if (string.IsNullOrEmpty(audioAsset))
         {
             Debug.LogWarning($"SnackManager: no TTS clip found for snack [{_snackName}].");
@@ -294,6 +332,13 @@ public class SnackManager : MonoSingleton<SnackManager>
         }
 
         TTSManager.Instance.PlayTTS(audioAsset);
+    }
+
+    // Called before a guide TriggerOnce callback runs, so the same trigger does not
+    // also play the snack's normal introduction TTS.
+    public void SuppressNextNormalSnackTTS()
+    {
+        _suppressNormalSnackTtsOnce = true;
     }
 
     // Resolve the snack's TTS clip by trying snackName first, then the GameObject name,

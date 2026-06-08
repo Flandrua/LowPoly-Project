@@ -6,6 +6,9 @@ using Unity.VisualScripting;
 
 using UnityEngine;
 
+using UnityEngine.Events;
+using UnityEngine.EventSystems;
+
 using UnityEngine.UI;
 
 
@@ -102,7 +105,7 @@ public enum HamsterEyes
 
 };
 
-public class HamsterController : MonoSingleton<HamsterController>
+public class HamsterController : MonoSingleton<HamsterController>, IPointerClickHandler
 
 {
 
@@ -157,6 +160,20 @@ public class HamsterController : MonoSingleton<HamsterController>
     public AudioClip hit;
 
     public AudioClip eat;
+    [Header("Guide Intro")]
+    [SerializeField] private bool enableGuideIntro = true;
+    [SerializeField] private bool guideTriggered;
+    [SerializeField] private string guideIntroTtsPath = "TTS/Introduce/Hamster";
+    [SerializeField] private string guideAnimatorTrigger = "Shining";
+    [SerializeField] private Animator guideAnimator;
+    [Tooltip("Manual assignment only. Drag scene Outline components here.")]
+    public Outline[] guideOutlines;
+    [SerializeField] private UnityEvent onGuideTriggered;
+    [Header("Trigger Enter Callback")]
+    [Tooltip("Invoked once on the first valid OnTriggerEnter interaction with Player.")]
+    [SerializeField] private UnityEvent onTriggerEnterOnce;
+    [SerializeField] private bool hasTriggeredOnTriggerEnterOnce;
+    private bool _missingGuideOutlineLogged;
 
     private void Awake()
 
@@ -173,16 +190,18 @@ public class HamsterController : MonoSingleton<HamsterController>
     {
 
         CacheComponents();
+        ResolveGuideReferences();
+        SetGuideOutlineVisible(enableGuideIntro && !guideTriggered);
 
     }
-
-
 
     private void OnEnable()
 
     {
 
         CacheComponents();
+        ResolveGuideReferences();
+        SetGuideOutlineVisible(enableGuideIntro && !guideTriggered);
 
         RegisterEvents();
 
@@ -231,6 +250,16 @@ public class HamsterController : MonoSingleton<HamsterController>
 
         UnregisterEvents();
 
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (!IsPlayerInteractionAllowed())
+        {
+            return;
+        }
+
+        TryTriggerGuideIntro();
     }
 
 
@@ -560,12 +589,12 @@ public class HamsterController : MonoSingleton<HamsterController>
     private void OnTriggerEnter(Collider other)
 
     {
-
-        if (!IsHamsterGameplayEnabled() || isDead || isOut) return;
+        if (!IsHamsterGameplayEnabled() || isDead || isOut || !IsPlayerInteractionAllowed()) return;
 
         if (other.CompareTag("Player") && !isEating)
 
         {
+            InvokeTriggerEnterOnceIfNeeded();
 
             onTrigger = true;
 
@@ -628,7 +657,6 @@ public class HamsterController : MonoSingleton<HamsterController>
         else if (other.CompareTag("Snack") && !isPlay)
 
         {
-
             onTrigger = true;
 
             isEating = true;
@@ -645,6 +673,17 @@ public class HamsterController : MonoSingleton<HamsterController>
 
         }
 
+    }
+
+    private void InvokeTriggerEnterOnceIfNeeded()
+    {
+        if (hasTriggeredOnTriggerEnterOnce)
+        {
+            return;
+        }
+
+        hasTriggeredOnTriggerEnterOnce = true;
+        onTriggerEnterOnce?.Invoke();
     }
 
     private void BarHide()
@@ -1034,8 +1073,94 @@ public class HamsterController : MonoSingleton<HamsterController>
         TimeManager.Instance.AddTask(4.1f, false, () => { _animator.Play("Walk"); }, this);
 
     }
+    public void TryTriggerGuideIntro()
+    {
+        if (!enableGuideIntro || guideTriggered)
+        {
+            return;
+        }
 
+        guideTriggered = true;
+        SetGuideOutlineVisible(false);
 
+        if (!string.IsNullOrEmpty(guideIntroTtsPath) && TTSManager.Instance != null)
+        {
+            AudioClip guideClip = Resources.Load<AudioClip>(guideIntroTtsPath);
+            if (guideClip != null)
+            {
+                if (GameManager.Instance != null)
+                {
+                    GameManager.Instance.PushPlayerInteractionLock();
+                    TTSManager.Instance.PlayTTS(guideClip, () =>
+                    {
+                        if (GameManager.Instance != null)
+                        {
+                            GameManager.Instance.PopPlayerInteractionLock();
+                        }
+                    });
+                }
+                else
+                {
+                    TTSManager.Instance.PlayTTS(guideClip);
+                }
+            }
+        }
+
+        Animator targetAnimator = guideAnimator != null ? guideAnimator : _animator;
+        if (targetAnimator != null && !string.IsNullOrEmpty(guideAnimatorTrigger))
+        {
+            targetAnimator.SetTrigger(guideAnimatorTrigger);
+        }
+
+        onGuideTriggered?.Invoke();
+    }
+
+    public bool HasTriggeredGuideIntro()
+    {
+        return guideTriggered;
+    }
+
+    public void ForceCompleteGuideIntro()
+    {
+        enableGuideIntro = false;
+        guideTriggered = true;
+        SetGuideOutlineVisible(false);
+    }
+
+    private void ResolveGuideReferences()
+    {
+        if (guideAnimator == null)
+        {
+            guideAnimator = _animator != null ? _animator : GetComponentInParent<Animator>();
+        }
+    }
+
+    private bool IsPlayerInteractionAllowed()
+    {
+        return GameManager.Instance == null || GameManager.Instance.IsPlayerInteractionEnabled;
+    }
+
+    private void SetGuideOutlineVisible(bool visible)
+    {
+        ResolveGuideReferences();
+        if (guideOutlines == null || guideOutlines.Length == 0)
+        {
+            if (!_missingGuideOutlineLogged)
+            {
+                Debug.LogWarning("HamsterController: Guide outlines are missing. Please add Outline components in scene and assign guideOutlines.");
+                _missingGuideOutlineLogged = true;
+            }
+            return;
+        }
+
+        for (int i = 0; i < guideOutlines.Length; i++)
+        {
+            if (guideOutlines[i] != null)
+            {
+                guideOutlines[i].enabled = visible;
+            }
+        }
+    }
 
     /// <summary>
 
