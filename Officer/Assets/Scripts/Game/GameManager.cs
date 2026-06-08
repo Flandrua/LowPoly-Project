@@ -621,38 +621,10 @@ public class GameManager : MonoSingleton<GameManager>
         }
 
         _hasEvaluatedDayOneGuides = true;
-        if (HasAnyGuideTriggeredInDayOne())
-        {
-            return;
-        }
 
+        // Guides are a day-one tutorial. When entering day 2, force-complete every guide (whether or
+        // not the player triggered it) so no green guide outline lingers past the first day.
         ForceCompleteAllGuidesAsLearned();
-    }
-
-    private bool HasAnyGuideTriggeredInDayOne()
-    {
-        KeyboardController keyboard = FindObjectOfType<KeyboardController>(true);
-        if (keyboard != null && keyboard.HasTriggeredGuideIntro())
-        {
-            return true;
-        }
-
-        HamsterController hamster = FindObjectOfType<HamsterController>(true);
-        if (hamster != null && hamster.HasTriggeredGuideIntro())
-        {
-            return true;
-        }
-
-        SnackGuideIntroTrigger[] snackGuides = FindObjectsOfType<SnackGuideIntroTrigger>(true);
-        for (int i = 0; i < snackGuides.Length; i++)
-        {
-            if (snackGuides[i] != null && snackGuides[i].HasTriggeredGuideIntro())
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private void ForceCompleteAllGuidesAsLearned()
@@ -699,6 +671,17 @@ public class GameManager : MonoSingleton<GameManager>
 
     public void SleepToNextDayFromInteraction()
     {
+        // Only night is a valid time to sleep. If the player triggers the bed during morning/
+        // afternoon, give audio feedback that it's not time to sleep yet instead of doing nothing.
+        if (!IsNightStage)
+        {
+            if (TTSManager.Instance != null)
+            {
+                TTSManager.Instance.PlayTTS("TTS/ItemGet/NotTimeToSleep");
+            }
+            return;
+        }
+
         TrySleepToNextDay();
     }
 

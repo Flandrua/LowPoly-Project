@@ -11390,7 +11390,7 @@ MonoBehaviour:
   maxRayDistance: 100
   raycastLayers:
     serializedVersion: 2
-    m_Bits: 4294967291
+    m_Bits: 0
   queryTriggerInteraction: 2
 --- !u!135 &158819311
 SphereCollider:
@@ -139630,7 +139630,7 @@ MonoBehaviour:
   maxRayDistance: 100
   raycastLayers:
     serializedVersion: 2
-    m_Bits: 4294967291
+    m_Bits: 0
   queryTriggerInteraction: 2
 --- !u!135 &1839549370
 SphereCollider:

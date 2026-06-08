@@ -346,11 +346,21 @@ public class LaserPointerHandler : MonoBehaviour
             || rayRoot.GetComponentInParent<ItemData>() != null;
     }
 
+    private int GetEffectiveRaycastLayers()
+    {
+        // The scene keeps serializing this mask as Nothing (m_Bits: 0) — e.g. when the LayerMask
+        // gets cleared in the Inspector — which makes RaycastAll hit nothing and silently disables
+        // the whole laser. Self-heal at runtime: an empty mask falls back to the default raycast mask
+        // so the laser always works regardless of what the scene serialized.
+        int mask = raycastLayers.value;
+        return mask == 0 ? Physics.DefaultRaycastLayers : mask;
+    }
+
     private Transform FindFirstAllowedHit(out float hitDistance)
     {
         hitDistance = maxRayDistance;
         Ray ray = new Ray(transform.position, transform.forward);
-        RaycastHit[] hits = Physics.RaycastAll(ray, maxRayDistance, raycastLayers, queryTriggerInteraction);
+        RaycastHit[] hits = Physics.RaycastAll(ray, maxRayDistance, GetEffectiveRaycastLayers(), queryTriggerInteraction);
         if (hits == null || hits.Length == 0)
         {
             return null;

@@ -63,6 +63,16 @@
 - 当前近手悬停已被禁用：手部靠近不会触发 `OnHandHoverBegin/End` 交互，悬停高亮与 UI 由射线专用回调 `OnRayHoverBegin/End` 驱动
 - 当前 `GameManager` 已暴露 `playerRayLength`，可统一控制玩家左右手射线长度
 - 当前道具 TTS 链路为“双通道”：首次拿起走 `onObjectAttachedOnce -> ItemData.TryPlayPickupTTSOnce()`；按 Trigger 走 `onTriggerDown -> ItemData.PlayPickupTTS()`
+- 当前手部交互为“双入口”：远距用 `LaserPointerHandler`（射线），近距用 `HandGrabCollider`（手部碰撞球）；两者都能抓取、Trigger、触发 guide
+- 当前 `HandGrabCollider` 挂在场景 `RightHand` / `LeftHand` 上，依赖该手已有的触发器碰撞体收 `OnTriggerEnter/Exit`；它**完全独立于 laser 的悬停状态**，不调用 `OnRayHoverBegin/End`，因此不会干扰射线
+- 当前 `MyInteractableSteamVR` 暴露 `DispatchTriggerFromExternalHand(Hand)` 作为碰撞球的 Trigger 入口，内部仍走 `TryDispatchTriggerFromHand` 的同帧去重，避免与 laser 重复触发
+- 当前 `HandGrabCollider` 释放物体后会把它加入“忽略集”，直到它真正离开碰撞球才允许再次抓取，防止吸附在手上的物体被反复重抓
+- ⚠️ 已知坑：`LaserPointerHandler` 的 `raycastLayers`（Inspector 里的 Raycast Layers）会反复被序列化成 `Nothing`（`m_Bits: 0`），导致 `RaycastAll` 打不到任何东西、laser 完全失效（不悬停/不抓取/不点击 guide），并连带让零食 guide outline 卡在常亮；**注意：Unity 开着场景时改磁盘 `.unity` 文件无效，会被内存版本覆盖回 0**
+- 当前已在代码层自愈：`LaserPointerHandler.GetEffectiveRaycastLayers()` 在 mask 为空(0)时自动回退到 `Physics.DefaultRaycastLayers`，因此不管场景序列化成什么，laser 都能命中；理想 Inspector 值仍为 `Everything`（除 Ignore Raycast，`m_Bits: 4294967291`）
+- 当前零食有“两层 outline”：绿色为 guide 介绍 outline（`SnackGuideIntroTrigger.guideOutlines`），黄色为出生提示 outline（`SnackManager` 控制，挂在 `_curSnacks` 子树）；二者独立
+- 当前键盘/仓鼠 guide 走 `IPointerClickHandler.OnPointerClick -> TryTriggerGuideIntro()`：laser 经 `HandleFilteredClick` 的 `pointerClick` 触发，碰撞球则在重叠时直接调用 `TryTriggerGuideIntro()`
+- 当前 guide 视为“第一天教学”：第 1 天进入第 2 天时，`GameManager.HandleDayOneGuideFallbackBeforeDayIncrement()` 会**无条件** `ForceCompleteAllGuidesAsLearned()`（键盘/仓鼠/零食），无论玩家是否触发过，避免绿色 guide outline 残留到第二天
+- 当前睡觉入口为 `GameManager.SleepToNextDayFromInteraction()`（床 trigger 绑定）；非晚上（`!IsNightStage`）触发时播放 `TTS/ItemGet/NotTimeToSleep` 并返回，晚上才走 `TrySleepToNextDay()`
 
 ## 当前交互链路说明
 - 工作进度链路：`GameManager.currentWorkProgress` ↔ `DataCenter.GameData.PlayerData.workProgress` → `EventCommon.UPDATE_MONITOR` → `MainMonitorData.UpdateInfo()` → 主监视器 `Scrollbar`
@@ -73,6 +83,13 @@
 - 射线悬停链路：`LaserPointerHandler.RaycastAll`（穿透非目标 Tag）→ `MyInteractableSteamVR.OnRayHoverBegin/End` → Interactable 高亮 / Item UI / Hover 回调
 - 射线点击链路：`LaserPointerHandler.HandleFilteredClick()` → `pointerDown/pointerClick/pointerUp`（仅对过滤后的目标触发）
 - Trigger 播放链路：`MyInteractableSteamVR` 在“射线悬停中”或“已抓在手上”时监听 `InteractUI` 抬起并触发 `onTriggerDown`
+- 手部碰撞球抓取链路：`HandGrabCollider.OnTriggerEnter/Exit` 收集 `canBeMoved` 的 `MyInteractableSteamVR` 候选（先进先抓）→ `GrabGrip` 按下抓取/跟随、抬起释放
+- 手部碰撞球 Trigger 链路：`HandGrabCollider.DispatchTrigger()` → `MyInteractableSteamVR.DispatchTriggerFromExternalHand()` → `onTriggerDown`（与 laser 帧级去重，不重复）
+- 手部碰撞球 guide 链路：`HandGrabCollider` 同时收集带 `KeyboardController`/`HamsterController` 的 guide 目标，`InteractUI` 抬起时直接调用其 `TryTriggerGuideIntro()`
+- 零食出生提示 outline 隐藏链路：射线指到走 `LaserPointerHandler -> SnackManager.HideSpawnOutlineForRayTarget()`；零食 guide 完成走 `SnackGuideIntroTrigger.TryTriggerGuideIntro() -> SnackManager.HideCurrentSnackSpawnOutline()`（按 `_curSnacks` 根隐藏，避免 guide 挂在子物体时漏掉根上的黄色 outline）
+- 零食 guide 未完成时，`SnackManager` 会用 `IsCurrentSnackGuidePending()` 拦截出生提示的隐藏，保证 guide 期间提示常亮，直到 guide 被触发
+- 睡觉交互链路：床 trigger → `GameManager.SleepToNextDayFromInteraction()` → 非晚上播放 `NotTimeToSleep`；晚上 → `TrySleepToNextDay()` → `CHANGE_TIME` 推进到次日
+- 第一天 guide 收尾链路：晚→次日换天、`days++` 前 → `HandleDayOneGuideFallbackBeforeDayIncrement()` → `ForceCompleteAllGuidesAsLearned()` → 各 `ForceCompleteGuideIntro()` 关闭绿色 outline 并标记已学完（仅执行一次，`_hasEvaluatedDayOneGuides`）
 - 提示区域挂点：`Player/Container/SteamVRObjects/VRCamera/FollowHead/HeadCollider`
 - `HeadCollider` 下会在运行时创建 `HeadColliderVisual` 子物体，并挂载球体 MeshRenderer 作为提示显示
 - 当前提示样式为淡蓝色半透明球体；默认隐藏，玩家拿起零食时显示，放下或吃掉后隐藏
@@ -91,6 +108,10 @@
 - VR 输入改动：明确区分左手/右手输入源、平滑移动、Snap Turn、传送、抓取
 - 视线/注视改动：优先复用 `PlayerSteamVRManager` 中统一的中心视线结果，不要在每个目标组件里重复发同样的 `Raycast`
 - 射线可交互改动：优先在 `LaserPointerHandler` 维护“命中筛选 + 可视长度 + 点击派发”统一逻辑，避免在多个目标脚本重复判定
+- 手部碰撞球改动：只改 `HandGrabCollider`，保持它独立于 laser 的悬停状态（不要调用 `OnRayHoverBegin/End`），避免两套交互互相污染 `isRayHovering`
+- laser “完全没反应”时：先查 `LaserPointerHandler.raycastLayers` 是否被设成 `Nothing`，再查目标 Tag 与 Layer；代码已有 `GetEffectiveRaycastLayers()` 兜底，**不要**在 Unity 开着场景时改磁盘 `.unity` 去修 mask（会被内存版本覆盖）
+- 改睡觉/换天逻辑：非晚上反馈走 `SleepToNextDayFromInteraction()`；实际推进仍由 `TrySleepToNextDay()` 负责，注意 `_isStageAdvanceRequested` 空档期
+- 改 guide 生命周期：第一天教学在进第二天时统一 `ForceCompleteGuideIntro()`，不要在单个 guide 里单独做跨天重置
 - 场景相关问题：优先查组件引用、事件回调、Layer/Collider、Toggle 状态，再改代码
 - 第三方代码必须改时：尽量做最小补丁，并在本文档记录原因、影响范围、回退方式
 
@@ -116,6 +137,13 @@
    - 射线悬停、点击、抓取是否正常
    - 手部靠近物体时不应触发交互高亮/Trigger；仅射线命中时触发
    - 射线前方存在非目标 Tag 遮挡时，应能穿透并命中后方目标 Tag 物体
+   - 若涉及 laser：确认 `LaserPointerHandler.raycastLayers` 不为 `Nothing`；laser 应能悬停/抓取/Trigger/点击键盘仓鼠 guide
+   - 若涉及手部碰撞球：手贴近道具按 `GrabGrip` 抓起/松开；贴近物体按 `InteractUI` 触发 TTS；贴近键盘/仓鼠按 `InteractUI` 触发 guide
+   - 若涉及手部碰撞球：碰撞球抓食物→松开→手移开（食物离开球）后再按 grab，不应无条件重抓同一食物
+   - 加了碰撞球后，laser 自身的悬停/抓取/Trigger 不应被破坏（两套交互可共存）
+   - 若涉及零食 guide outline：guide 期间黄色出生提示常亮；用 laser 或碰撞球触发 guide 后，绿色 guide outline 与黄色出生提示都应熄灭
+   - 若涉及第一天 guide 跨天：第 1 天只触发部分 guide 后睡觉进第 2 天，所有绿色 guide outline（含未触发的键盘/仓鼠/零食）应全部熄灭且不再出现
+   - 若涉及睡觉：早上/下午 trigger 床应播放 `NotTimeToSleep` 且不推进天数；晚上 trigger 床应正常进入次日
    - `GameManager.playerRayLength` 在运行时调节后，左右手射线可见长度与命中距离应同步变化
    - 抓起零食后按 Trigger 应播放对应零食 TTS；道具按 Trigger 应播放道具 TTS；首次拿起道具仍只触发一次首次拿起 TTS
    - 若涉及 `GameManager.currentWorkProgress`：运行时手动修改该值后，确认 `DataCenter.GameData.PlayerData.workProgress` 与主监视器进度条同步变化
@@ -131,6 +159,10 @@
 
 ## 常见任务模板
 - **改输入逻辑**：先确认使用的是 `SteamVR` 还是 `XRI` 输入链路，再改对应脚本
+- **改手部交互（射线/碰撞球）**：先分清是 `LaserPointerHandler`（远距射线）还是 `HandGrabCollider`（近距碰撞球）；两者各自维护抓取/Trigger/guide，碰撞球必须保持独立、不碰 laser 的 `isRayHovering`
+- **修 laser 失效**：先确认 `GetEffectiveRaycastLayers()` 兜底是否生效；再查目标 Tag/Layer；不要依赖改磁盘 `.unity` 修 `raycastLayers`
+- **改床/睡觉交互**：确认床 trigger 绑定的是 `SleepToNextDayFromInteraction()` 而非直接调 `TrySleepToNextDay()`；非晚上 TTS 路径为 `TTS/ItemGet/NotTimeToSleep`
+- **改 guide 跨天残留**：检查 `HandleDayOneGuideFallbackBeforeDayIncrement()` 是否在 `days++` 前执行，以及 `ForceCompleteAllGuidesAsLearned()` 是否覆盖键盘/仓鼠/所有 `SnackGuideIntroTrigger`
 - **改中心视野逻辑**：优先修改 `PlayerSteamVRManager` 的统一视线检测参数或 `CenterGazeCallback` 的目标判定，不要为每个目标单独复制一套头显射线检测
 - **改 UI 交互**：优先增加 Inspector 可绑定入口，不要把 UI 查找逻辑写死
 - **改进度显示/调试入口**：优先复用 `DataCenter.GameData.PlayerData.workProgress` 与 `EventCommon.UPDATE_MONITOR` 链路；若需要手动调试，优先暴露 `GameManager.currentWorkProgress`
