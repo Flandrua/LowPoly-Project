@@ -1,5 +1,7 @@
 ﻿# CLAUDE.md - Officer
 
+> Last updated: 2026-08-14 18:40 +08
+
 ## 项目概述
 这是一个基于 Unity `2022.3.22f1` 的 VR 办公室互动项目，集成了 `SteamVR`、`XR Interaction Toolkit`、`OpenXR` 与 `PICO XR` 相关能力。项目核心目标是实现玩家在办公室场景中的移动、转向、物品交互、数据/UI 展示，以及基于 VR 手柄的交互流程。
 
@@ -10,11 +12,12 @@
 - 打开 C# 工程：双击 `Officer.sln`
 - 查看包依赖：检查 `Packages/manifest.json`
 - 查看 Unity 版本：检查 `ProjectSettings/ProjectVersion.txt`
-- 重新导入输入/脚本后验证：回到 Unity Editor 等待编译完成并检查 `Console`
+- 重新导入输入/脚本后验证：回到 Unity Editor 等待编译完成并检查 `Console`；`unity-log` MCP 助手可能读不到编译错误，以 `EditorUtility.scriptCompilationFailed` 和 `%LOCALAPPDATA%\Unity\Editor\Editor.log` 为准
+- Unity MCP：Editor 里 `puerts-mcp` 默认监听 `http://127.0.0.1:3100/mcp`（工具 `evalJsCode`）；Cursor 内置 MCP 列表里没有它，需直连该端口
 - Android 打包入口：在 Unity Editor 中使用 `File > Build Settings`
 
 ## 架构边界（严格遵守）
-- 业务逻辑 → `Assets/Scripts/Game/`
+- 业务逻辑 → `Assets/Scripts/Game/`（含第 1 天教学 `DayOneTutorialDirector`）
 - VR 交互与输入逻辑 → `Assets/Scripts/SteamVRScripts/`
 - 数据定义与数据中心 → `Assets/Scripts/Data/`
 - 事件系统 → `Assets/Scripts/Event/`
@@ -38,7 +41,7 @@
 - 不在未确认文件真实编码前，直接覆盖出现乱码的文档文件
 
 ## 项目结构建议
-- `Assets/Scripts/Game/`：玩法、流程、玩家状态、关卡逻辑
+- `Assets/Scripts/Game/`：玩法、流程、玩家状态、关卡逻辑、第 1 天教学（`DayOneTutorialDirector.cs`、`GuideAnimationLoop.cs`）
 - `Assets/Scripts/SteamVRScripts/`：手柄输入、射线交互、抓取、转向、传送回调
 - `Assets/Scripts/Data/`：`DataCenter`、`SnackData`、`ItemData` 等数据定义
 - `Assets/Scripts/Event/`：项目内事件广播与解耦
@@ -68,11 +71,22 @@
 - 当前 `MyInteractableSteamVR` 暴露 `DispatchTriggerFromExternalHand(Hand)` 作为碰撞球的 Trigger 入口，内部仍走 `TryDispatchTriggerFromHand` 的同帧去重，避免与 laser 重复触发
 - 当前 `HandGrabCollider` 释放物体后会把它加入“忽略集”，直到它真正离开碰撞球才允许再次抓取，防止吸附在手上的物体被反复重抓
 - ⚠️ 已知坑：`LaserPointerHandler` 的 `raycastLayers`（Inspector 里的 Raycast Layers）会反复被序列化成 `Nothing`（`m_Bits: 0`），导致 `RaycastAll` 打不到任何东西、laser 完全失效（不悬停/不抓取/不点击 guide），并连带让零食 guide outline 卡在常亮；**注意：Unity 开着场景时改磁盘 `.unity` 文件无效，会被内存版本覆盖回 0**
+- ⚠️ 已知坑：`KeyboardController` 若 `using System`，`Random.Range` 会和 `System.Random` 冲突（CS0104），必须写 `UnityEngine.Random.Range`
+- ⚠️ 已知坑：Unity MCP 的 `unity-log` 在编译失败时可能返回 0 条 error；以 `EditorUtility.scriptCompilationFailed` 和 `%LOCALAPPDATA%\Unity\Editor\Editor.log` 为准
 - 当前已在代码层自愈：`LaserPointerHandler.GetEffectiveRaycastLayers()` 在 mask 为空(0)时自动回退到 `Physics.DefaultRaycastLayers`，因此不管场景序列化成什么，laser 都能命中；理想 Inspector 值仍为 `Everything`（除 Ignore Raycast，`m_Bits: 4294967291`）
-- 当前零食有“两层 outline”：绿色为 guide 介绍 outline（`SnackGuideIntroTrigger.guideOutlines`），黄色为出生提示 outline（`SnackManager` 控制，挂在 `_curSnacks` 子树）；二者独立
-- 当前键盘/仓鼠 guide 走 `IPointerClickHandler.OnPointerClick -> TryTriggerGuideIntro()`：laser 经 `HandleFilteredClick` 的 `pointerClick` 触发，碰撞球则在重叠时直接调用 `TryTriggerGuideIntro()`
-- 当前 guide 视为“第一天教学”：第 1 天进入第 2 天时，`GameManager.HandleDayOneGuideFallbackBeforeDayIncrement()` 会**无条件** `ForceCompleteAllGuidesAsLearned()`（键盘/仓鼠/零食），无论玩家是否触发过，避免绿色 guide outline 残留到第二天
-- 当前睡觉入口为 `GameManager.SleepToNextDayFromInteraction()`（床 trigger 绑定）；非晚上（`!IsNightStage`）触发时播放 `TTS/ItemGet/NotTimeToSleep` 并返回，晚上才走 `TrySleepToNextDay()`
+- 当前零食有“两层 outline”：绿色为旧 guide 介绍 outline（`SnackGuideIntroTrigger.guideOutlines`），黄色为出生提示 outline（`SnackManager` 控制，挂在 `_curSnacks` 子树）；二者独立。第 1 天旧绿色 guide 开局即被强制关闭
+- 当前睡觉入口为 `GameManager.SleepToNextDayFromInteraction()`（床 trigger 绑定）；非晚上播放 `TTS/ItemGet/NotTimeToSleep`；第 1 天晚上还要先看完床，`TrySleepToNextDay()` 才会放行
+- 键盘有效 slap 在进度条加满的那一次就 `PREPARE_CHANGE_TIME "work"`，不要再依赖“打满后再多拍一拍”
+
+## 第 1 天教学
+- 只认 `DayOneTutorialDirector`。`GameManager.Awake` 若场景里没有该组件会运行时 `AddComponent`；要在 Inspector 挂 TTS，必须在 `GameManager` 上保存一份该组件，并配置 `stepHooks`
+- 流程（仅 `days == 1`）：`StartTriggerBox` 到达工位 → 早班只出键盘（循环 `Shining`；`guideDismissHitCount` 默认 3 次有效 slap 关动画；打满场景 `requireHit`，当前 Simple Sample 为 10，才换阶段）→ 仓鼠开启则下午只出仓鼠（摸满 `stayRequireTime` 进晚上）→ 晚上固定 `Chips`（先自己吃；仓鼠开启再刷一包只喂、禁止抚摸）→ 注视床约 `bedGazeDuration`（默认 2.5s）后才能睡觉进第 2 天
+- 仓鼠关闭（`GameManager.enableHamster == false`）：早班完成后 `_skipToNightOnNextChange` 一次过场直接晚上，不进下午、不刷第二包、不喂
+- 教学结算计入总进度：早班工作进度、下午抚摸好感；晚上喂仓鼠后保留 `isOut`，第 2 天照常 `MainItemManager.RandomItem()`
+- 第 1 天 `SnackManager.Start` 不调用 `RandomSnack()`；晚上用 `SpawnSnackByName("Chips")`。吃/喂门禁：`TutorialSnackRule.PlayerEatOnly` / `HamsterFeedOnly`
+- 开局关闭旧并行 guide（`enableGuideIntro` / `TryTriggerGuideIntro`）。进第 2 天：`FinishTutorial()` 停循环动画、关触发盒、清交互锁，再 `ForceCompleteAllGuidesAsLearned()`。只关 outline 不够
+- TTS 接口：`stepHooks` 的 `onEntered` / `onGuideDismissed` / `onCompleted`，或 `PlayTutorialTTS(string path)` / `PlayTutorialTTS(AudioClip)`（播时 `PushPlayerInteractionLock`，播完 `Pop`）
+- 场景引用可留空，导演运行时查找 `StartTriggerBox`、键盘（优先带 `Work` 子物体的父节点）、仓鼠、`SnackManager`、名为 `Bed` 的 Animator。不要在 Unity 开着时改磁盘 `.unity` 去绑这些引用
 
 ## 当前交互链路说明
 - 工作进度链路：`GameManager.currentWorkProgress` ↔ `DataCenter.GameData.PlayerData.workProgress` → `EventCommon.UPDATE_MONITOR` → `MainMonitorData.UpdateInfo()` → 主监视器 `Scrollbar`
@@ -85,11 +99,11 @@
 - Trigger 播放链路：`MyInteractableSteamVR` 在“射线悬停中”或“已抓在手上”时监听 `InteractUI` 抬起并触发 `onTriggerDown`
 - 手部碰撞球抓取链路：`HandGrabCollider.OnTriggerEnter/Exit` 收集 `canBeMoved` 的 `MyInteractableSteamVR` 候选（先进先抓）→ `GrabGrip` 按下抓取/跟随、抬起释放
 - 手部碰撞球 Trigger 链路：`HandGrabCollider.DispatchTrigger()` → `MyInteractableSteamVR.DispatchTriggerFromExternalHand()` → `onTriggerDown`（与 laser 帧级去重，不重复）
-- 手部碰撞球 guide 链路：`HandGrabCollider` 同时收集带 `KeyboardController`/`HamsterController` 的 guide 目标，`InteractUI` 抬起时直接调用其 `TryTriggerGuideIntro()`
+- 手部碰撞球 guide 链路：`HandGrabCollider` 仍会在重叠时调用 `TryTriggerGuideIntro()`，但第 1 天开局已 `ForceCompleteGuideIntro()`，该入口是空操作；教学引导改由 `DayOneTutorialDirector` 循环 `Shining`
 - 零食出生提示 outline 隐藏链路：射线指到走 `LaserPointerHandler -> SnackManager.HideSpawnOutlineForRayTarget()`；零食 guide 完成走 `SnackGuideIntroTrigger.TryTriggerGuideIntro() -> SnackManager.HideCurrentSnackSpawnOutline()`（按 `_curSnacks` 根隐藏，避免 guide 挂在子物体时漏掉根上的黄色 outline）
 - 零食 guide 未完成时，`SnackManager` 会用 `IsCurrentSnackGuidePending()` 拦截出生提示的隐藏，保证 guide 期间提示常亮，直到 guide 被触发
-- 睡觉交互链路：床 trigger → `GameManager.SleepToNextDayFromInteraction()` → 非晚上播放 `NotTimeToSleep`；晚上 → `TrySleepToNextDay()` → `CHANGE_TIME` 推进到次日
-- 第一天 guide 收尾链路：晚→次日换天、`days++` 前 → `HandleDayOneGuideFallbackBeforeDayIncrement()` → `ForceCompleteAllGuidesAsLearned()` → 各 `ForceCompleteGuideIntro()` 关闭绿色 outline 并标记已学完（仅执行一次，`_hasEvaluatedDayOneGuides`）
+- 第一天教学链路：`StartTriggerBox.Entered` → `DayOneTutorialDirector.NotifyArrivedAtWorkArea()` → 早/午/晚步骤；进第 2 天前 `HandleDayOneGuideFallbackBeforeDayIncrement()` → `FinishTutorial()` + `ForceCompleteAllGuidesAsLearned()`
+- 睡觉交互链路：床 trigger → `GameManager.SleepToNextDayFromInteraction()` → 非晚上播放 `NotTimeToSleep`；晚上且（非教学或 `CanSleep`）→ `TrySleepToNextDay()` → `CHANGE_TIME` 推进到次日
 - 提示区域挂点：`Player/Container/SteamVRObjects/VRCamera/FollowHead/HeadCollider`
 - `HeadCollider` 下会在运行时创建 `HeadColliderVisual` 子物体，并挂载球体 MeshRenderer 作为提示显示
 - 当前提示样式为淡蓝色半透明球体；默认隐藏，玩家拿起零食时显示，放下或吃掉后隐藏
@@ -110,8 +124,9 @@
 - 射线可交互改动：优先在 `LaserPointerHandler` 维护“命中筛选 + 可视长度 + 点击派发”统一逻辑，避免在多个目标脚本重复判定
 - 手部碰撞球改动：只改 `HandGrabCollider`，保持它独立于 laser 的悬停状态（不要调用 `OnRayHoverBegin/End`），避免两套交互互相污染 `isRayHovering`
 - laser “完全没反应”时：先查 `LaserPointerHandler.raycastLayers` 是否被设成 `Nothing`，再查目标 Tag 与 Layer；代码已有 `GetEffectiveRaycastLayers()` 兜底，**不要**在 Unity 开着场景时改磁盘 `.unity` 去修 mask（会被内存版本覆盖）
-- 改睡觉/换天逻辑：非晚上反馈走 `SleepToNextDayFromInteraction()`；实际推进仍由 `TrySleepToNextDay()` 负责，注意 `_isStageAdvanceRequested` 空档期
-- 改 guide 生命周期：第一天教学在进第二天时统一 `ForceCompleteGuideIntro()`，不要在单个 guide 里单独做跨天重置
+- 改睡觉/换天逻辑：非晚上反馈走 `SleepToNextDayFromInteraction()`；实际推进仍由 `TrySleepToNextDay()` 负责，注意 `_isStageAdvanceRequested` 空档期；第 1 天晚上还要过 `DayOneTutorialDirector.CanSleep`（已注视床）
+- 改第 1 天教学：只改 `DayOneTutorialDirector` 及它调用的门禁（键盘 slap、仓鼠摸/打、零食吃/喂、`GameManager._skipToNightOnNextChange`）。不要重新打开旧 `enableGuideIntro`。`requireHit` 跟场景值；3 次 slap 只关动画；晚上禁摸只喂
+- 改 guide 生命周期：第 1 天只认导演循环动画；进第 2 天必须 `FinishTutorial()` 停 `Shining` 并清 lock，不能只靠 `ForceCompleteGuideIntro()`
 - 场景相关问题：优先查组件引用、事件回调、Layer/Collider、Toggle 状态，再改代码
 - 第三方代码必须改时：尽量做最小补丁，并在本文档记录原因、影响范围、回退方式
 
@@ -125,6 +140,7 @@
 - 优先改项目脚本，不优先改 `Assets/SteamVR/` 或 `Assets/Samples/`
 - 变更前先确认目标场景和真实挂载脚本
 - VR 改动必须区分输入源、场景引用、Toggle/Inspector 绑定
+- 第 1 天教学走 `DayOneTutorialDirector`，不要再启用旧的并行 `enableGuideIntro`
 - 提交结果时说明：改了哪些文件、为什么改、如何在 Unity 里验证
 - 文档文件默认使用 UTF-8（建议带 BOM 以兼容 Windows PowerShell），更新后必须复查是否存在乱码
 
@@ -137,13 +153,13 @@
    - 射线悬停、点击、抓取是否正常
    - 手部靠近物体时不应触发交互高亮/Trigger；仅射线命中时触发
    - 射线前方存在非目标 Tag 遮挡时，应能穿透并命中后方目标 Tag 物体
-   - 若涉及 laser：确认 `LaserPointerHandler.raycastLayers` 不为 `Nothing`；laser 应能悬停/抓取/Trigger/点击键盘仓鼠 guide
-   - 若涉及手部碰撞球：手贴近道具按 `GrabGrip` 抓起/松开；贴近物体按 `InteractUI` 触发 TTS；贴近键盘/仓鼠按 `InteractUI` 触发 guide
+   - 若涉及 laser：确认 `LaserPointerHandler.raycastLayers` 不为 `Nothing`；laser 应能悬停/抓取/Trigger。第 1 天教学不依赖点击旧 guide
+   - 若涉及手部碰撞球：手贴近道具按 `GrabGrip` 抓起/松开；贴近物体按 `InteractUI` 触发 TTS。第 1 天不要指望碰撞球/射线点击再触发旧 `TryTriggerGuideIntro`
    - 若涉及手部碰撞球：碰撞球抓食物→松开→手移开（食物离开球）后再按 grab，不应无条件重抓同一食物
    - 加了碰撞球后，laser 自身的悬停/抓取/Trigger 不应被破坏（两套交互可共存）
-   - 若涉及零食 guide outline：guide 期间黄色出生提示常亮；用 laser 或碰撞球触发 guide 后，绿色 guide outline 与黄色出生提示都应熄灭
-   - 若涉及第一天 guide 跨天：第 1 天只触发部分 guide 后睡觉进第 2 天，所有绿色 guide outline（含未触发的键盘/仓鼠/零食）应全部熄灭且不再出现
-   - 若涉及睡觉：早上/下午 trigger 床应播放 `NotTimeToSleep` 且不推进天数；晚上 trigger 床应正常进入次日
+   - 若涉及零食出生 outline（第 2 天起）：射线指到后黄色出生提示应熄灭；第 1 天教学零食走导演循环 `Shining`
+   - 若涉及第一天教学：不到工位不应出键盘/仓鼠/食物；第 3 次有效 slap 只停键盘引导动画，打满场景 `requireHit`（当前 10）才换阶段且工作进度增加；仓鼠开启时下午只出仓鼠、晚上不能摸只能喂薯片，喂完次日有道具；仓鼠关闭时早班打满直接晚上、只吃一包薯片；没看床不能睡；第 2 天无循环 `Shining`/绿圈/交互锁
+   - 若涉及睡觉：早上/下午 trigger 床应播放 `NotTimeToSleep`；第 1 天晚上未看床不应进次日；看完后再互动才进第 2 天；第 2 天起晚上 trigger 床应正常进入次日
    - `GameManager.playerRayLength` 在运行时调节后，左右手射线可见长度与命中距离应同步变化
    - 抓起零食后按 Trigger 应播放对应零食 TTS；道具按 Trigger 应播放道具 TTS；首次拿起道具仍只触发一次首次拿起 TTS
    - 若涉及 `GameManager.currentWorkProgress`：运行时手动修改该值后，确认 `DataCenter.GameData.PlayerData.workProgress` 与主监视器进度条同步变化
@@ -161,8 +177,8 @@
 - **改输入逻辑**：先确认使用的是 `SteamVR` 还是 `XRI` 输入链路，再改对应脚本
 - **改手部交互（射线/碰撞球）**：先分清是 `LaserPointerHandler`（远距射线）还是 `HandGrabCollider`（近距碰撞球）；两者各自维护抓取/Trigger/guide，碰撞球必须保持独立、不碰 laser 的 `isRayHovering`
 - **修 laser 失效**：先确认 `GetEffectiveRaycastLayers()` 兜底是否生效；再查目标 Tag/Layer；不要依赖改磁盘 `.unity` 修 `raycastLayers`
-- **改床/睡觉交互**：确认床 trigger 绑定的是 `SleepToNextDayFromInteraction()` 而非直接调 `TrySleepToNextDay()`；非晚上 TTS 路径为 `TTS/ItemGet/NotTimeToSleep`
-- **改 guide 跨天残留**：检查 `HandleDayOneGuideFallbackBeforeDayIncrement()` 是否在 `days++` 前执行，以及 `ForceCompleteAllGuidesAsLearned()` 是否覆盖键盘/仓鼠/所有 `SnackGuideIntroTrigger`
+- **改床/睡觉交互**：确认床 trigger 绑定的是 `SleepToNextDayFromInteraction()`；非晚上 TTS 为 `TTS/ItemGet/NotTimeToSleep`；第 1 天晚上还要过 `CanSleep`
+- **改第 1 天教学**：先改 `DayOneTutorialDirector`；仓鼠开关走 `enableHamster`；3 次 slap 只关动画；`requireHit` 跟场景值；晚上禁摸只喂；TTS 挂 `stepHooks` 或 `PlayTutorialTTS`
 - **改中心视野逻辑**：优先修改 `PlayerSteamVRManager` 的统一视线检测参数或 `CenterGazeCallback` 的目标判定，不要为每个目标单独复制一套头显射线检测
 - **改 UI 交互**：优先增加 Inspector 可绑定入口，不要把 UI 查找逻辑写死
 - **改进度显示/调试入口**：优先复用 `DataCenter.GameData.PlayerData.workProgress` 与 `EventCommon.UPDATE_MONITOR` 链路；若需要手动调试，优先暴露 `GameManager.currentWorkProgress`

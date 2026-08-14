@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,7 +15,11 @@ public class KeyboardController : MonoSingleton<KeyboardController>, IPointerCli
     private ParticleSystem _star;
     public List<AudioClip> sounds = new List<AudioClip>();
     private AudioSource _as;
+    private bool _tutorialGuideActive;
     public bool IsWorkInputCompleted => actualHit >= requireHit;
+    public int ActualHit => actualHit;
+    public Animator GuideAnimator => guideAnimator;
+    public event Action<int> ValidHit;
     [Header("Guide Intro")]
     [SerializeField] private bool enableGuideIntro = true;
     [SerializeField] private bool guideTriggered;
@@ -102,24 +107,38 @@ public class KeyboardController : MonoSingleton<KeyboardController>, IPointerCli
 
     private void HitHandle()
     {
+        if (actualHit >= requireHit)
+        {
+            return;
+        }
+
         // Play a random key hit sound.
-        int randomIndex = Random.Range(0, sounds.Count);
-        _as.clip = sounds[randomIndex];
-        _as.Play();
+        if (sounds != null && sounds.Count > 0 && _as != null)
+        {
+            int randomIndex = UnityEngine.Random.Range(0, sounds.Count);
+            _as.clip = sounds[randomIndex];
+            _as.Play();
+        }
+
+        actualHit++;
+        if (_bar != null)
+        {
+            _bar.size = (float)actualHit / Mathf.Max(1, requireHit);
+        }
+
+        ValidHit?.Invoke(actualHit);
 
         if (actualHit < requireHit)
         {
-            actualHit++;
-            _bar.size = ((float)actualHit / (float)requireHit);
-            Debug.Log(actualHit);
+            return;
         }
-        else if(actualHit == requireHit)
+
+        if (_star != null)
         {
-            actualHit++; // Prevent this branch from firing again on extra hits.
             _star.Play();
-            // Notify that work for this stage is complete.
-            EventManager.DispatchEvent<string>(EventCommon.PREPARE_CHANGE_TIME,"work");
         }
+
+        EventManager.DispatchEvent<string>(EventCommon.PREPARE_CHANGE_TIME, "work");
     }
 
     public void TryTriggerGuideIntro()
@@ -177,7 +196,17 @@ public class KeyboardController : MonoSingleton<KeyboardController>, IPointerCli
     {
         enableGuideIntro = false;
         guideTriggered = true;
-        SetGuideOutlineVisible(false);
+        if (!_tutorialGuideActive)
+        {
+            SetGuideOutlineVisible(false);
+        }
+    }
+
+    public void SetTutorialGuideActive(bool active)
+    {
+        enableGuideIntro = false;
+        _tutorialGuideActive = active;
+        SetGuideOutlineVisible(active);
     }
 
     private void ResolveGuideReferences()
