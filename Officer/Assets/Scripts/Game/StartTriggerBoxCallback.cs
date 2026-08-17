@@ -62,6 +62,11 @@ public class StartTriggerBoxCallback : MonoBehaviour
         LastEnteredCollider = null;
     }
 
+    public void DetectOverlappingTargets()
+    {
+        TryTriggerOverlappingTargets();
+    }
+
     public void TriggerCallback()
     {
         if (triggerOnce && HasTriggered)

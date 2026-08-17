@@ -1,6 +1,6 @@
 ﻿# CLAUDE.md - Officer
 
-> Last updated: 2026-08-14 18:40 +08
+> Last updated: 2026-08-17 17:55 +08
 
 ## 项目概述
 这是一个基于 Unity `2022.3.22f1` 的 VR 办公室互动项目，集成了 `SteamVR`、`XR Interaction Toolkit`、`OpenXR` 与 `PICO XR` 相关能力。项目核心目标是实现玩家在办公室场景中的移动、转向、物品交互、数据/UI 展示，以及基于 VR 手柄的交互流程。
@@ -73,14 +73,17 @@
 - ⚠️ 已知坑：`LaserPointerHandler` 的 `raycastLayers`（Inspector 里的 Raycast Layers）会反复被序列化成 `Nothing`（`m_Bits: 0`），导致 `RaycastAll` 打不到任何东西、laser 完全失效（不悬停/不抓取/不点击 guide），并连带让零食 guide outline 卡在常亮；**注意：Unity 开着场景时改磁盘 `.unity` 文件无效，会被内存版本覆盖回 0**
 - ⚠️ 已知坑：`KeyboardController` 若 `using System`，`Random.Range` 会和 `System.Random` 冲突（CS0104），必须写 `UnityEngine.Random.Range`
 - ⚠️ 已知坑：Unity MCP 的 `unity-log` 在编译失败时可能返回 0 条 error；以 `EditorUtility.scriptCompilationFailed` 和 `%LOCALAPPDATA%\Unity\Editor\Editor.log` 为准
+- ⚠️ 已知坑：第 1 天导演 `Start` 会先 `ClearCurrentSnack()`。若 `SnackManager` 还没记下出生点，`ResetSnackRootState` 会把世界坐标写成 `(0,0,0)`，薯片会出现在场景原点/沙发附近地板上。出生点必须在 `Awake` 用 `Snacks` 相对 `SnacksRespawnPoint` 的 local pose 捕获，复位也走 local，不要用尚未赋值的世界坐标
+- ⚠️ 已知坑：传送进 `StartTriggerBox` 时 Unity 可能不发 `OnTriggerEnter`，键盘会等玩家再走动才出现。WaitForWorkArea 在 `Teleport.Player` 完成时查一次 overlap，走路仍走 `OnTriggerEnter`
+- ⚠️ 已知坑：晚上吃完零食后若手还抓着 `Snacks` 根，下一包会被带到手上。刷第二包前必须 `ForceReleaseIfHolding` 再复位到 `SnacksRespawnPoint`；`VanishEffect` 会把 `Container` 缩到 0.5，复位时要停动画并还原 scale
 - 当前已在代码层自愈：`LaserPointerHandler.GetEffectiveRaycastLayers()` 在 mask 为空(0)时自动回退到 `Physics.DefaultRaycastLayers`，因此不管场景序列化成什么，laser 都能命中；理想 Inspector 值仍为 `Everything`（除 Ignore Raycast，`m_Bits: 4294967291`）
 - 当前零食有“两层 outline”：绿色为旧 guide 介绍 outline（`SnackGuideIntroTrigger.guideOutlines`），黄色为出生提示 outline（`SnackManager` 控制，挂在 `_curSnacks` 子树）；二者独立。第 1 天旧绿色 guide 开局即被强制关闭
-- 当前睡觉入口为 `GameManager.SleepToNextDayFromInteraction()`（床 trigger 绑定）；非晚上播放 `TTS/ItemGet/NotTimeToSleep`；第 1 天晚上还要先看完床，`TrySleepToNextDay()` 才会放行
+- 当前睡觉入口为 `GameManager.SleepToNextDayFromInteraction()`（床 trigger 绑定）；非晚上播放 `TTS/ItemGet/NotTimeToSleep`；第 1 天晚上喂完（仓鼠关闭则吃完）后站在床 trigger 互动即可睡觉
 - 键盘有效 slap 在进度条加满的那一次就 `PREPARE_CHANGE_TIME "work"`，不要再依赖“打满后再多拍一拍”
 
 ## 第 1 天教学
 - 只认 `DayOneTutorialDirector`。`GameManager.Awake` 若场景里没有该组件会运行时 `AddComponent`；要在 Inspector 挂 TTS，必须在 `GameManager` 上保存一份该组件，并配置 `stepHooks`
-- 流程（仅 `days == 1`）：`StartTriggerBox` 到达工位 → 早班只出键盘（循环 `Shining`；`guideDismissHitCount` 默认 3 次有效 slap 关动画；打满场景 `requireHit`，当前 Simple Sample 为 10，才换阶段）→ 仓鼠开启则下午只出仓鼠（摸满 `stayRequireTime` 进晚上）→ 晚上固定 `Chips`（先自己吃；仓鼠开启再刷一包只喂、禁止抚摸）→ 注视床约 `bedGazeDuration`（默认 2.5s）后才能睡觉进第 2 天
+- 流程（仅 `days == 1`）：`StartTriggerBox` 到达工位 → 早班只出键盘（循环 `Shining`；`guideDismissHitCount` 默认 3 次有效 slap 关动画；打满场景 `requireHit`，当前 Simple Sample 为 10，才换阶段）→ 仓鼠开启则下午只出仓鼠（摸满 `stayRequireTime` 进晚上）→ 晚上固定 `Chips`（先自己吃；仓鼠开启再刷一包只喂、禁止抚摸）→ 晚上喂完后站在床 trigger 按 InteractUI/GrabGrip 睡觉进第 2 天（注视床仍会关引导，但不再是睡觉前提）
 - 仓鼠关闭（`GameManager.enableHamster == false`）：早班完成后 `_skipToNightOnNextChange` 一次过场直接晚上，不进下午、不刷第二包、不喂
 - 教学结算计入总进度：早班工作进度、下午抚摸好感；晚上喂仓鼠后保留 `isOut`，第 2 天照常 `MainItemManager.RandomItem()`
 - 第 1 天 `SnackManager.Start` 不调用 `RandomSnack()`；晚上用 `SpawnSnackByName("Chips")`。吃/喂门禁：`TutorialSnackRule.PlayerEatOnly` / `HamsterFeedOnly`
@@ -124,7 +127,7 @@
 - 射线可交互改动：优先在 `LaserPointerHandler` 维护“命中筛选 + 可视长度 + 点击派发”统一逻辑，避免在多个目标脚本重复判定
 - 手部碰撞球改动：只改 `HandGrabCollider`，保持它独立于 laser 的悬停状态（不要调用 `OnRayHoverBegin/End`），避免两套交互互相污染 `isRayHovering`
 - laser “完全没反应”时：先查 `LaserPointerHandler.raycastLayers` 是否被设成 `Nothing`，再查目标 Tag 与 Layer；代码已有 `GetEffectiveRaycastLayers()` 兜底，**不要**在 Unity 开着场景时改磁盘 `.unity` 去修 mask（会被内存版本覆盖）
-- 改睡觉/换天逻辑：非晚上反馈走 `SleepToNextDayFromInteraction()`；实际推进仍由 `TrySleepToNextDay()` 负责，注意 `_isStageAdvanceRequested` 空档期；第 1 天晚上还要过 `DayOneTutorialDirector.CanSleep`（已注视床）
+- 改睡觉/换天逻辑：非晚上反馈走 `SleepToNextDayFromInteraction()`；实际推进仍由 `TrySleepToNextDay()` 负责，注意 `_isStageAdvanceRequested` 空档期；第 1 天晚上要过 `DayOneTutorialDirector.CanSleep`（已进入 `NightLookAtBed`，站在床 trigger 互动即可）
 - 改第 1 天教学：只改 `DayOneTutorialDirector` 及它调用的门禁（键盘 slap、仓鼠摸/打、零食吃/喂、`GameManager._skipToNightOnNextChange`）。不要重新打开旧 `enableGuideIntro`。`requireHit` 跟场景值；3 次 slap 只关动画；晚上禁摸只喂
 - 改 guide 生命周期：第 1 天只认导演循环动画；进第 2 天必须 `FinishTutorial()` 停 `Shining` 并清 lock，不能只靠 `ForceCompleteGuideIntro()`
 - 场景相关问题：优先查组件引用、事件回调、Layer/Collider、Toggle 状态，再改代码
@@ -158,8 +161,9 @@
    - 若涉及手部碰撞球：碰撞球抓食物→松开→手移开（食物离开球）后再按 grab，不应无条件重抓同一食物
    - 加了碰撞球后，laser 自身的悬停/抓取/Trigger 不应被破坏（两套交互可共存）
    - 若涉及零食出生 outline（第 2 天起）：射线指到后黄色出生提示应熄灭；第 1 天教学零食走导演循环 `Shining`
-   - 若涉及第一天教学：不到工位不应出键盘/仓鼠/食物；第 3 次有效 slap 只停键盘引导动画，打满场景 `requireHit`（当前 10）才换阶段且工作进度增加；仓鼠开启时下午只出仓鼠、晚上不能摸只能喂薯片，喂完次日有道具；仓鼠关闭时早班打满直接晚上、只吃一包薯片；没看床不能睡；第 2 天无循环 `Shining`/绿圈/交互锁
-   - 若涉及睡觉：早上/下午 trigger 床应播放 `NotTimeToSleep`；第 1 天晚上未看床不应进次日；看完后再互动才进第 2 天；第 2 天起晚上 trigger 床应正常进入次日
+   - 若涉及第一天教学：不到工位不应出键盘/仓鼠/食物；传送进 `StartTriggerBox` 也应立刻出键盘；第 3 次有效 slap 只停键盘引导动画，打满场景 `requireHit`（当前 10）才换阶段且工作进度增加；仓鼠开启时下午只出仓鼠、晚上不能摸只能喂薯片，喂完次日有道具；仓鼠关闭时早班打满直接晚上、只吃一包薯片；喂完后站在床 trigger 互动即可进第 2 天；第 2 天无循环 `Shining`/绿圈/交互锁
+   - 若涉及第 1 天晚上薯片：应出现在 `SnacksRespawnPoint`（`Snacks` local `(0,0,0)`），不要刷到世界原点或沙发旁地板；玩家吃完第一包后应松手，第二包出现在出生点而不是跟着手柄
+   - 若涉及睡觉：早上/下午 trigger 床应播放 `NotTimeToSleep`；第 1 天晚上未喂完（或仓鼠关闭时未吃完）不应进次日；喂完后站在床 trigger 互动应进第 2 天；第 2 天起晚上 trigger 床应正常进入次日
    - `GameManager.playerRayLength` 在运行时调节后，左右手射线可见长度与命中距离应同步变化
    - 抓起零食后按 Trigger 应播放对应零食 TTS；道具按 Trigger 应播放道具 TTS；首次拿起道具仍只触发一次首次拿起 TTS
    - 若涉及 `GameManager.currentWorkProgress`：运行时手动修改该值后，确认 `DataCenter.GameData.PlayerData.workProgress` 与主监视器进度条同步变化

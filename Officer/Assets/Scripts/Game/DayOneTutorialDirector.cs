@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Events;
+using Valve.VR.InteractionSystem;
 
 public class DayOneTutorialDirector : MonoBehaviour
 {
@@ -66,7 +67,7 @@ public class DayOneTutorialDirector : MonoBehaviour
 
     public bool IsRunning => enableTutorial && _sessionStarted && !_hasFinished && currentStep != Step.Completed;
     public bool ShouldShowHamster => IsRunning && _wantHamsterVisible && IsHamsterEnabled;
-    public bool CanSleep => !IsRunning || (currentStep == Step.NightLookAtBed && HasLookedAtBed);
+    public bool CanSleep => !IsRunning || currentStep == Step.NightLookAtBed;
     public bool ShouldSkipAfternoonAfterMorningWork => IsRunning && !IsHamsterEnabled;
     public bool ShouldSuppressDayOneNightStageCallbacks => IsRunning && currentStep != Step.NightLookAtBed;
     public bool HasLookedAtBed { get; private set; }
@@ -166,6 +167,7 @@ public class DayOneTutorialDirector : MonoBehaviour
         }
 
         CompleteCurrentStep();
+        ReleaseAllTtsLocks();
         EnterMorningKeyboard();
     }
 
@@ -213,6 +215,7 @@ public class DayOneTutorialDirector : MonoBehaviour
         EventManager.AddListener<SnackData>(EventCommon.PLAYER_FINISH_EATING, OnPlayerFinishedEating);
         EventManager.AddListener<SnackData>(EventCommon.HAMSTER_FINISH_EATING, OnHamsterFinishedEating);
         EventManager.AddListener(EventCommon.NEXT_STAGE, OnNextStage);
+        Teleport.Player.AddListener(OnPlayerTeleported);
     }
 
     private void Unsubscribe()
@@ -235,6 +238,7 @@ public class DayOneTutorialDirector : MonoBehaviour
         EventManager.RemoveListener<SnackData>(EventCommon.PLAYER_FINISH_EATING, OnPlayerFinishedEating);
         EventManager.RemoveListener<SnackData>(EventCommon.HAMSTER_FINISH_EATING, OnHamsterFinishedEating);
         EventManager.RemoveListener(EventCommon.NEXT_STAGE, OnNextStage);
+        Teleport.Player.RemoveListener(OnPlayerTeleported);
     }
 
     private void ResolveReferences()
@@ -306,6 +310,8 @@ public class DayOneTutorialDirector : MonoBehaviour
         {
             _bedGazeCollider = bedGuideTarget.GetComponentInChildren<Collider>(true);
         }
+
+        ResolveBedGazeCollider();
 
         _keyboardGuideLoop = new GuideAnimationLoop(keyboardController != null ? keyboardController.GuideAnimator : null, "Shining");
         _hamsterGuideLoop = new GuideAnimationLoop(hamsterController != null ? hamsterController.GuideAnimator : null, "Shining");
@@ -408,6 +414,7 @@ public class DayOneTutorialDirector : MonoBehaviour
         HasLookedAtBed = false;
         _isBedGazing = false;
         _bedGazeStartTime = -1f;
+        ResolveBedGazeCollider();
         SetBedGuide(true);
         SetStep(Step.NightLookAtBed);
     }
@@ -502,6 +509,34 @@ public class DayOneTutorialDirector : MonoBehaviour
         }
     }
 
+    private void OnPlayerTeleported(TeleportMarkerBase teleportedMarker)
+    {
+        if (currentStep != Step.WaitForWorkArea)
+        {
+            return;
+        }
+
+        startTriggerBox?.DetectOverlappingTargets();
+    }
+
+    public void NotifyBedInteracted()
+    {
+        if (currentStep != Step.NightLookAtBed)
+        {
+            return;
+        }
+
+        if (HasLookedAtBed)
+        {
+            return;
+        }
+
+        HasLookedAtBed = true;
+        SetBedGuide(false);
+        InvokeHook(currentStep, hook => hook.onGuideDismissed?.Invoke());
+        Log("bed interacted");
+    }
+
     private void TickBedGaze()
     {
         if (_bedGazeCollider == null)
@@ -523,9 +558,7 @@ public class DayOneTutorialDirector : MonoBehaviour
             return;
         }
 
-        bool looking = hasHit && hitInfo.collider != null &&
-                       (hitInfo.collider == _bedGazeCollider || hitInfo.collider.transform.IsChildOf(_bedGazeCollider.transform) ||
-                        _bedGazeCollider.transform.IsChildOf(hitInfo.collider.transform));
+        bool looking = hasHit && hitInfo.collider != null && IsBedGazeHit(hitInfo.collider);
         if (!looking)
         {
             ResetBedGaze();
@@ -552,6 +585,60 @@ public class DayOneTutorialDirector : MonoBehaviour
     {
         _isBedGazing = false;
         _bedGazeStartTime = -1f;
+    }
+
+    private void ResolveBedGazeCollider()
+    {
+        if (bedGuideTarget != null)
+        {
+            _bedGazeCollider = bedGuideTarget.GetComponentInChildren<Collider>(true);
+        }
+
+        if (_bedGazeCollider != null)
+        {
+            return;
+        }
+
+        BedSleepTriggerBox bedBox = FindObjectOfType<BedSleepTriggerBox>(true);
+        if (bedBox != null)
+        {
+            _bedGazeCollider = bedBox.GetComponent<Collider>();
+            if (bedGuideTarget == null)
+            {
+                bedGuideTarget = bedBox.gameObject;
+            }
+        }
+    }
+
+    private bool IsBedGazeHit(Collider hitCollider)
+    {
+        if (hitCollider == null)
+        {
+            return false;
+        }
+
+        if (_bedGazeCollider != null &&
+            (hitCollider == _bedGazeCollider ||
+             hitCollider.transform.IsChildOf(_bedGazeCollider.transform) ||
+             _bedGazeCollider.transform.IsChildOf(hitCollider.transform)))
+        {
+            return true;
+        }
+
+        if (bedGuideTarget != null &&
+            (hitCollider.transform == bedGuideTarget.transform ||
+             hitCollider.transform.IsChildOf(bedGuideTarget.transform) ||
+             bedGuideTarget.transform.IsChildOf(hitCollider.transform)))
+        {
+            return true;
+        }
+
+        if (hitCollider.GetComponentInParent<BedSleepTriggerBox>() != null)
+        {
+            return true;
+        }
+
+        return hitCollider.name.IndexOf("Bed", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private void SetStep(Step step)

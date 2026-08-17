@@ -132,10 +132,14 @@ public class BedSleepTriggerBox : MonoBehaviour
         }
 
         if (DayOneTutorialDirector.Instance != null &&
-            DayOneTutorialDirector.Instance.IsRunning &&
-            !DayOneTutorialDirector.Instance.CanSleep)
+            DayOneTutorialDirector.Instance.IsRunning)
         {
-            return;
+            if (!DayOneTutorialDirector.Instance.CanSleep)
+            {
+                return;
+            }
+
+            DayOneTutorialDirector.Instance.NotifyBedInteracted();
         }
 
         if (GameManager.Instance.TrySleepToNextDay())

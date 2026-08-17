@@ -10,7 +10,7 @@ public class SnackManager : MonoSingleton<SnackManager>
 
     // Random snack selection without pooling.
     private Animation _animation;
-    private string _animationName;
+    private string _animationName = "VanishEffect";
     private Collider _col;
     private XRGrabInteractable _grabInteractable;
     [SerializeField] private List<GameObject> _snacks = new List<GameObject>();
@@ -28,9 +28,16 @@ public class SnackManager : MonoSingleton<SnackManager>
     private bool _suppressNormalSnackTtsOnce;
     private Vector3 initialPosition;
     private Quaternion initialRotation;
+    private Vector3 initialLocalPosition;
+    private Quaternion initialLocalRotation;
+    private Vector3 initialLocalScale;
+    private Vector3 initialContainerScale;
+    private Transform _spawnParent;
+    private bool _hasInitialPose;
     private Rigidbody _rb;
     private bool _defaultUseGravity;
     private bool _defaultIsKinematic;
+    private bool _hasCachedRigidbodyDefaults;
     private string audioAsset;
     public bool isPlayer = false;
     public bool isHamster = false;
@@ -85,24 +92,24 @@ public class SnackManager : MonoSingleton<SnackManager>
         _tutorialSnackRule = rule;
     }
 
+    private void Awake()
+    {
+        CaptureSpawnPose();
+        CacheRigidbodyDefaults();
+    }
+
     void Start()
     {
         EventManager.AddListener<bool>(EventCommon.HAMSTER_EATING, HamsterEating);
         EventManager.AddListener<bool>(EventCommon.PLAYER_EATING, PlayerEating);
         EventManager.AddListener<bool>(EventCommon.PLAYER_SNACK_HINT, OnPlayerSnackHintChanged);
         EventManager.AddListener(EventCommon.NEXT_STAGE, ResetToDefault);
-        initialPosition = transform.position;
-        initialRotation = transform.rotation;
+        CaptureSpawnPose();
+        CacheRigidbodyDefaults();
         _animation = GetComponent<Animation>();
         _animation.enabled = false;
         _animationName = "VanishEffect";
         _col = GetComponent<Collider>();
-        _rb = GetComponent<Rigidbody>();
-        if (_rb != null)
-        {
-            _defaultUseGravity = _rb.useGravity;
-            _defaultIsKinematic = _rb.isKinematic;
-        }
         _grabInteractable = GetComponent<XRGrabInteractable>();
         _snacks = GetChildren(transform.Find("Container"));
         _content = UIMonitorController.Instance.content;
@@ -348,12 +355,102 @@ public class SnackManager : MonoSingleton<SnackManager>
         }
     }
 
+    private void CaptureSpawnPose()
+    {
+        if (_hasInitialPose)
+        {
+            return;
+        }
+
+        _spawnParent = transform.parent;
+        initialLocalPosition = transform.localPosition;
+        initialLocalRotation = transform.localRotation;
+        initialLocalScale = transform.localScale;
+        initialPosition = transform.position;
+        initialRotation = transform.rotation;
+        if (container == null)
+        {
+            Transform found = transform.Find("Container");
+            if (found != null)
+            {
+                container = found.gameObject;
+            }
+        }
+
+        initialContainerScale = container != null ? container.transform.localScale : Vector3.one;
+        _hasInitialPose = true;
+    }
+
+    private void CacheRigidbodyDefaults()
+    {
+        if (_rb == null)
+        {
+            _rb = GetComponent<Rigidbody>();
+        }
+
+        if (_rb == null)
+        {
+            return;
+        }
+
+        if (_hasCachedRigidbodyDefaults)
+        {
+            return;
+        }
+
+        _defaultUseGravity = _rb.useGravity;
+        _defaultIsKinematic = _rb.isKinematic;
+        _hasCachedRigidbodyDefaults = true;
+    }
+
+    public void ReleaseHeldSnack()
+    {
+        LaserPointerHandler[] lasers = FindObjectsOfType<LaserPointerHandler>(true);
+        for (int i = 0; i < lasers.Length; i++)
+        {
+            if (lasers[i] != null)
+            {
+                lasers[i].ForceReleaseIfHolding(gameObject);
+            }
+        }
+
+        HandGrabCollider[] grabs = FindObjectsOfType<HandGrabCollider>(true);
+        for (int i = 0; i < grabs.Length; i++)
+        {
+            if (grabs[i] != null)
+            {
+                grabs[i].ForceReleaseIfHolding(gameObject);
+            }
+        }
+    }
+
     private void ResetSnackRootState(bool resetPose)
     {
         if (resetPose)
         {
-            transform.position = initialPosition;
-            transform.rotation = initialRotation;
+            ReleaseHeldSnack();
+            StopVanishAnimation();
+            if (_hasInitialPose)
+            {
+                if (_spawnParent != null && transform.parent != _spawnParent)
+                {
+                    transform.SetParent(_spawnParent, false);
+                }
+
+                transform.localPosition = initialLocalPosition;
+                transform.localRotation = initialLocalRotation;
+                transform.localScale = initialLocalScale;
+            }
+
+            if (container != null)
+            {
+                container.transform.localScale = _hasInitialPose ? initialContainerScale : Vector3.one;
+            }
+        }
+
+        if (_rb == null)
+        {
+            _rb = GetComponent<Rigidbody>();
         }
 
         if (_rb == null)
@@ -629,6 +726,37 @@ public class SnackManager : MonoSingleton<SnackManager>
         isHamster = false;
         isPlayer = false;
         ResetAnimation(_animation, _animationName);
+    }
+
+    private void StopVanishAnimation()
+    {
+        if (TimeManager.Instance != null)
+        {
+            TimeManager.Instance.RemoveTask(StopAnimation, this);
+        }
+
+        if (_animation == null)
+        {
+            _animation = GetComponent<Animation>();
+        }
+
+        if (_animation == null)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(_animationName) && _animation[_animationName] != null)
+        {
+            AnimationState state = _animation[_animationName];
+            state.speed = 0f;
+            state.time = 0f;
+            _animation.Play(_animationName);
+            _animation.Sample();
+            state.enabled = false;
+        }
+
+        _animation.Stop();
+        _animation.enabled = false;
     }
 
     private void ResetAnimation(Animation ani, string name)

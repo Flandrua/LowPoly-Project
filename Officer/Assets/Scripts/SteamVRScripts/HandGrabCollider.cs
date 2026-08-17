@@ -116,7 +116,7 @@ public class HandGrabCollider : MonoBehaviour
         // Drop a held object that was destroyed or deactivated (e.g. a snack that got eaten).
         if (_attachedObject != null && !_attachedObject.activeInHierarchy)
         {
-            _attachedObject = null;
+            Detach();
         }
 
         PruneCandidates();
@@ -223,6 +223,21 @@ public class HandGrabCollider : MonoBehaviour
     {
         _attachedObject.transform.position = handTransform.TransformPoint(_posOffset);
         _attachedObject.transform.rotation = handTransform.rotation * _rotOffset;
+    }
+
+    public void ForceReleaseIfHolding(GameObject root)
+    {
+        if (_attachedObject == null || root == null)
+        {
+            return;
+        }
+
+        if (_attachedObject == root ||
+            _attachedObject.transform.IsChildOf(root.transform) ||
+            root.transform.IsChildOf(_attachedObject.transform))
+        {
+            Detach();
+        }
     }
 
     private void Detach()
