@@ -388,8 +388,7 @@ public class DayOneTutorialDirector : MonoBehaviour
         SetKeyboardVisible(false);
         SetKeyboardGuide(false);
         SetHamsterGuide(false);
-        SetHamsterVisible(IsHamsterEnabled);
-        ConfigureHamsterForNight();
+        SetHamsterVisible(false);
         SetSnackVisible(true);
         SetSnackRule(SnackManager.TutorialSnackRule.PlayerEatOnly);
         SpawnChips();
@@ -399,6 +398,7 @@ public class DayOneTutorialDirector : MonoBehaviour
 
     private void EnterNightFeedChips()
     {
+        SetHamsterVisible(IsHamsterEnabled);
         ConfigureHamsterForNight();
         SetSnackRule(SnackManager.TutorialSnackRule.HamsterFeedOnly);
         SpawnChips();

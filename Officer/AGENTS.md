@@ -1,6 +1,6 @@
 ﻿# CLAUDE.md - Officer
 
-> Last updated: 2026-08-17 17:55 +08
+> Last updated: 2026-08-20 10:00 +08
 
 ## 项目概述
 这是一个基于 Unity `2022.3.22f1` 的 VR 办公室互动项目，集成了 `SteamVR`、`XR Interaction Toolkit`、`OpenXR` 与 `PICO XR` 相关能力。项目核心目标是实现玩家在办公室场景中的移动、转向、物品交互、数据/UI 展示，以及基于 VR 手柄的交互流程。
@@ -83,7 +83,7 @@
 
 ## 第 1 天教学
 - 只认 `DayOneTutorialDirector`。`GameManager.Awake` 若场景里没有该组件会运行时 `AddComponent`；要在 Inspector 挂 TTS，必须在 `GameManager` 上保存一份该组件，并配置 `stepHooks`
-- 流程（仅 `days == 1`）：`StartTriggerBox` 到达工位 → 早班只出键盘（循环 `Shining`；`guideDismissHitCount` 默认 3 次有效 slap 关动画；打满场景 `requireHit`，当前 Simple Sample 为 10，才换阶段）→ 仓鼠开启则下午只出仓鼠（摸满 `stayRequireTime` 进晚上）→ 晚上固定 `Chips`（先自己吃；仓鼠开启再刷一包只喂、禁止抚摸）→ 晚上喂完后站在床 trigger 按 InteractUI/GrabGrip 睡觉进第 2 天（注视床仍会关引导，但不再是睡觉前提）
+- 流程（仅 `days == 1`）：`StartTriggerBox` 到达工位 → 早班只出键盘（循环 `Shining`；`guideDismissHitCount` 默认 3 次有效 slap 关动画；打满场景 `requireHit`，当前 Simple Sample 为 10，才换阶段）→ 仓鼠开启则下午只出仓鼠（摸满 `stayRequireTime` 进晚上）→ 晚上先只出 `Chips` 给玩家吃，仓鼠此时不出；吃完后仓鼠才出现，再刷一包只喂、禁止抚摸 → 喂完后站在床 trigger 按 InteractUI/GrabGrip 睡觉进第 2 天（注视床仍会关引导，但不再是睡觉前提）
 - 仓鼠关闭（`GameManager.enableHamster == false`）：早班完成后 `_skipToNightOnNextChange` 一次过场直接晚上，不进下午、不刷第二包、不喂
 - 教学结算计入总进度：早班工作进度、下午抚摸好感；晚上喂仓鼠后保留 `isOut`，第 2 天照常 `MainItemManager.RandomItem()`
 - 第 1 天 `SnackManager.Start` 不调用 `RandomSnack()`；晚上用 `SpawnSnackByName("Chips")`。吃/喂门禁：`TutorialSnackRule.PlayerEatOnly` / `HamsterFeedOnly`
@@ -92,7 +92,7 @@
 - 场景引用可留空，导演运行时查找 `StartTriggerBox`、键盘（优先带 `Work` 子物体的父节点）、仓鼠、`SnackManager`、名为 `Bed` 的 Animator。不要在 Unity 开着时改磁盘 `.unity` 去绑这些引用
 
 ## 当前交互链路说明
-- 工作进度链路：`GameManager.currentWorkProgress` ↔ `DataCenter.GameData.PlayerData.workProgress` → `EventCommon.UPDATE_MONITOR` → `MainMonitorData.UpdateInfo()` → 主监视器 `Scrollbar`
+- 工作进度链路：`GameManager.currentWorkProgress` ↔ `DataCenter.GameData.PlayerData.workProgress` → `EventCommon.UPDATE_MONITOR` → `MainMonitorData.UpdateInfo()` → 主监视器 `Scrollbar` + `workInfo/WorkProgressPercent` 百分制（布局在 Inspector 里调，不要用脚本改位置）
 - 阶段倒计时链路：`GameManager.countDown` → `GameManager.Update()` → `TickStageCountDown()`；仅从第 2 天开始生效，每次推进到下一阶段后重置
 - 超时奖惩链路：当天任意阶段超时后，`GameManager` 会记录当日超时状态；跨到下一天时调用 `SnackManager.SetContainerVisible(bool)`，超时则隐藏 `Container`，未超时则显示 `Container`
 - 超时提示链路：首次发生“前一天超时”并进入下一天时，`GameManager` 会显示场景内 `No snack` 对象；该对象依赖自身 `AudioSource.playOnAwake` 播放提示，并且只触发一次，后续不再由 `GameManager` 重复 show/hide
@@ -161,12 +161,12 @@
    - 若涉及手部碰撞球：碰撞球抓食物→松开→手移开（食物离开球）后再按 grab，不应无条件重抓同一食物
    - 加了碰撞球后，laser 自身的悬停/抓取/Trigger 不应被破坏（两套交互可共存）
    - 若涉及零食出生 outline（第 2 天起）：射线指到后黄色出生提示应熄灭；第 1 天教学零食走导演循环 `Shining`
-   - 若涉及第一天教学：不到工位不应出键盘/仓鼠/食物；传送进 `StartTriggerBox` 也应立刻出键盘；第 3 次有效 slap 只停键盘引导动画，打满场景 `requireHit`（当前 10）才换阶段且工作进度增加；仓鼠开启时下午只出仓鼠、晚上不能摸只能喂薯片，喂完次日有道具；仓鼠关闭时早班打满直接晚上、只吃一包薯片；喂完后站在床 trigger 互动即可进第 2 天；第 2 天无循环 `Shining`/绿圈/交互锁
+   - 若涉及第一天教学：不到工位不应出键盘/仓鼠/食物；传送进 `StartTriggerBox` 也应立刻出键盘；第 3 次有效 slap 只停键盘引导动画，打满场景 `requireHit`（当前 10）才换阶段且工作进度增加；仓鼠开启时下午只出仓鼠、晚上先吃薯片时仓鼠不应出现，吃完后仓鼠才出来且不能摸只能喂，喂完次日有道具；仓鼠关闭时早班打满直接晚上、只吃一包薯片；喂完后站在床 trigger 互动即可进第 2 天；第 2 天无循环 `Shining`/绿圈/交互锁
    - 若涉及第 1 天晚上薯片：应出现在 `SnacksRespawnPoint`（`Snacks` local `(0,0,0)`），不要刷到世界原点或沙发旁地板；玩家吃完第一包后应松手，第二包出现在出生点而不是跟着手柄
    - 若涉及睡觉：早上/下午 trigger 床应播放 `NotTimeToSleep`；第 1 天晚上未喂完（或仓鼠关闭时未吃完）不应进次日；喂完后站在床 trigger 互动应进第 2 天；第 2 天起晚上 trigger 床应正常进入次日
    - `GameManager.playerRayLength` 在运行时调节后，左右手射线可见长度与命中距离应同步变化
    - 抓起零食后按 Trigger 应播放对应零食 TTS；道具按 Trigger 应播放道具 TTS；首次拿起道具仍只触发一次首次拿起 TTS
-   - 若涉及 `GameManager.currentWorkProgress`：运行时手动修改该值后，确认 `DataCenter.GameData.PlayerData.workProgress` 与主监视器进度条同步变化
+   - 若涉及 `GameManager.currentWorkProgress`：运行时手动修改该值后，确认 `DataCenter.GameData.PlayerData.workProgress`、主监视器进度条与条右侧百分制同步变化
    - 若涉及阶段倒计时：从第 2 天开始确认阶段内倒计时会运行，推进到下一阶段后确认计时器重置
    - 若涉及超时奖惩：确认某天内任意阶段超时后，下一天 `SnackManager.container` 被隐藏；若当天全程未超时，则下一天显示
    - 若涉及 `No snack` 提示：确认第一次超时后的次日会显示场景内 `No snack` 对象并播放其自身音频；后续天数中不应被 `GameManager` 反复触发
