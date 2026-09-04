@@ -86,6 +86,7 @@ public class GameManager : MonoSingleton<GameManager>
 
     [SerializeField] private GameObject noSnackObject;
     [SerializeField] private GameObject outsideWalls;
+    [SerializeField] private GameObject noOutObject;
     [Header("Player Ray")]
     [Min(0.05f)] public float playerRayLength = 100f;
     [SerializeField] private List<LaserPointerHandler> playerLaserPointers = new List<LaserPointerHandler>();
@@ -1159,6 +1160,7 @@ public class GameManager : MonoSingleton<GameManager>
             outsideWalls.SetActive(false);
         }
 
+        SuppressNoOutForLowStress();
         UnlockAllTeleportAreasForExploration();
     }
 
@@ -1207,6 +1209,22 @@ public class GameManager : MonoSingleton<GameManager>
         }
     }
 
+    private void SuppressNoOutForLowStress()
+    {
+        ResolveNoOutReference();
+        if (noOutObject == null)
+        {
+            return;
+        }
+
+        CenterGazeCallback noOutGaze = noOutObject.GetComponent<CenterGazeCallback>();
+        if (noOutGaze != null)
+        {
+            noOutGaze.SetBoxColliderEnabled(false);
+            noOutGaze.enabled = false;
+        }
+    }
+
     private void ResolveOutsideWallsReference()
     {
         if (outsideWalls != null)
@@ -1218,6 +1236,27 @@ public class GameManager : MonoSingleton<GameManager>
         if (found != null)
         {
             outsideWalls = found.gameObject;
+        }
+    }
+
+    private void ResolveNoOutReference()
+    {
+        if (noOutObject != null)
+        {
+            return;
+        }
+
+        GameObject[] sceneObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+        for (int i = 0; i < sceneObjects.Length; i++)
+        {
+            GameObject candidate = sceneObjects[i];
+            if (candidate == null || candidate.name != "NoOut" || !candidate.scene.IsValid())
+            {
+                continue;
+            }
+
+            noOutObject = candidate;
+            return;
         }
     }
 

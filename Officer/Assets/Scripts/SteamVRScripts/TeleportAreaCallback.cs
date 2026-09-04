@@ -137,6 +137,15 @@ public class TeleportAreaCallback : MonoBehaviour
             Debug.Log("TeleportAreaCallback: 触发回调事件", this);
         }
 
+        if (DayOneTutorialDirector.Instance != null &&
+            !DayOneTutorialDirector.Instance.AllowsLegacyTeleportIntro(gameObject.name))
+        {
+            // IEnumerator cannot use return; yield break ends the wait coroutine.
+            hasTriggered = true;
+            delayedCallbackCoroutine = null;
+            yield break;
+        }
+
         onTeleportComplete?.Invoke();
         hasTriggered = true;
         delayedCallbackCoroutine = null;
@@ -157,6 +166,13 @@ public class TeleportAreaCallback : MonoBehaviour
         if (debugLog)
         {
             Debug.Log("TeleportAreaCallback: 触发离开区域回调事件", this);
+        }
+
+        if (ShouldSuppressLowStressExitEffects())
+        {
+            hasExitTriggered = true;
+            delayedExitCallbackCoroutine = null;
+            yield break;
         }
 
         if (lockAreaOnExit)
@@ -224,6 +240,12 @@ public class TeleportAreaCallback : MonoBehaviour
             Debug.Log("TeleportAreaCallback: 立即触发回调事件", this);
         }
 
+        if (DayOneTutorialDirector.Instance != null &&
+            !DayOneTutorialDirector.Instance.AllowsLegacyTeleportIntro(gameObject.name))
+        {
+            return;
+        }
+
         onTeleportComplete?.Invoke();
         hasTriggered = true;
     }
@@ -276,6 +298,12 @@ public class TeleportAreaCallback : MonoBehaviour
         if (debugLog)
         {
             Debug.Log("TeleportAreaCallback: 立即触发离开区域回调事件", this);
+        }
+
+        if (ShouldSuppressLowStressExitEffects())
+        {
+            hasExitTriggered = true;
+            return;
         }
 
         if (lockAreaOnExit)
@@ -412,5 +440,10 @@ public class TeleportAreaCallback : MonoBehaviour
         {
             Debug.Log($"TeleportAreaCallback: 已解锁 {gameObject.name} 的 TeleportArea", this);
         }
+    }
+
+    private static bool ShouldSuppressLowStressExitEffects()
+    {
+        return GameManager.Instance != null && GameManager.Instance.IsLowStressVersion;
     }
 }

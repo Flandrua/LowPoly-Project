@@ -133,6 +133,11 @@ public class CenterGazeCallback : MonoBehaviour
 
     public void SetBoxColliderEnabled(bool enabled)
     {
+        if (enabled && IsLowStressNoOut())
+        {
+            enabled = false;
+        }
+
         BoxCollider boxCollider = GetComponent<BoxCollider>();
         if (boxCollider == null && targetRoot != null)
         {
@@ -145,6 +150,13 @@ public class CenterGazeCallback : MonoBehaviour
         }
 
         boxCollider.enabled = enabled;
+    }
+
+    private bool IsLowStressNoOut()
+    {
+        return GameManager.Instance != null &&
+               GameManager.Instance.IsLowStressVersion &&
+               gameObject.name == "NoOut";
     }
 
     private void CacheTargets()

@@ -48,11 +48,11 @@ public class DayOneTutorialDirector : MonoBehaviour
 
     [Header("TTS Hooks")]
     [SerializeField] private StepHook[] stepHooks;
-    [SerializeField] private string arriveIntroTtsPath = "TTS/Introduce/Start State";
     [SerializeField] private string keyboardIntroTtsPath = "TTS/Introduce/keyboard";
     [SerializeField] private string hamsterIntroTtsPath = "TTS/Introduce/Hamster";
     [SerializeField] private string snackIntroTtsPath = "TTS/Introduce/Snack";
     [SerializeField] private string sleepIntroTtsPath = "TTS/Introduce/Sleep";
+    [SerializeField] private string workTeleportAreaName = "TeleportAreaWork";
 
     [Header("Runtime")]
     [SerializeField] private Step currentStep = Step.Inactive;
@@ -62,6 +62,8 @@ public class DayOneTutorialDirector : MonoBehaviour
     private GuideAnimationLoop _snackGuideLoop;
     private GuideAnimationLoop _bedGuideLoop;
     private Collider _bedGazeCollider;
+    private TeleportArea _workTeleportArea;
+    private Collider _workAreaCollider;
     private PlayerSteamVRManager _playerManager;
     private float _bedGazeStartTime = -1f;
     private bool _isBedGazing;
@@ -73,12 +75,14 @@ public class DayOneTutorialDirector : MonoBehaviour
     public bool IsRunning => enableTutorial && _sessionStarted && !_hasFinished && currentStep != Step.Completed;
     public bool ShouldShowHamster => IsRunning && _wantHamsterVisible && IsHamsterEnabled;
     public bool CanSleep => !IsRunning || currentStep == Step.NightLookAtBed;
-    public bool ShouldSkipAfternoonAfterMorningWork => IsRunning && !IsHamsterEnabled;
+    public bool ShouldSkipAfternoonAfterMorningWork => IsRunning && !IsHamsterEnabled && !IsLowStressVersion;
     public bool ShouldSuppressDayOneNightStageCallbacks => IsRunning && currentStep != Step.NightLookAtBed;
+    public bool ShouldSuppressLegacyTeleportIntro => IsRunning && currentStep == Step.WaitForWorkArea;
     public bool HasLookedAtBed { get; private set; }
     public Step CurrentStep => currentStep;
 
     private bool IsHamsterEnabled => GameManager.Instance == null || GameManager.Instance.IsHamsterGameplayEnabled;
+    private bool IsLowStressVersion => GameManager.Instance != null && GameManager.Instance.IsLowStressVersion;
 
     private void Awake()
     {
@@ -110,18 +114,7 @@ public class DayOneTutorialDirector : MonoBehaviour
         Subscribe();
         _sessionStarted = true;
         HideAllTutorialTargets();
-        if (startTriggerBox == null)
-        {
-            EnterMorningKeyboard();
-        }
-        else
-        {
-            PrepareStartTrigger();
-            if (currentStep == Step.Inactive)
-            {
-                SetStep(Step.WaitForWorkArea);
-            }
-        }
+        SetStep(Step.WaitForWorkArea);
     }
 
     private void Update()
@@ -135,6 +128,11 @@ public class DayOneTutorialDirector : MonoBehaviour
         _hamsterGuideLoop?.Tick();
         _snackGuideLoop?.Tick();
         _bedGuideLoop?.Tick();
+
+        if (currentStep == Step.WaitForWorkArea)
+        {
+            TickWorkAreaArrival();
+        }
 
         if (currentStep == Step.NightLookAtBed && !HasLookedAtBed)
         {
@@ -181,6 +179,16 @@ public class DayOneTutorialDirector : MonoBehaviour
 
         PushTtsLock();
         TTSManager.Instance.PlayTTSChain(firstClip, nextClip, PopTtsLock);
+    }
+
+    public bool AllowsLegacyTeleportIntro(string areaName)
+    {
+        if (!ShouldSuppressLegacyTeleportIntro)
+        {
+            return true;
+        }
+
+        return string.Equals(areaName, workTeleportAreaName, StringComparison.Ordinal);
     }
 
     public void NotifyArrivedAtWorkArea()
@@ -336,6 +344,7 @@ public class DayOneTutorialDirector : MonoBehaviour
         }
 
         ResolveBedGazeCollider();
+        ResolveWorkTeleportArea();
 
         _keyboardGuideLoop = new GuideAnimationLoop(keyboardController != null ? keyboardController.GuideAnimator : null, "Shining");
         _hamsterGuideLoop = new GuideAnimationLoop(hamsterController != null ? hamsterController.GuideAnimator : null, "Shining");
@@ -478,6 +487,12 @@ public class DayOneTutorialDirector : MonoBehaviour
 
         SetSnackGuide(false);
         CompleteCurrentStep();
+        if (IsLowStressVersion)
+        {
+            RequestAdvanceToNextDay();
+            return;
+        }
+
         if (IsHamsterEnabled)
         {
             EnterNightFeedChips();
@@ -515,7 +530,7 @@ public class DayOneTutorialDirector : MonoBehaviour
         if (currentStep == Step.MorningKeyboard && GameManager.Instance != null)
         {
             CompleteCurrentStep();
-            if (GameManager.Instance.IsNightStage || !IsHamsterEnabled)
+            if (IsLowStressVersion || GameManager.Instance.IsNightStage || !IsHamsterEnabled)
             {
                 EnterNightEatChips();
             }
@@ -540,7 +555,103 @@ public class DayOneTutorialDirector : MonoBehaviour
             return;
         }
 
-        startTriggerBox?.DetectOverlappingTargets();
+        if (teleportedMarker != null &&
+            string.Equals(teleportedMarker.name, workTeleportAreaName, StringComparison.Ordinal))
+        {
+            NotifyArrivedAtWorkArea();
+        }
+    }
+
+    private void TickWorkAreaArrival()
+    {
+        if (_workAreaCollider == null)
+        {
+            ResolveWorkTeleportArea();
+        }
+
+        if (_workAreaCollider == null || !_workAreaCollider.enabled)
+        {
+            return;
+        }
+
+        Vector3 playerPosition;
+        if (Player.instance != null)
+        {
+            playerPosition = Player.instance.feetPositionGuess;
+        }
+        else if (Camera.main != null)
+        {
+            playerPosition = Camera.main.transform.position;
+        }
+        else
+        {
+            return;
+        }
+
+        bool insideArea;
+        MeshCollider meshCollider = _workAreaCollider as MeshCollider;
+        if (meshCollider != null && !meshCollider.convex)
+        {
+            insideArea = _workAreaCollider.bounds.Contains(playerPosition);
+        }
+        else
+        {
+            Vector3 closestPoint = _workAreaCollider.ClosestPoint(playerPosition);
+            insideArea = (closestPoint - playerPosition).sqrMagnitude <= 0.0001f;
+        }
+
+        if (insideArea)
+        {
+            NotifyArrivedAtWorkArea();
+        }
+    }
+
+    private void ResolveWorkTeleportArea()
+    {
+        if (_workTeleportArea != null && _workAreaCollider != null)
+        {
+            return;
+        }
+
+        TeleportArea[] areas = FindObjectsOfType<TeleportArea>(true);
+        if (areas == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < areas.Length; i++)
+        {
+            TeleportArea area = areas[i];
+            if (area == null || !string.Equals(area.name, workTeleportAreaName, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            _workTeleportArea = area;
+            _workAreaCollider = area.GetComponent<Collider>();
+            return;
+        }
+    }
+
+    private void PlaySceneSleepCue()
+    {
+        Transform sleepTransform = FindObjectByName<Transform>("Sleep");
+        if (sleepTransform != null)
+        {
+            if (!sleepTransform.gameObject.activeSelf)
+            {
+                sleepTransform.gameObject.SetActive(true);
+            }
+
+            return;
+        }
+
+        PlayTutorialTTS(sleepIntroTtsPath);
+    }
+
+    private void RequestAdvanceToNextDay()
+    {
+        EventManager.DispatchEvent(EventCommon.PREPARE_CHANGE_TIME, "tutorial");
     }
 
     public void NotifyBedInteracted()
@@ -678,7 +789,7 @@ public class DayOneTutorialDirector : MonoBehaviour
         switch (step)
         {
             case Step.MorningKeyboard:
-                PlayTutorialTTSChain(arriveIntroTtsPath, keyboardIntroTtsPath);
+                PlayTutorialTTS(keyboardIntroTtsPath);
                 break;
             case Step.AfternoonHamster:
                 PlayTutorialTTS(hamsterIntroTtsPath);
@@ -687,7 +798,7 @@ public class DayOneTutorialDirector : MonoBehaviour
                 PlayTutorialTTS(snackIntroTtsPath);
                 break;
             case Step.NightLookAtBed:
-                PlayTutorialTTS(sleepIntroTtsPath);
+                PlaySceneSleepCue();
                 break;
         }
     }
@@ -914,7 +1025,7 @@ public class DayOneTutorialDirector : MonoBehaviour
             }
         }
 
-        return found.Length > 0 ? found[0] : null;
+        return null;
     }
 
     private static GameObject FindBedGuideTarget()
