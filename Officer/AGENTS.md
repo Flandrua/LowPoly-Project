@@ -1,6 +1,6 @@
 ﻿# CLAUDE.md - Officer
 
-> Last updated: 2026-09-04 14:30 +08
+> Last updated: 2026-09-04 15:10 +08
 
 ## 项目概述
 这是一个基于 Unity `2022.3.22f1` 的 VR 办公室互动项目，集成了 `SteamVR`、`XR Interaction Toolkit`、`OpenXR` 与 `PICO XR` 相关能力。项目核心目标是实现玩家在办公室场景中的移动、转向、物品交互、数据/UI 展示，以及基于 VR 手柄的交互流程。
@@ -87,13 +87,13 @@
 - 当前项目用 `GameManager.LowStressVersion` 区分高压/低压两个打包版本：默认 false 为高压；勾选后开局走低压旁路，**不要做成运行中途切换，也不要删除高压代码**。当前 `Simple Sample` 默认 `LowStressVersion: 0`（高压）
 
 ## 第 1 天教学
-- 只认 `DayOneTutorialDirector`。`GameManager.Awake` 若场景里没有该组件会运行时 `AddComponent`；要在 Inspector 挂 TTS，必须在 `GameManager` 上保存一份该组件，并配置 `stepHooks`
+- 只认 `DayOneTutorialDirector`。`GameManager.Awake` 若场景里没有该组件会运行时 `AddComponent`。默认 TTS 由导演按步骤直接播放，不依赖场景里是否保存了该组件
 - 流程（仅 `days == 1`）：`StartTriggerBox` 到达工位 → 早班只出键盘（循环 `Shining`；`guideDismissHitCount` 默认 3 次有效 slap 关动画；打满场景 `requireHit`，当前 Simple Sample 为 10，才换阶段）→ 仓鼠开启则下午只出仓鼠（摸满 `stayRequireTime` 进晚上）→ 晚上先只出 `Chips` 给玩家吃，仓鼠此时不出；吃完后仓鼠才出现，再刷一包只喂、禁止抚摸 → 喂完后站在床 trigger 按 InteractUI/GrabGrip 睡觉进第 2 天（注视床仍会关引导，但不再是睡觉前提）
 - 仓鼠关闭（`GameManager.enableHamster == false`）：早班完成后 `_skipToNightOnNextChange` 一次过场直接晚上，不进下午、不刷第二包、不喂
 - 教学结算计入总进度：早班工作进度、下午抚摸好感；晚上喂仓鼠后保留 `isOut`，第 2 天照常 `MainItemManager.RandomItem()`
 - 第 1 天 `SnackManager.Start` 不调用 `RandomSnack()`；晚上用 `SpawnSnackByName("Chips")`。吃/喂门禁：`TutorialSnackRule.PlayerEatOnly` / `HamsterFeedOnly`
 - 开局关闭旧并行 guide（`enableGuideIntro` / `TryTriggerGuideIntro`）。进第 2 天：`FinishTutorial()` 停循环动画、关触发盒、清交互锁，再 `ForceCompleteAllGuidesAsLearned()`。只关 outline 不够
-- TTS 接口：`stepHooks` 的 `onEntered` / `onGuideDismissed` / `onCompleted`，或 `PlayTutorialTTS(string path)` / `PlayTutorialTTS(AudioClip)`（播时 `PushPlayerInteractionLock`，播完 `Pop`）
+- TTS：进步骤时导演直接播默认介绍。早班 `Start State` 接 `keyboard`，下午 `Hamster`，晚上吃零食 `Snack`，看床 `Sleep`。路径可在导演字段改；空路径则跳过。`stepHooks` 仍可用于额外事件，不要再绑同一段介绍 TTS，否则会播两遍（播时 `PushPlayerInteractionLock`，播完 `Pop`）
 - 场景引用可留空，导演运行时查找 `StartTriggerBox`、键盘（优先带 `Work` 子物体的父节点）、仓鼠、`SnackManager`、名为 `Bed` 的 Animator。不要在 Unity 开着时改磁盘 `.unity` 去绑这些引用
 
 ## 当前交互链路说明

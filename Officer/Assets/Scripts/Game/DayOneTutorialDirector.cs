@@ -48,6 +48,11 @@ public class DayOneTutorialDirector : MonoBehaviour
 
     [Header("TTS Hooks")]
     [SerializeField] private StepHook[] stepHooks;
+    [SerializeField] private string arriveIntroTtsPath = "TTS/Introduce/Start State";
+    [SerializeField] private string keyboardIntroTtsPath = "TTS/Introduce/keyboard";
+    [SerializeField] private string hamsterIntroTtsPath = "TTS/Introduce/Hamster";
+    [SerializeField] private string snackIntroTtsPath = "TTS/Introduce/Snack";
+    [SerializeField] private string sleepIntroTtsPath = "TTS/Introduce/Sleep";
 
     [Header("Runtime")]
     [SerializeField] private Step currentStep = Step.Inactive;
@@ -139,13 +144,7 @@ public class DayOneTutorialDirector : MonoBehaviour
 
     public void PlayTutorialTTS(string resourcePath)
     {
-        if (string.IsNullOrEmpty(resourcePath) || TTSManager.Instance == null)
-        {
-            return;
-        }
-
-        PushTtsLock();
-        TTSManager.Instance.PlayTTS(resourcePath, PopTtsLock);
+        PlayTutorialTTS(LoadTutorialClip(resourcePath));
     }
 
     public void PlayTutorialTTS(AudioClip clip)
@@ -157,6 +156,31 @@ public class DayOneTutorialDirector : MonoBehaviour
 
         PushTtsLock();
         TTSManager.Instance.PlayTTS(clip, PopTtsLock);
+    }
+
+    public void PlayTutorialTTSChain(string firstPath, string nextPath)
+    {
+        if (TTSManager.Instance == null)
+        {
+            return;
+        }
+
+        AudioClip firstClip = LoadTutorialClip(firstPath);
+        AudioClip nextClip = LoadTutorialClip(nextPath);
+        if (firstClip == null)
+        {
+            PlayTutorialTTS(nextClip);
+            return;
+        }
+
+        if (nextClip == null)
+        {
+            PlayTutorialTTS(firstClip);
+            return;
+        }
+
+        PushTtsLock();
+        TTSManager.Instance.PlayTTSChain(firstClip, nextClip, PopTtsLock);
     }
 
     public void NotifyArrivedAtWorkArea()
@@ -645,7 +669,50 @@ public class DayOneTutorialDirector : MonoBehaviour
     {
         currentStep = step;
         InvokeHook(step, hook => hook.onEntered?.Invoke());
+        PlayDefaultEnteredTts(step);
         Log("step " + step);
+    }
+
+    private void PlayDefaultEnteredTts(Step step)
+    {
+        switch (step)
+        {
+            case Step.MorningKeyboard:
+                PlayTutorialTTSChain(arriveIntroTtsPath, keyboardIntroTtsPath);
+                break;
+            case Step.AfternoonHamster:
+                PlayTutorialTTS(hamsterIntroTtsPath);
+                break;
+            case Step.NightEatChips:
+                PlayTutorialTTS(snackIntroTtsPath);
+                break;
+            case Step.NightLookAtBed:
+                PlayTutorialTTS(sleepIntroTtsPath);
+                break;
+        }
+    }
+
+    private static AudioClip LoadTutorialClip(string resourcePath)
+    {
+        if (string.IsNullOrEmpty(resourcePath))
+        {
+            return null;
+        }
+
+        AudioClip clip = Resources.Load<AudioClip>(resourcePath);
+        if (clip != null)
+        {
+            return clip;
+        }
+
+        int slash = resourcePath.LastIndexOf('/');
+        if (slash < 0)
+        {
+            return Resources.Load<AudioClip>(resourcePath.ToLowerInvariant());
+        }
+
+        return Resources.Load<AudioClip>(
+            resourcePath.Substring(0, slash + 1) + resourcePath.Substring(slash + 1).ToLowerInvariant());
     }
 
     private void CompleteCurrentStep()
