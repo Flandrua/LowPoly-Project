@@ -1,6 +1,6 @@
 ﻿# CLAUDE.md - Officer
 
-> Last updated: 2026-08-20 10:00 +08
+> Last updated: 2026-09-04 14:10 +08
 
 ## 项目概述
 这是一个基于 Unity `2022.3.22f1` 的 VR 办公室互动项目，集成了 `SteamVR`、`XR Interaction Toolkit`、`OpenXR` 与 `PICO XR` 相关能力。项目核心目标是实现玩家在办公室场景中的移动、转向、物品交互、数据/UI 展示，以及基于 VR 手柄的交互流程。
@@ -39,11 +39,12 @@
 - 不混用 `SteamVR` 与 `XRI` 的同类控制逻辑而不加说明
 - 不因为小需求顺手重构整套交互系统
 - 不在未确认文件真实编码前，直接覆盖出现乱码的文档文件
+- 不在 Play 时用脚本创建主监视器百分制 UI，也不要用脚本写死进度条/`WorkProgressPercent` 的 RectTransform；布局留在 Hierarchy/Inspector
 
 ## 项目结构建议
 - `Assets/Scripts/Game/`：玩法、流程、玩家状态、关卡逻辑、第 1 天教学（`DayOneTutorialDirector.cs`、`GuideAnimationLoop.cs`）
 - `Assets/Scripts/SteamVRScripts/`：手柄输入、射线交互、抓取、转向、传送回调
-- `Assets/Scripts/Data/`：`DataCenter`、`SnackData`、`ItemData` 等数据定义
+- `Assets/Scripts/Data/`：`DataCenter`、`SnackData`、`ItemData`、`MainMonitorData` 等数据定义
 - `Assets/Scripts/Event/`：项目内事件广播与解耦
 - `Assets/Scripts/Tools/`：单例、时间管理、调试辅助、通用计算
 - `Assets/SteamVR/Simple Sample.unity`：当前正常作业场景，优先用于 VR 输入、抓取、吃零食等交互验证
@@ -55,7 +56,7 @@
 - 主业务脚本集中在 `Assets/Scripts/`
 - 当前项目已有 VR 输入控制脚本，如 `TestInput.cs`、`LaserPointerHandler.cs`、`PlayerSteamVRManager.cs`
 - 当前 `GameManager` 已暴露 `countDown` 倒计时参数，默认 60 秒；从第 2 天开始，阶段内会在 `Update` 中持续计时
-- 当前 `GameManager` 已暴露 `currentWorkProgress` 调试字段，并与 `DataCenter.GameData.PlayerData.workProgress` 和主监视器进度条保持同步
+- 当前 `GameManager` 已暴露 `currentWorkProgress` 调试字段，并与 `DataCenter.GameData.PlayerData.workProgress` 和主监视器进度条、百分制保持同步
 - 当前 `GameManager` 已改为通过场景内 `No snack` 对象做超时后的次日提示，不再依赖外部音频资源路径；该提示只会被触发一次
 - 当前项目已新增“头显中心视野检测”项目侧实现：统一射线入口在 `PlayerSteamVRManager`，目标回调组件为 `CenterGazeCallback`
 - 当前项目同时保留了官方示例和自定义实现，修改前需分清“示例代码”与“项目实际使用代码”
@@ -76,6 +77,7 @@
 - ⚠️ 已知坑：第 1 天导演 `Start` 会先 `ClearCurrentSnack()`。若 `SnackManager` 还没记下出生点，`ResetSnackRootState` 会把世界坐标写成 `(0,0,0)`，薯片会出现在场景原点/沙发附近地板上。出生点必须在 `Awake` 用 `Snacks` 相对 `SnacksRespawnPoint` 的 local pose 捕获，复位也走 local，不要用尚未赋值的世界坐标
 - ⚠️ 已知坑：传送进 `StartTriggerBox` 时 Unity 可能不发 `OnTriggerEnter`，键盘会等玩家再走动才出现。WaitForWorkArea 在 `Teleport.Player` 完成时查一次 overlap，走路仍走 `OnTriggerEnter`
 - ⚠️ 已知坑：晚上吃完零食后若手还抓着 `Snacks` 根，下一包会被带到手上。刷第二包前必须 `ForceReleaseIfHolding` 再复位到 `SnacksRespawnPoint`；`VanishEffect` 会把 `Container` 缩到 0.5，复位时要停动画并还原 scale
+- 当前零食复位已走 `SnackManager`：`Awake` 记相对 `SnacksRespawnPoint` 的 local pose；`ResetSnackRootState` 会松手、停 `VanishEffect`、还原 local 坐标和 `Container` scale
 - 当前已在代码层自愈：`LaserPointerHandler.GetEffectiveRaycastLayers()` 在 mask 为空(0)时自动回退到 `Physics.DefaultRaycastLayers`，因此不管场景序列化成什么，laser 都能命中；理想 Inspector 值仍为 `Everything`（除 Ignore Raycast，`m_Bits: 4294967291`）
 - 当前零食有“两层 outline”：绿色为旧 guide 介绍 outline（`SnackGuideIntroTrigger.guideOutlines`），黄色为出生提示 outline（`SnackManager` 控制，挂在 `_curSnacks` 子树）；二者独立。第 1 天旧绿色 guide 开局即被强制关闭
 - 当前睡觉入口为 `GameManager.SleepToNextDayFromInteraction()`（床 trigger 绑定）；非晚上播放 `TTS/ItemGet/NotTimeToSleep`；第 1 天晚上喂完（仓鼠关闭则吃完）后站在床 trigger 互动即可睡觉
@@ -92,7 +94,7 @@
 - 场景引用可留空，导演运行时查找 `StartTriggerBox`、键盘（优先带 `Work` 子物体的父节点）、仓鼠、`SnackManager`、名为 `Bed` 的 Animator。不要在 Unity 开着时改磁盘 `.unity` 去绑这些引用
 
 ## 当前交互链路说明
-- 工作进度链路：`GameManager.currentWorkProgress` ↔ `DataCenter.GameData.PlayerData.workProgress` → `EventCommon.UPDATE_MONITOR` → `MainMonitorData.UpdateInfo()` → 主监视器 `Scrollbar` + `workInfo/WorkProgressPercent` 百分制（布局在 Inspector 里调，不要用脚本改位置）
+- 工作进度链路：`GameManager.currentWorkProgress` ↔ `DataCenter.GameData.PlayerData.workProgress` → `EventCommon.UPDATE_MONITOR` → `MainMonitorData.UpdateInfo()` → 主监视器 `Scrollbar` + `workInfo/WorkProgressPercent` 百分制（对象在 `Assets/Prefab/Item/MainMonitor.prefab` 层级里；脚本只改文字，布局在 Inspector 调 `Scrollbar` 与 `WorkProgressPercent`）
 - 阶段倒计时链路：`GameManager.countDown` → `GameManager.Update()` → `TickStageCountDown()`；仅从第 2 天开始生效，每次推进到下一阶段后重置
 - 超时奖惩链路：当天任意阶段超时后，`GameManager` 会记录当日超时状态；跨到下一天时调用 `SnackManager.SetContainerVisible(bool)`，超时则隐藏 `Container`，未超时则显示 `Container`
 - 超时提示链路：首次发生“前一天超时”并进入下一天时，`GameManager` 会显示场景内 `No snack` 对象；该对象依赖自身 `AudioSource.playOnAwake` 播放提示，并且只触发一次，后续不再由 `GameManager` 重复 show/hide
@@ -128,7 +130,8 @@
 - 手部碰撞球改动：只改 `HandGrabCollider`，保持它独立于 laser 的悬停状态（不要调用 `OnRayHoverBegin/End`），避免两套交互互相污染 `isRayHovering`
 - laser “完全没反应”时：先查 `LaserPointerHandler.raycastLayers` 是否被设成 `Nothing`，再查目标 Tag 与 Layer；代码已有 `GetEffectiveRaycastLayers()` 兜底，**不要**在 Unity 开着场景时改磁盘 `.unity` 去修 mask（会被内存版本覆盖）
 - 改睡觉/换天逻辑：非晚上反馈走 `SleepToNextDayFromInteraction()`；实际推进仍由 `TrySleepToNextDay()` 负责，注意 `_isStageAdvanceRequested` 空档期；第 1 天晚上要过 `DayOneTutorialDirector.CanSleep`（已进入 `NightLookAtBed`，站在床 trigger 互动即可）
-- 改第 1 天教学：只改 `DayOneTutorialDirector` 及它调用的门禁（键盘 slap、仓鼠摸/打、零食吃/喂、`GameManager._skipToNightOnNextChange`）。不要重新打开旧 `enableGuideIntro`。`requireHit` 跟场景值；3 次 slap 只关动画；晚上禁摸只喂
+- 改第 1 天教学：只改 `DayOneTutorialDirector` 及它调用的门禁（键盘 slap、仓鼠摸/打、零食吃/喂、`GameManager._skipToNightOnNextChange`）。不要重新打开旧 `enableGuideIntro`。`requireHit` 跟场景值；3 次 slap 只关动画；晚上先吃后出仓鼠，禁摸只喂
+- 改进度百分制：只改 `MainMonitorData.workProgressPercent` 的刷新文字；对象必须已在 `MainMonitor/workInfo/WorkProgressPercent`，不要运行时 `new GameObject`，不要改进度条坐标
 - 改 guide 生命周期：第 1 天只认导演循环动画；进第 2 天必须 `FinishTutorial()` 停 `Shining` 并清 lock，不能只靠 `ForceCompleteGuideIntro()`
 - 场景相关问题：优先查组件引用、事件回调、Layer/Collider、Toggle 状态，再改代码
 - 第三方代码必须改时：尽量做最小补丁，并在本文档记录原因、影响范围、回退方式
@@ -144,6 +147,8 @@
 - 变更前先确认目标场景和真实挂载脚本
 - VR 改动必须区分输入源、场景引用、Toggle/Inspector 绑定
 - 第 1 天教学走 `DayOneTutorialDirector`，不要再启用旧的并行 `enableGuideIntro`
+- 晚上仓鼠在玩家吃完薯片后才出现；零食复位走 local pose + 松手 + 还原 scale
+- 主监视器百分制在预制体 `workInfo/WorkProgressPercent`，脚本只改文字
 - 提交结果时说明：改了哪些文件、为什么改、如何在 Unity 里验证
 - 文档文件默认使用 UTF-8（建议带 BOM 以兼容 Windows PowerShell），更新后必须复查是否存在乱码
 
@@ -162,7 +167,7 @@
    - 加了碰撞球后，laser 自身的悬停/抓取/Trigger 不应被破坏（两套交互可共存）
    - 若涉及零食出生 outline（第 2 天起）：射线指到后黄色出生提示应熄灭；第 1 天教学零食走导演循环 `Shining`
    - 若涉及第一天教学：不到工位不应出键盘/仓鼠/食物；传送进 `StartTriggerBox` 也应立刻出键盘；第 3 次有效 slap 只停键盘引导动画，打满场景 `requireHit`（当前 10）才换阶段且工作进度增加；仓鼠开启时下午只出仓鼠、晚上先吃薯片时仓鼠不应出现，吃完后仓鼠才出来且不能摸只能喂，喂完次日有道具；仓鼠关闭时早班打满直接晚上、只吃一包薯片；喂完后站在床 trigger 互动即可进第 2 天；第 2 天无循环 `Shining`/绿圈/交互锁
-   - 若涉及第 1 天晚上薯片：应出现在 `SnacksRespawnPoint`（`Snacks` local `(0,0,0)`），不要刷到世界原点或沙发旁地板；玩家吃完第一包后应松手，第二包出现在出生点而不是跟着手柄
+   - 若涉及第 1 天晚上薯片：应出现在 `SnacksRespawnPoint`（`Snacks` local `(0,0,0)`），不要刷到世界原点或沙发旁地板；玩家吃完第一包后应松手，第二包出现在出生点而不是跟着手柄；`Container` scale 应还原，不要一直缩在 0.5
    - 若涉及睡觉：早上/下午 trigger 床应播放 `NotTimeToSleep`；第 1 天晚上未喂完（或仓鼠关闭时未吃完）不应进次日；喂完后站在床 trigger 互动应进第 2 天；第 2 天起晚上 trigger 床应正常进入次日
    - `GameManager.playerRayLength` 在运行时调节后，左右手射线可见长度与命中距离应同步变化
    - 抓起零食后按 Trigger 应播放对应零食 TTS；道具按 Trigger 应播放道具 TTS；首次拿起道具仍只触发一次首次拿起 TTS
@@ -181,11 +186,11 @@
 - **改输入逻辑**：先确认使用的是 `SteamVR` 还是 `XRI` 输入链路，再改对应脚本
 - **改手部交互（射线/碰撞球）**：先分清是 `LaserPointerHandler`（远距射线）还是 `HandGrabCollider`（近距碰撞球）；两者各自维护抓取/Trigger/guide，碰撞球必须保持独立、不碰 laser 的 `isRayHovering`
 - **修 laser 失效**：先确认 `GetEffectiveRaycastLayers()` 兜底是否生效；再查目标 Tag/Layer；不要依赖改磁盘 `.unity` 修 `raycastLayers`
-- **改床/睡觉交互**：确认床 trigger 绑定的是 `SleepToNextDayFromInteraction()`；非晚上 TTS 为 `TTS/ItemGet/NotTimeToSleep`；第 1 天晚上还要过 `CanSleep`
-- **改第 1 天教学**：先改 `DayOneTutorialDirector`；仓鼠开关走 `enableHamster`；3 次 slap 只关动画；`requireHit` 跟场景值；晚上禁摸只喂；TTS 挂 `stepHooks` 或 `PlayTutorialTTS`
+- **改床/睡觉交互**：确认床 trigger 绑定的是 `SleepToNextDayFromInteraction()`；非晚上 TTS 为 `TTS/ItemGet/NotTimeToSleep`；第 1 天晚上还要过 `CanSleep`（已进入 `NightLookAtBed` 即可，不必先注视 2.5s）
+- **改第 1 天教学**：先改 `DayOneTutorialDirector`；仓鼠开关走 `enableHamster`；3 次 slap 只关动画；`requireHit` 跟场景值；晚上先吃后出仓鼠、禁摸只喂；TTS 挂 `stepHooks` 或 `PlayTutorialTTS`
 - **改中心视野逻辑**：优先修改 `PlayerSteamVRManager` 的统一视线检测参数或 `CenterGazeCallback` 的目标判定，不要为每个目标单独复制一套头显射线检测
 - **改 UI 交互**：优先增加 Inspector 可绑定入口，不要把 UI 查找逻辑写死
-- **改进度显示/调试入口**：优先复用 `DataCenter.GameData.PlayerData.workProgress` 与 `EventCommon.UPDATE_MONITOR` 链路；若需要手动调试，优先暴露 `GameManager.currentWorkProgress`
+- **改进度显示/调试入口**：优先复用 `DataCenter.GameData.PlayerData.workProgress` 与 `EventCommon.UPDATE_MONITOR` 链路；百分制对象已在预制体 `workInfo/WorkProgressPercent`，脚本只改文字；若需要手动调试，优先暴露 `GameManager.currentWorkProgress`
 - **改场景行为**：先确认对象挂载脚本、事件回调、引用对象
 - **修 SDK 问题**：先尝试项目层兜底；只有项目层无法解决时再改 SDK
 - **修 NaN/Transform 报错**：优先在输入数据入口和赋值出口做合法性保护
