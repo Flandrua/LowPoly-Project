@@ -41,7 +41,7 @@ public class GameManager : MonoSingleton<GameManager>
     public float countDown = 60f;
 
     [Header("Build Version")]
-    [Tooltip("勾选后进入低压版本：不限制探索、不剥夺零食、不触发 Stage Advance Callbacks、隐藏 OutsideWalls、不判定熬夜灰屏/死亡，结局固定为 WorkStandard。仅用于打包不同版本，不支持运行中途切换。")]
+    [Tooltip("勾选后进入低压版本：不限制探索、不剥夺零食、不触发 Stage Advance Callbacks、隐藏 OutsideWalls、一天只有早/下午（下午推进直接换天，不进入晚上）、不判定熬夜灰屏/死亡，结局固定为 WorkStandard。仅用于打包不同版本，不支持运行中途切换。")]
     public bool LowStressVersion;
 
     private Animator _animator;
