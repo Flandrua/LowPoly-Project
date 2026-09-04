@@ -13,6 +13,9 @@ public class SnackGuideIntroTrigger : MonoBehaviour
     [SerializeField] private Animator guideAnimator;
     [SerializeField] private Outline[] guideOutlines;
     [SerializeField] private UnityEvent onGuideTriggered;
+    private bool _tutorialGuideActive;
+
+    public Animator GuideAnimator => guideAnimator;
 
     [Header("Guide vs Normal Snack TTS")]
     [SerializeField] private bool suppressNormalSnackTts = true;
@@ -24,7 +27,7 @@ public class SnackGuideIntroTrigger : MonoBehaviour
 
     private void OnEnable()
     {
-        SetGuideOutlineVisible(enableGuideIntro && !guideTriggered);
+        SetGuideOutlineVisible(_tutorialGuideActive || (enableGuideIntro && !guideTriggered));
     }
 
     public void TryTriggerGuideIntro()
@@ -106,7 +109,17 @@ public class SnackGuideIntroTrigger : MonoBehaviour
     {
         enableGuideIntro = false;
         guideTriggered = true;
-        SetGuideOutlineVisible(false);
+        if (!_tutorialGuideActive)
+        {
+            SetGuideOutlineVisible(false);
+        }
+    }
+
+    public void SetTutorialGuideActive(bool active)
+    {
+        enableGuideIntro = false;
+        _tutorialGuideActive = active;
+        SetGuideOutlineVisible(active);
     }
 
     private void ResolveGuideReferences()

@@ -150,6 +150,9 @@ public class HamsterController : MonoSingleton<HamsterController>, IPointerClick
     public float stayRequireTime = 3; // Required petting time before the interaction completes.
 
     private float stayTime = 0; // Accumulated petting time.
+    private bool _tutorialIgnoreHit;
+    private bool _tutorialPettingEnabled = true;
+    private bool _tutorialGuideActive;
 
     private AudioSource _as;
 
@@ -174,6 +177,8 @@ public class HamsterController : MonoSingleton<HamsterController>, IPointerClick
     [SerializeField] private UnityEvent onTriggerEnterOnce;
     [SerializeField] private bool hasTriggeredOnTriggerEnterOnce;
     private bool _missingGuideOutlineLogged;
+    public Animator GuideAnimator => guideAnimator;
+    public event System.Action PetCompleted;
 
     private void Awake()
 
@@ -191,7 +196,7 @@ public class HamsterController : MonoSingleton<HamsterController>, IPointerClick
 
         CacheComponents();
         ResolveGuideReferences();
-        SetGuideOutlineVisible(enableGuideIntro && !guideTriggered);
+        SetGuideOutlineVisible(_tutorialGuideActive || (enableGuideIntro && !guideTriggered));
 
     }
 
@@ -201,7 +206,7 @@ public class HamsterController : MonoSingleton<HamsterController>, IPointerClick
 
         CacheComponents();
         ResolveGuideReferences();
-        SetGuideOutlineVisible(enableGuideIntro && !guideTriggered);
+        SetGuideOutlineVisible(_tutorialGuideActive || (enableGuideIntro && !guideTriggered));
 
         RegisterEvents();
 
@@ -552,6 +557,12 @@ public class HamsterController : MonoSingleton<HamsterController>, IPointerClick
 
             }
 
+            if (!_tutorialPettingEnabled)
+            {
+                isPlay = false;
+                return;
+            }
+
             stayTime += (float)Time.deltaTime;
 
             _bar.size = (stayTime / stayRequireTime);
@@ -571,6 +582,8 @@ public class HamsterController : MonoSingleton<HamsterController>, IPointerClick
                 _bar.size = 1;
 
                 Debug.Log("get favor");
+
+                PetCompleted?.Invoke();
 
                 // Notify the GameManager that this stage can advance.
 
@@ -592,8 +605,12 @@ public class HamsterController : MonoSingleton<HamsterController>, IPointerClick
         if (!IsHamsterGameplayEnabled() || isDead || isOut || !IsPlayerInteractionAllowed()) return;
 
         if (other.CompareTag("Player") && !isEating)
-
         {
+            if (!_tutorialPettingEnabled)
+            {
+                return;
+            }
+
             InvokeTriggerEnterOnceIfNeeded();
 
             onTrigger = true;
@@ -613,6 +630,10 @@ public class HamsterController : MonoSingleton<HamsterController>, IPointerClick
                 if (mag > 2.5) // Treat a fast collision as a hit.
 
                 {
+                    if (_tutorialIgnoreHit)
+                    {
+                        return;
+                    }
 
                     GetDamage(-2);
 
@@ -657,6 +678,11 @@ public class HamsterController : MonoSingleton<HamsterController>, IPointerClick
         else if (other.CompareTag("Snack") && !isPlay)
 
         {
+            if (SnackManager.Instance != null && !SnackManager.Instance.CanHamsterEatSnack())
+            {
+                return;
+            }
+
             onTrigger = true;
 
             isEating = true;
@@ -1124,7 +1150,31 @@ public class HamsterController : MonoSingleton<HamsterController>, IPointerClick
     {
         enableGuideIntro = false;
         guideTriggered = true;
-        SetGuideOutlineVisible(false);
+        if (!_tutorialGuideActive)
+        {
+            SetGuideOutlineVisible(false);
+        }
+    }
+
+    public void SetTutorialGuideActive(bool active)
+    {
+        enableGuideIntro = false;
+        _tutorialGuideActive = active;
+        SetGuideOutlineVisible(active);
+    }
+
+    public void SetTutorialIgnoreHit(bool ignoreHit)
+    {
+        _tutorialIgnoreHit = ignoreHit;
+    }
+
+    public void SetTutorialPettingEnabled(bool enabled)
+    {
+        _tutorialPettingEnabled = enabled;
+        if (!enabled)
+        {
+            isPlay = false;
+        }
     }
 
     private void ResolveGuideReferences()

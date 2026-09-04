@@ -10,7 +10,7 @@ public class SnackManager : MonoSingleton<SnackManager>
 
     // Random snack selection without pooling.
     private Animation _animation;
-    private string _animationName;
+    private string _animationName = "VanishEffect";
     private Collider _col;
     private XRGrabInteractable _grabInteractable;
     [SerializeField] private List<GameObject> _snacks = new List<GameObject>();
@@ -28,14 +28,75 @@ public class SnackManager : MonoSingleton<SnackManager>
     private bool _suppressNormalSnackTtsOnce;
     private Vector3 initialPosition;
     private Quaternion initialRotation;
+    private Vector3 initialLocalPosition;
+    private Quaternion initialLocalRotation;
+    private Vector3 initialLocalScale;
+    private Vector3 initialContainerScale;
+    private Transform _spawnParent;
+    private bool _hasInitialPose;
     private Rigidbody _rb;
     private bool _defaultUseGravity;
     private bool _defaultIsKinematic;
+    private bool _hasCachedRigidbodyDefaults;
     private string audioAsset;
     public bool isPlayer = false;
     public bool isHamster = false;
     public GameObject container;
     public bool ShouldShowSpawnOutline => !_spawnOutlineHiddenBySnackGrab;
+
+    public enum TutorialSnackRule
+    {
+        None = 0,
+        PlayerEatOnly = 1,
+        HamsterFeedOnly = 2
+    }
+
+    private TutorialSnackRule _tutorialSnackRule = TutorialSnackRule.None;
+
+    public SnackGuideIntroTrigger CurrentSnackGuide
+    {
+        get
+        {
+            if (_curSnacks == null)
+            {
+                return null;
+            }
+
+            SnackGuideIntroTrigger guide = _curSnacks.GetComponent<SnackGuideIntroTrigger>();
+            if (guide == null)
+            {
+                guide = _curSnacks.GetComponentInChildren<SnackGuideIntroTrigger>(true);
+            }
+
+            if (guide == null)
+            {
+                guide = _curSnacks.GetComponentInParent<SnackGuideIntroTrigger>();
+            }
+
+            return guide;
+        }
+    }
+
+    public bool CanPlayerEatSnack()
+    {
+        return _tutorialSnackRule != TutorialSnackRule.HamsterFeedOnly;
+    }
+
+    public bool CanHamsterEatSnack()
+    {
+        return _tutorialSnackRule != TutorialSnackRule.PlayerEatOnly;
+    }
+
+    public void SetTutorialSnackRule(TutorialSnackRule rule)
+    {
+        _tutorialSnackRule = rule;
+    }
+
+    private void Awake()
+    {
+        CaptureSpawnPose();
+        CacheRigidbodyDefaults();
+    }
 
     void Start()
     {
@@ -43,23 +104,24 @@ public class SnackManager : MonoSingleton<SnackManager>
         EventManager.AddListener<bool>(EventCommon.PLAYER_EATING, PlayerEating);
         EventManager.AddListener<bool>(EventCommon.PLAYER_SNACK_HINT, OnPlayerSnackHintChanged);
         EventManager.AddListener(EventCommon.NEXT_STAGE, ResetToDefault);
-        initialPosition = transform.position;
-        initialRotation = transform.rotation;
+        CaptureSpawnPose();
+        CacheRigidbodyDefaults();
         _animation = GetComponent<Animation>();
         _animation.enabled = false;
         _animationName = "VanishEffect";
         _col = GetComponent<Collider>();
-        _rb = GetComponent<Rigidbody>();
-        if (_rb != null)
-        {
-            _defaultUseGravity = _rb.useGravity;
-            _defaultIsKinematic = _rb.isKinematic;
-        }
         _grabInteractable = GetComponent<XRGrabInteractable>();
         _snacks = GetChildren(transform.Find("Container"));
         _content = UIMonitorController.Instance.content;
         _name = UIMonitorController.Instance.nameTxt;
         RegisterGrabEvents();
+        if (ShouldSkipInitialRandomSnack())
+        {
+            ClearCurrentSnack();
+            SetContainerVisible(false);
+            return;
+        }
+
         RandomSnack();
     }
 
@@ -87,6 +149,106 @@ public class SnackManager : MonoSingleton<SnackManager>
         EventManager.RemoveListener<bool>(EventCommon.PLAYER_SNACK_HINT, OnPlayerSnackHintChanged);
         EventManager.RemoveListener(EventCommon.NEXT_STAGE, ResetToDefault);
         UnregisterGrabEvents();
+    }
+
+    public bool SpawnSnackByName(string snackKey)
+    {
+        EnsureSnackList();
+        string normalizedKey = NormalizeSnackKey(snackKey);
+        if (string.IsNullOrEmpty(normalizedKey) || container == null)
+        {
+            return false;
+        }
+
+        GameObject match = FindSnackByKey(normalizedKey);
+        if (match == null)
+        {
+            Debug.LogWarning("SnackManager: could not find snack [" + normalizedKey + "].");
+            return false;
+        }
+
+        ResetSnackRootState(true);
+        _spawnOutlineHiddenBySnackGrab = false;
+        _hasPlayedPickupTtsForCurrentSnack = false;
+        _suppressNormalSnackTtsOnce = false;
+        _rayHideOutlineEnableTime = Time.time + Mathf.Max(0f, rayHideOutlineDelayAfterSpawn);
+
+        if (_curSnacks != null && _curSnacks != match)
+        {
+            _curSnacks.SetActive(false);
+        }
+
+        if (_animation != null)
+        {
+            _animation.enabled = false;
+        }
+
+        container.transform.localScale = Vector3.one;
+        _curSnacks = match;
+        _curSnacks.SetActive(true);
+        if (_col != null)
+        {
+            _col.enabled = true;
+        }
+
+        SnackData snackData = _curSnacks.GetComponent<SnackData>();
+        _snackName = snackData != null ? snackData.name : _curSnacks.name;
+        _desc = snackData != null ? snackData.desc : string.Empty;
+        audioAsset = ResolveSnackTtsPath(snackData);
+        _lastGrabState = false;
+        NotifySnackHint(false);
+        SetSpawnObjectOutlineVisible(true);
+        return true;
+    }
+
+    private void EnsureSnackList()
+    {
+        if (_snacks != null && _snacks.Count > 0)
+        {
+            return;
+        }
+
+        Transform parent = container != null ? container.transform : transform.Find("Container");
+        if (parent != null)
+        {
+            _snacks = GetChildren(parent);
+        }
+    }
+
+    private GameObject FindSnackByKey(string normalizedKey)
+    {
+        Transform parent = container != null ? container.transform : transform.Find("Container");
+        if (parent == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform child = parent.GetChild(i);
+            if (child == null)
+            {
+                continue;
+            }
+
+            if (NormalizeSnackKey(child.name) == normalizedKey)
+            {
+                return child.gameObject;
+            }
+
+            SnackData snackData = child.GetComponent<SnackData>();
+            if (snackData != null && NormalizeSnackKey(snackData.snackName) == normalizedKey)
+            {
+                return child.gameObject;
+            }
+        }
+
+        return null;
+    }
+
+    private bool ShouldSkipInitialRandomSnack()
+    {
+        return GameManager.Instance != null && GameManager.Instance.CurrentDay <= 1;
     }
 
     public void RandomSnack()
@@ -193,12 +355,102 @@ public class SnackManager : MonoSingleton<SnackManager>
         }
     }
 
+    private void CaptureSpawnPose()
+    {
+        if (_hasInitialPose)
+        {
+            return;
+        }
+
+        _spawnParent = transform.parent;
+        initialLocalPosition = transform.localPosition;
+        initialLocalRotation = transform.localRotation;
+        initialLocalScale = transform.localScale;
+        initialPosition = transform.position;
+        initialRotation = transform.rotation;
+        if (container == null)
+        {
+            Transform found = transform.Find("Container");
+            if (found != null)
+            {
+                container = found.gameObject;
+            }
+        }
+
+        initialContainerScale = container != null ? container.transform.localScale : Vector3.one;
+        _hasInitialPose = true;
+    }
+
+    private void CacheRigidbodyDefaults()
+    {
+        if (_rb == null)
+        {
+            _rb = GetComponent<Rigidbody>();
+        }
+
+        if (_rb == null)
+        {
+            return;
+        }
+
+        if (_hasCachedRigidbodyDefaults)
+        {
+            return;
+        }
+
+        _defaultUseGravity = _rb.useGravity;
+        _defaultIsKinematic = _rb.isKinematic;
+        _hasCachedRigidbodyDefaults = true;
+    }
+
+    public void ReleaseHeldSnack()
+    {
+        LaserPointerHandler[] lasers = FindObjectsOfType<LaserPointerHandler>(true);
+        for (int i = 0; i < lasers.Length; i++)
+        {
+            if (lasers[i] != null)
+            {
+                lasers[i].ForceReleaseIfHolding(gameObject);
+            }
+        }
+
+        HandGrabCollider[] grabs = FindObjectsOfType<HandGrabCollider>(true);
+        for (int i = 0; i < grabs.Length; i++)
+        {
+            if (grabs[i] != null)
+            {
+                grabs[i].ForceReleaseIfHolding(gameObject);
+            }
+        }
+    }
+
     private void ResetSnackRootState(bool resetPose)
     {
         if (resetPose)
         {
-            transform.position = initialPosition;
-            transform.rotation = initialRotation;
+            ReleaseHeldSnack();
+            StopVanishAnimation();
+            if (_hasInitialPose)
+            {
+                if (_spawnParent != null && transform.parent != _spawnParent)
+                {
+                    transform.SetParent(_spawnParent, false);
+                }
+
+                transform.localPosition = initialLocalPosition;
+                transform.localRotation = initialLocalRotation;
+                transform.localScale = initialLocalScale;
+            }
+
+            if (container != null)
+            {
+                container.transform.localScale = _hasInitialPose ? initialContainerScale : Vector3.one;
+            }
+        }
+
+        if (_rb == null)
+        {
+            _rb = GetComponent<Rigidbody>();
         }
 
         if (_rb == null)
@@ -423,6 +675,11 @@ public class SnackManager : MonoSingleton<SnackManager>
 
     public void HamsterEating(bool flag)
     {
+        if (flag && !CanHamsterEatSnack())
+        {
+            return;
+        }
+
         if (isPlayer) { return; }
         isEating = flag;
         if (flag)
@@ -442,6 +699,11 @@ public class SnackManager : MonoSingleton<SnackManager>
 
     public void PlayerEating(bool flag)
     {
+        if (flag && !CanPlayerEatSnack())
+        {
+            return;
+        }
+
         if (isHamster) { return; }
         isEating = flag;
         if (flag)
@@ -464,6 +726,37 @@ public class SnackManager : MonoSingleton<SnackManager>
         isHamster = false;
         isPlayer = false;
         ResetAnimation(_animation, _animationName);
+    }
+
+    private void StopVanishAnimation()
+    {
+        if (TimeManager.Instance != null)
+        {
+            TimeManager.Instance.RemoveTask(StopAnimation, this);
+        }
+
+        if (_animation == null)
+        {
+            _animation = GetComponent<Animation>();
+        }
+
+        if (_animation == null)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(_animationName) && _animation[_animationName] != null)
+        {
+            AnimationState state = _animation[_animationName];
+            state.speed = 0f;
+            state.time = 0f;
+            _animation.Play(_animationName);
+            _animation.Sample();
+            state.enabled = false;
+        }
+
+        _animation.Stop();
+        _animation.enabled = false;
     }
 
     private void ResetAnimation(Animation ani, string name)

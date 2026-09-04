@@ -189,6 +189,21 @@ public class LaserPointerHandler : MonoBehaviour
         attachedObject.transform.rotation = handTransform.rotation * rotOffset;
     }
 
+    public void ForceReleaseIfHolding(GameObject root)
+    {
+        if (attachedObject == null || root == null)
+        {
+            return;
+        }
+
+        if (attachedObject == root ||
+            attachedObject.transform.IsChildOf(root.transform) ||
+            root.transform.IsChildOf(attachedObject.transform))
+        {
+            DetachRemote();
+        }
+    }
+
     private void DetachRemote()
     {
         if (attachedObject == null)

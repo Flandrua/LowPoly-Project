@@ -108,6 +108,7 @@ public class GameManager : MonoSingleton<GameManager>
     private bool _isStageAdvanceRequested;
     private bool _wasGrayFatigueActive;
     private bool _hasEvaluatedDayOneGuides;
+    private bool _skipToNightOnNextChange;
 
     public int TotalDays => Mathf.Max(1, totaldays);
     public int HamsterLoveEndingFavorabilityThreshold => Mathf.Max(0, hamsterLoveEndingFavorabilityThreshold);
@@ -119,6 +120,15 @@ public class GameManager : MonoSingleton<GameManager>
     public bool IsStageAdvanceRequested => _isStageAdvanceRequested;
     public bool IsNightStage => curTimeStage == (int)TimeStage.Night;
     public int CurrentFatigue => GetCurrentFatigueSafe();
+    public int CurrentDay => GetCurrentDaySafe();
+    public GameObject HamsterRoot
+    {
+        get
+        {
+            ResolveHamsterReferences();
+            return hamsterRoot;
+        }
+    }
 
     public string CurrentTimeDisplay => GetCurrentTimeDisplay();
 
@@ -133,6 +143,7 @@ public class GameManager : MonoSingleton<GameManager>
         ResolveHamsterReferences();
         ResolvePlayerRayPointers();
         ApplyPlayerRayLength();
+        EnsureDayOneTutorialDirector();
 
     }
     public void DecreaseWorkProcess()
@@ -248,6 +259,19 @@ public class GameManager : MonoSingleton<GameManager>
         playerInteractionLockCount = Mathf.Max(0, playerInteractionLockCount - 1);
     }
 
+    public void ResetPlayerInteractionLock()
+    {
+        playerInteractionLockCount = 0;
+    }
+
+    private void EnsureDayOneTutorialDirector()
+    {
+        if (GetComponent<DayOneTutorialDirector>() == null)
+        {
+            gameObject.AddComponent<DayOneTutorialDirector>();
+        }
+    }
+
     private void ResolvePlayerRayPointers()
     {
         if (playerLaserPointers == null)
@@ -352,7 +376,7 @@ public class GameManager : MonoSingleton<GameManager>
 
 
 
-    private void ApplyHamsterFeatureState()
+    public void ApplyHamsterFeatureState()
     {
         ResolveHamsterReferences();
 
@@ -367,9 +391,15 @@ public class GameManager : MonoSingleton<GameManager>
             EventManager.DispatchEvent<bool>(EventCommon.HAMSTER_EATING, false);
         }
 
-        if (hamsterRoot != null && hamsterRoot.activeSelf != enableHamster)
+        bool wantActive = enableHamster;
+        if (DayOneTutorialDirector.Instance != null && DayOneTutorialDirector.Instance.IsRunning)
         {
-            hamsterRoot.SetActive(enableHamster);
+            wantActive = DayOneTutorialDirector.Instance.ShouldShowHamster;
+        }
+
+        if (hamsterRoot != null && hamsterRoot.activeSelf != wantActive)
+        {
+            hamsterRoot.SetActive(wantActive);
         }
     }
 
@@ -405,6 +435,13 @@ public class GameManager : MonoSingleton<GameManager>
             ApplyWorkProgressFromMouseClick();
         }
 
+        if (type == "work" &&
+            DayOneTutorialDirector.Instance != null &&
+            DayOneTutorialDirector.Instance.ShouldSkipAfternoonAfterMorningWork)
+        {
+            _skipToNightOnNextChange = true;
+        }
+
         _isStageAdvanceRequested = true;
         EventManager.DispatchEvent<bool>(EventCommon.CHANGE_TIME, true);
 
@@ -426,7 +463,19 @@ public class GameManager : MonoSingleton<GameManager>
 
     {
 
-        if (curTimeStage == 0)
+        if (_skipToNightOnNextChange && curTimeStage == 0)
+
+        {
+
+            _skipToNightOnNextChange = false;
+
+            RenderSettings.skybox = night;
+
+            curTimeStage = (int)TimeStage.Night;
+
+        }
+
+        else if (curTimeStage == 0)
 
         {
 
@@ -603,6 +652,14 @@ public class GameManager : MonoSingleton<GameManager>
 
             }
 
+            if (currentDay == 1 &&
+                entry.stage == TimeStage.Night &&
+                DayOneTutorialDirector.Instance != null &&
+                DayOneTutorialDirector.Instance.ShouldSuppressDayOneNightStageCallbacks)
+            {
+                continue;
+            }
+
 
 
             entry.onTriggered?.Invoke();
@@ -645,9 +702,11 @@ public class GameManager : MonoSingleton<GameManager>
 
         _hasEvaluatedDayOneGuides = true;
 
-        // Guides are a day-one tutorial. When entering day 2, force-complete every guide (whether or
-        // not the player triggered it) so no green guide outline lingers past the first day.
         ForceCompleteAllGuidesAsLearned();
+        if (DayOneTutorialDirector.Instance != null)
+        {
+            DayOneTutorialDirector.Instance.FinishTutorial();
+        }
     }
 
     private void ForceCompleteAllGuidesAsLearned()
@@ -682,6 +741,13 @@ public class GameManager : MonoSingleton<GameManager>
         }
 
         if (_isStageAdvanceRequested)
+        {
+            return false;
+        }
+
+        if (DayOneTutorialDirector.Instance != null &&
+            DayOneTutorialDirector.Instance.IsRunning &&
+            !DayOneTutorialDirector.Instance.CanSleep)
         {
             return false;
         }

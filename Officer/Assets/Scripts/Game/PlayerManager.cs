@@ -265,6 +265,11 @@ public class PlayerManager : MonoBehaviour
     {
         if (other.CompareTag("Snack"))
         {
+            if (SnackManager.Instance != null && !SnackManager.Instance.CanPlayerEatSnack())
+            {
+                return;
+            }
+
             _as.Play();
             EventManager.DispatchEvent(EventCommon.PLAYER_EATING, true);
         }
