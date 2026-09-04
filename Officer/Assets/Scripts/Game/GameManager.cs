@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.Events;
 
 using UnityEngine.Serialization;
+using Valve.VR.InteractionSystem;
 
 
 
@@ -38,6 +39,10 @@ public class GameManager : MonoSingleton<GameManager>
 
     private int curTimeStage = 0;//0 = morning, 1 = afternoon, 2 = night
     public float countDown = 60f;
+
+    [Header("Build Version")]
+    [Tooltip("勾选后进入低压版本：不限制探索、不剥夺零食、不触发 Stage Advance Callbacks、隐藏 OutsideWalls、不判定熬夜灰屏/死亡，结局固定为 WorkStandard。仅用于打包不同版本，不支持运行中途切换。")]
+    public bool LowStressVersion;
 
     private Animator _animator;
 
@@ -80,6 +85,7 @@ public class GameManager : MonoSingleton<GameManager>
     [SerializeField] private HamsterController hamsterController;
 
     [SerializeField] private GameObject noSnackObject;
+    [SerializeField] private GameObject outsideWalls;
     [Header("Player Ray")]
     [Min(0.05f)] public float playerRayLength = 100f;
     [SerializeField] private List<LaserPointerHandler> playerLaserPointers = new List<LaserPointerHandler>();
@@ -107,6 +113,7 @@ public class GameManager : MonoSingleton<GameManager>
     public int HamsterLoveEndingFavorabilityThreshold => Mathf.Max(0, hamsterLoveEndingFavorabilityThreshold);
 
     public bool IsHamsterGameplayEnabled => enableHamster;
+    public bool IsLowStressVersion => LowStressVersion;
     public bool IsPlayerInteractionEnabled => !manuallyDisablePlayerInteraction && playerInteractionLockCount <= 0;
     // True while a stage advance is in progress (the time-switching gap). Used to lock work/sleep/pet inputs.
     public bool IsStageAdvanceRequested => _isStageAdvanceRequested;
@@ -145,7 +152,9 @@ public class GameManager : MonoSingleton<GameManager>
         _animator = GetComponent<Animator>();
 
         ResolveNoSnackObjectReference();
+        ResolveOutsideWallsReference();
         _hasShownNoSnackObject = noSnackObject != null && noSnackObject.activeSelf;
+        ApplyLowStressVersionState();
         ApplyHamsterFeatureState();
         ResolvePlayerRayPointers();
         ApplyPlayerRayLength();
@@ -175,6 +184,7 @@ public class GameManager : MonoSingleton<GameManager>
     {
 
         ResolveNoSnackObjectReference();
+        ResolveOutsideWallsReference();
         ResolvePlayerRayPointers();
 
         if (!Application.isPlaying)
@@ -428,7 +438,7 @@ public class GameManager : MonoSingleton<GameManager>
 
         }
 
-        else if (curTimeStage == 1)
+        else if (curTimeStage == 1 && !LowStressVersion)
 
         {
 
@@ -438,7 +448,7 @@ public class GameManager : MonoSingleton<GameManager>
 
         }
 
-        else if (curTimeStage == 2)//Advance to the next day
+        else if (curTimeStage == 2 || (LowStressVersion && curTimeStage == 1))//Advance to the next day
 
         {
 
@@ -489,17 +499,20 @@ public class GameManager : MonoSingleton<GameManager>
 
             PlayerSteamVRManager.Instance.ResetLocation();
 
-            if (sleptThisNight)
+            if (!LowStressVersion)
             {
-                DataCenter.Instance.ResetFatigue();
+                if (sleptThisNight)
+                {
+                    DataCenter.Instance.ResetFatigue();
+                }
+                else
+                {
+                    DataCenter.Instance.AddFatigue(1);
+                }
+                SyncExposedFatigueFromData();
             }
-            else
-            {
-                DataCenter.Instance.AddFatigue(1);
-            }
-            SyncExposedFatigueFromData();
 
-            bool isDeathEnding = EvaluateDailyFatigueState();
+            bool isDeathEnding = !LowStressVersion && EvaluateDailyFatigueState();
             if (!isDeathEnding)
             {
                 if (DataCenter.Instance.GameData.PlayerData.days >= TotalDays)
@@ -515,7 +528,7 @@ public class GameManager : MonoSingleton<GameManager>
                 {
                     HandleDayOneGuideFallbackBeforeDayIncrement();
 
-                    bool shouldShowSnackContainerNextDay = !_hasTimedOutToday;
+                    bool shouldShowSnackContainerNextDay = LowStressVersion || !_hasTimedOutToday;
                     DataCenter.Instance.GameData.PlayerData.days++;
                     if (shouldShowSnackContainerNextDay)
                     {
@@ -553,6 +566,16 @@ public class GameManager : MonoSingleton<GameManager>
     private void InvokeStageAdvanceCallbacks()
 
     {
+
+        if (LowStressVersion)
+
+        {
+
+            return;
+
+        }
+
+
 
         if (stageAdvanceCallbacks == null || stageAdvanceCallbacks.Count == 0)
 
@@ -930,6 +953,16 @@ public class GameManager : MonoSingleton<GameManager>
 
     private void ApplyHalfOnByFatigue()
     {
+        if (LowStressVersion)
+        {
+            if (_animator != null)
+            {
+                _animator.SetBool("gray", false);
+            }
+            _wasGrayFatigueActive = false;
+            return;
+        }
+
         bool isGrayFatigueActive = GetCurrentFatigueSafe() >= Mathf.Max(0, grayFatigueThreshold);
 
         if (_animator != null)
@@ -947,6 +980,11 @@ public class GameManager : MonoSingleton<GameManager>
 
     private bool EvaluateDailyFatigueState()
     {
+        if (LowStressVersion)
+        {
+            return false;
+        }
+
         ApplyHalfOnByFatigue();
 
         if (_hasTriggeredDeathEnding || GetCurrentFatigueSafe() < Mathf.Max(0, deathFatigueThreshold))
@@ -1041,6 +1079,81 @@ public class GameManager : MonoSingleton<GameManager>
     }
 
 
+
+    private void ApplyLowStressVersionState()
+    {
+        if (!LowStressVersion)
+        {
+            return;
+        }
+
+        ResolveOutsideWallsReference();
+        if (outsideWalls != null && outsideWalls.activeSelf)
+        {
+            outsideWalls.SetActive(false);
+        }
+
+        UnlockAllTeleportAreasForExploration();
+    }
+
+    private void UnlockAllTeleportAreasForExploration()
+    {
+        TeleportArea[] areas = FindObjectsOfType<TeleportArea>(true);
+        if (areas != null)
+        {
+            for (int i = 0; i < areas.Length; i++)
+            {
+                TeleportArea area = areas[i];
+                if (area == null || !area.gameObject.scene.IsValid())
+                {
+                    continue;
+                }
+
+                if (!area.gameObject.activeSelf)
+                {
+                    area.gameObject.SetActive(true);
+                }
+
+                if (!area.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                area.SetLocked(false);
+            }
+        }
+
+        TeleportAreaCallback[] callbacks = FindObjectsOfType<TeleportAreaCallback>(true);
+        if (callbacks == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < callbacks.Length; i++)
+        {
+            TeleportAreaCallback callback = callbacks[i];
+            if (callback == null)
+            {
+                continue;
+            }
+
+            callback.lockAreaOnExit = false;
+        }
+    }
+
+    private void ResolveOutsideWallsReference()
+    {
+        if (outsideWalls != null)
+        {
+            return;
+        }
+
+        Transform found = transform.Find("OutsideWalls");
+        if (found != null)
+        {
+            outsideWalls = found.gameObject;
+        }
+    }
 
     private void ResolveNoSnackObjectReference()
 

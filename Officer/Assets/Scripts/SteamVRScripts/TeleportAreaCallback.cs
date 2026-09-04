@@ -386,6 +386,11 @@ public class TeleportAreaCallback : MonoBehaviour
             return;
         }
 
+        if (GameManager.Instance != null && GameManager.Instance.IsLowStressVersion)
+        {
+            return;
+        }
+
         teleportArea.SetLocked(true);
 
         if (debugLog)

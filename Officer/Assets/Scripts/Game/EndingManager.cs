@@ -64,6 +64,12 @@ public class EndingManager : MonoSingleton<EndingManager>
 
     public void EndingDeath()
     {
+        if (GameManager.Instance != null && GameManager.Instance.IsLowStressVersion)
+        {
+            Ending();
+            return;
+        }
+
         LockTeleportAreasForEnding();
         SetDeadBodyVisible(true);
         ResetHamsterEndingVisuals();
@@ -78,6 +84,13 @@ public class EndingManager : MonoSingleton<EndingManager>
     {
         ResetHamsterEndingVisuals();
         hamsterEnding = string.Empty;
+
+        if (GameManager.Instance != null && GameManager.Instance.IsLowStressVersion)
+        {
+            LoadWorkEndingText("TTS/Ending/Work/WorkStandard");
+            TTSManager.Instance.PlayTTS("TTS/Ending/Work/WorkStandard");
+            return;
+        }
 
         bool hamsterGameplayEnabled = GameManager.Instance.IsHamsterGameplayEnabled;
         bool hamsterLoveEnding = hamsterGameplayEnabled &&
