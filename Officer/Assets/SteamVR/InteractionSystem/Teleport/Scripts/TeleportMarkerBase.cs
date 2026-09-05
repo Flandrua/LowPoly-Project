@@ -25,6 +25,16 @@ namespace Valve.VR.InteractionSystem
 
 
 		//-------------------------------------------------
+		public virtual void SetPointerVisible( bool visible )
+		{
+			if ( gameObject != null && gameObject.activeSelf != visible )
+			{
+				gameObject.SetActive( visible );
+			}
+		}
+
+
+		//-------------------------------------------------
 		public void SetLocked( bool locked )
 		{
 			this.locked = locked;

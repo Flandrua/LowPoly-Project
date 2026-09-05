@@ -1,6 +1,6 @@
 ﻿# CLAUDE.md - Officer
 
-> Last updated: 2026-09-04 15:50 +08
+> Last updated: 2026-09-05 12:35 +08
 
 ## 项目概述
 这是一个基于 Unity `2022.3.22f1` 的 VR 办公室互动项目，集成了 `SteamVR`、`XR Interaction Toolkit`、`OpenXR` 与 `PICO XR` 相关能力。项目核心目标是实现玩家在办公室场景中的移动、转向、物品交互、数据/UI 展示，以及基于 VR 手柄的交互流程。
@@ -74,6 +74,8 @@
 - 当前 `MyInteractableSteamVR` 暴露 `DispatchTriggerFromExternalHand(Hand)` 作为碰撞球的 Trigger 入口，内部仍走 `TryDispatchTriggerFromHand` 的同帧去重，避免与 laser 重复触发
 - 当前 `HandGrabCollider` 释放物体后会把它加入“忽略集”，直到它真正离开碰撞球才允许再次抓取，防止吸附在手上的物体被反复重抓
 - ⚠️ 已知坑：`LaserPointerHandler` 的 `raycastLayers`（Inspector 里的 Raycast Layers）会反复被序列化成 `Nothing`（`m_Bits: 0`），导致 `RaycastAll` 打不到任何东西、laser 完全失效（不悬停/不抓取/不点击 guide），并连带让零食 guide outline 卡在常亮；**注意：Unity 开着场景时改磁盘 `.unity` 文件无效，会被内存版本覆盖回 0**
+- ⚠️ 已知坑：SteamVR 原版每次显示传送弧都会 `SetActive` 全部 `TeleportArea`（非凸 Plane 网格）并用 `areaMesh.material` 实例化材质，按下遥感的第一帧会出现 60ms+ 尖峰（Profiler：`WaitForLastPresentationAndUpdateTime` + `GarbageCollector.CollectIncremental`）。项目补丁改为只开关 `MeshRenderer`，颜色用**一次性缓存的材质实例** `SetColor`，不要用 `MaterialPropertyBlock`：Highlight shader 开了 GPU instancing 且把 `_MainTex` 放进 instancing buffer，MPB 只写 `_TintColor` 时贴图会丢，传送区会变成不透明蓝色实心平面（Lock1 面积最大最明显），并因 fillrate 掉帧。`TeleportPoint` 仍可 `SetActive`
+- ⚠️ 已知坑：`TeleportAreaLock1` 是窄长走廊（约 7m×1m）。解锁后射线打上去会画出 SteamVR chaperone 的 `playAreaPreview`（绿色立柱/大圈），工位垫 `TeleportAreaWork` 够大所以看起来像落点标记，走廊里就会变成巨大绿柱。Highlight shader 在 Unity 2018+ 路径不走 `TRANSFORM_TEX`，`SetTextureScale` 无效，Lock1 的 Plane UV 0–1 被拉满整条走廊，网格会变得很稀甚至像实心色块。开局对 Lock1 调 `ConfigureCorridorVisuals`：关掉 `showPlayAreaPreview`，并按 `TeleportAreaWork` 的 localScale 重排网格 UV
 - ⚠️ 已知坑：`KeyboardController` 若 `using System`，`Random.Range` 会和 `System.Random` 冲突（CS0104），必须写 `UnityEngine.Random.Range`
 - ⚠️ 已知坑：Unity MCP 的 `unity-log` 在编译失败时可能返回 0 条 error；以 `EditorUtility.scriptCompilationFailed` 和 `%LOCALAPPDATA%\Unity\Editor\Editor.log` 为准
 - ⚠️ 已知坑：第 1 天导演 `Start` 会先 `ClearCurrentSnack()`。若 `SnackManager` 还没记下出生点，`ResetSnackRootState` 会把世界坐标写成 `(0,0,0)`，薯片会出现在场景原点/沙发附近地板上。出生点必须在 `Awake` 用 `Snacks` 相对 `SnacksRespawnPoint` 的 local pose 捕获，复位也走 local，不要用尚未赋值的世界坐标
@@ -88,13 +90,13 @@
 
 ## 第 1 天教学
 - 只认 `DayOneTutorialDirector`。`GameManager.Awake` 若场景里没有该组件会运行时 `AddComponent`。默认 TTS 由导演按步骤直接播放，不依赖场景里是否保存了该组件
-- 流程（仅 `days == 1`）：点击 Start 由场景按钮播 `Start State` → 进入 `TeleportAreaWork` 才出键盘并打断欢迎、播 `keyboard`（循环 `Shining`；`guideDismissHitCount` 默认 3 次有效 slap 关动画；打满场景 `requireHit`，当前 Simple Sample 为 10，才换阶段）→ 高压且仓鼠开启则下午只出仓鼠（摸满 `stayRequireTime` 进晚上）→ 高压晚上先只出 `Chips` 给玩家吃，仓鼠此时不出；吃完后仓鼠才出现，再刷一包只喂、禁止抚摸 → 喂完后站在床 trigger 按 InteractUI/GrabGrip 睡觉进第 2 天（注视床仍会关引导，但不再是睡觉前提）
-- 仓鼠关闭且高压：早班完成后 `_skipToNightOnNextChange` 一次过场直接晚上，不进下午、不刷第二包、不喂
-- 低压第 1 天：早班完成后进入下午（不要跳晚上），出零食给玩家吃；吃完直接换天，不进晚上、不播 Sleep、不睡觉
+- 流程（仅 `days == 1`）：点击 Start 由场景按钮播 `Start State` → 进入 `TeleportAreaWork` 才出键盘并打断欢迎、播 `keyboard`（循环 `Shining`；`guideDismissHitCount` 默认 3 次有效 slap 关动画；打满场景 `requireHit`，当前 Simple Sample 为 10，才换阶段）→ 高压且仓鼠开启则下午只出仓鼠（摸满 `stayRequireTime` 进晚上）→ 出 `Chips` 给玩家吃。仓鼠开启：吃完直接后续（高压再刷一包只喂、禁止抚摸，喂完后站在床 trigger 睡觉进第 2 天；低压播 `FreeToGo` 并 2 秒后换天），不出键盘。仓鼠关闭：高压吃完直接引导睡觉，不出键盘；低压吃完再出键盘，打满 `requireHit` 后播 `FreeToGo` 并 2 秒后换天。注视床仍会关引导，但不再是睡觉前提
+- 仓鼠关闭且高压：早班完成后 `_skipToNightOnNextChange` 一次过场直接晚上，不进下午；吃完一包后直接看床睡觉，不刷第二包、不喂、不出键盘
+- 低压第 1 天：早班完成后进入下午（不要跳晚上），出零食给玩家吃。仓鼠关闭时吃完出键盘、打满后再播 `TTS/Introduce/FreeToGo`；仓鼠开启时吃完直接播 `FreeToGo`。然后 2 秒后换天；不进晚上、不播 Sleep、不睡觉
 - 教学结算计入总进度：早班工作进度、下午抚摸好感；晚上喂仓鼠后保留 `isOut`，第 2 天照常 `MainItemManager.RandomItem()`
 - 第 1 天 `SnackManager.Start` 不调用 `RandomSnack()`；晚上用 `SpawnSnackByName("Chips")`。吃/喂门禁：`TutorialSnackRule.PlayerEatOnly` / `HamsterFeedOnly`
 - 开局关闭旧并行 guide（`enableGuideIntro` / `TryTriggerGuideIntro`）。进第 2 天：`FinishTutorial()` 停循环动画、关触发盒、清交互锁，再 `ForceCompleteAllGuidesAsLearned()`。只关 outline 不够
-- TTS：Start 按钮播 `Start State`；进 `TeleportAreaWork` 才由导演播 `keyboard`（会打断欢迎）。下午仓鼠播 `Hamster`，吃零食播 `Snack`。高压看床只激活场景 `Sleep` 物体（`playOnAwake`），导演不要再 `PlayTTS(Sleep)`，否则会重音。等待工位时压制 `TeleportAreaStart` 上的旧 `PlayTTSByClip(keyboard)`
+- TTS：Start 按钮播 `Start State`；进 `TeleportAreaWork` 才由导演播 `keyboard`（会打断欢迎）。下午仓鼠播 `Hamster`，吃零食时仓鼠开启播 `Snack`、关闭播 `Snack1`。仓鼠关闭且低压：吃完再出键盘（这次不换阶段），打满后播 `FreeToGo` 并延迟 2 秒换天。仓鼠开启：吃完直接走喂/低压 `FreeToGo`，不出键盘。高压无仓鼠：吃完直接引导睡觉，不出键盘。高压看床只激活场景 `Sleep` 物体（`playOnAwake`），导演不要再 `PlayTTS(Sleep)`，否则会重音。等待工位时压制 `TeleportAreaStart` 上的旧 `PlayTTSByClip(keyboard)`
 - 场景引用可留空，导演运行时查找 `StartTriggerBox`、键盘（优先带 `Work` 子物体的父节点）、仓鼠、`SnackManager`、名为 `Bed` 的 Animator。不要在 Unity 开着时改磁盘 `.unity` 去绑这些引用
 
 ## 当前交互链路说明
@@ -127,10 +129,10 @@
 - 开关：`GameManager` Inspector 的 `Low Stress Version`（字段 `LowStressVersion`）；其他脚本读 `GameManager.Instance.IsLowStressVersion`
 - 打包：同一套场景打两个包。勾选后打低压包，不勾选打高压包。只在 `Start -> ApplyLowStressVersionState()` 生效，**不要做成运行中途切换**
 - 原则：高压逻辑全部保留，只在关键路径用 `if (LowStressVersion)` 旁路；不要删 `stageAdvanceCallbacks`、疲劳、晚上阶段或原有结局分支
-- 开局：`ApplyLowStressVersionState()` 隐藏 `GameManager/OutsideWalls`（`outsideWalls` 为空时 `transform.Find("OutsideWalls")`）；解锁场景内全部 `TeleportArea`（含未激活的 `TeleportAreaLock2`）；把各 `TeleportAreaCallback.lockAreaOnExit` 全部设为 false（含 `TeleportAreaLock1`）；关闭 `NoOut` 注视碰撞，离开任何传送区都不要触发高压的 `onPlayerExitArea`（因此不会启用 `NoOut`、不会播 `Look around`）
+- 开局：`ApplyLowStressVersionState()` 隐藏 `GameManager/OutsideWalls`（`outsideWalls` 为空时 `transform.Find("OutsideWalls")`）；解锁场景内已激活的 `TeleportArea`（不要再 `SetActive` 未激活物体，`TeleportAreaLock2` 已删除）；把各 `TeleportAreaCallback.lockAreaOnExit` 全部设为 false（含 `TeleportAreaLock1`）；关闭 `NoOut` 注视碰撞，离开任何传送区都不要触发高压的 `onPlayerExitArea`（因此不会启用 `NoOut`、不会播 `Look around`）。高压不要在 `GameManager.Start` 解锁 Lock1；等玩家点 `Start` 按钮关掉名为 `Start` 的 Canvas 后，由 `GameManager.TryUnlockTeleportAreaLock1AfterStartClicked()` 再 `SetLocked(false)`。不要只依赖按钮 UnityEvent 里排在最后的 Lock1 `SetLocked`（前面的调用抛错时不会执行）。离开后仍走 `lockAreaOnExit`
 - 探索：低压全程不限制。出去探索后再回工位，仍可再出去；传送点保持解锁，`OutsideWalls` 保持隐藏，`NoOut` 不触发。高压离开 `TeleportAreaLock1` 才启用 `NoOut` 并播 `Look around`
 - 阶段：高压仍是早→午→晚→次日早。低压 `ChangeTime()` 为早→午→次日早（`curTimeStage == 1 && LowStressVersion` 走换天，不把天空盒切到 night，监视器时间不会到 21:00）。换天仍由键盘工作 / 仓鼠玩耍发 `PREPARE_CHANGE_TIME`，不依赖睡觉
-- 零食：换天时 `shouldShowSnackContainerNextDay = LowStressVersion || !_hasTimedOutToday`，始终 `SetContainerVisible(true)` + `RandomSnack()`，不走剥夺、不 `ShowNoSnackObject()`
+- 零食：换天时 `shouldShowSnackContainerNextDay = LowStressVersion || !_hasTimedOutToday`，低压始终 `SetContainerVisible(true)` + `RandomSnack()`，不剥夺。高压超时才藏零食。前一天超时进入次日时，高压/低压都会 `ShowNoSnackObject()` 播提示 TTS（只一次）
 - 事件：`InvokeStageAdvanceCallbacks()` 开头 return，Inspector 里 Stage Advance Callbacks 绑定的方法（发光、减进度、激活物体等）都不触发
 - 疲劳：换天不 `AddFatigue` / `ResetFatigue`；`ApplyHalfOnByFatigue()` 强制 `gray=false`；`EvaluateDailyFatigueState()` 返回 false，不触发猝死结局
 - 结局：`EndingManager.HandleEndingTextAndGameObjects()` 固定 `TTS/Ending/Work/WorkStandard`，不拼仓鼠结局、不走 Workaholic / WorkFailed / WorkDead。若误入 `EndingDeath()` 也改走 `Ending()`
@@ -150,7 +152,7 @@
 - 改睡觉/换天逻辑：非晚上反馈走 `SleepToNextDayFromInteraction()`；实际推进仍由 `TrySleepToNextDay()` 负责，注意 `_isStageAdvanceRequested` 空档期；第 1 天晚上要过 `DayOneTutorialDirector.CanSleep`（已进入 `NightLookAtBed`，站在床 trigger 互动即可）。低压版不进晚上，换天只改 `ChangeTime()` 的下午旁路，不要让床在低压里直接 `TrySleepToNextDay()`
 - 改第 1 天教学：只改 `DayOneTutorialDirector` 及它调用的门禁（键盘 slap、仓鼠摸/打、零食吃/喂、`GameManager._skipToNightOnNextChange`）。不要重新打开旧 `enableGuideIntro`。`requireHit` 跟场景值；3 次 slap 只关动画；晚上先吃后出仓鼠，禁摸只喂
 - 改进度百分制：只改 `MainMonitorData.workProgressPercent` 的刷新文字；对象必须已在 `MainMonitor/workInfo/WorkProgressPercent`，不要运行时 `new GameObject`，不要改进度条坐标
-- 改低压版本：只加 `LowStressVersion` 判断，不删高压分支；打包靠 Inspector 勾选区分两个版本。零食走 `LowStressVersion || !_hasTimedOutToday`，回调走 `InvokeStageAdvanceCallbacks()` 开头 return，阶段走下午直接换天、不进晚上，结局走 `EndingManager` 的 WorkStandard 早退
+- 改低压版本：只加 `LowStressVersion` 判断，不删高压分支；打包靠 Inspector 勾选区分两个版本。零食走 `LowStressVersion || !_hasTimedOutToday`（低压不剥夺，但超时次日仍 `ShowNoSnackObject` 播 TTS），回调走 `InvokeStageAdvanceCallbacks()` 开头 return，阶段走下午直接换天、不进晚上，结局走 `EndingManager` 的 WorkStandard 早退
 - 改 guide 生命周期：第 1 天只认导演循环动画；进第 2 天必须 `FinishTutorial()` 停 `Shining` 并清 lock，不能只靠 `ForceCompleteGuideIntro()`
 - 场景相关问题：优先查组件引用、事件回调、Layer/Collider、Toggle 状态，再改代码
 - 第三方代码必须改时：尽量做最小补丁，并在本文档记录原因、影响范围、回退方式
@@ -159,6 +161,7 @@
 - `Packages/puerts-mcp/Resources/McpServer/main.cjs`：为兼容当前 Codex/RMCP 调用链，调整 POST 响应为 JSON，避免 `text/event-stream` 导致客户端解码失败
 - `Packages/puerts-mcp/Editor/McpServerWindow.cs`：增加 MCP Server 自动启动状态持久化，减少 Unity 重载后服务未恢复的问题
 - 上述补丁仅用于恢复 Unity MCP 联调能力；后续若上游修复，需要优先评估是否回退到官方实现
+- `Assets/SteamVR/InteractionSystem/Teleport/Scripts/Teleport.cs`、`TeleportMarkerBase.cs`、`TeleportArea.cs`：传送弧显示/隐藏对 `TeleportArea` 只开关 `MeshRenderer`；高亮/淡出用开局缓存的材质实例 `SetColor`，禁止 `MaterialPropertyBlock`（会让 instanced Highlight shader 丢掉网格贴图变成实心蓝块）。`TeleportArea.showPlayAreaPreview` 为 false 时不画 chaperone 预览。回退：`SetPointerVisible` 改回 `gameObject.SetActive`，`Highlight`/`SetAlpha` 改回 `areaMesh.material`，并去掉 `showPlayAreaPreview` 判断
 
 ## Compact Instructions（上下文压缩时必须保留）
 - 这是 Unity VR 项目，主逻辑在 `Assets/Scripts/`
@@ -167,8 +170,10 @@
 - VR 改动必须区分输入源、场景引用、Toggle/Inspector 绑定
 - 第 1 天教学走 `DayOneTutorialDirector`，不要再启用旧的并行 `enableGuideIntro`
 - 低压版开关是 `GameManager.LowStressVersion`：勾选打包低压，不勾选打包高压；开局生效，不支持中途切换；不删高压代码
-- 低压旁路：开局隐藏 `OutsideWalls`、解锁全部传送区（含 Lock1）、关闭离开锁定，且全程不触发 `NoOut`。出去探索再回工位后仍可再出去。不剥夺零食、不触发 `stageAdvanceCallbacks`、不进晚上（下午直接换天）、不判定熬夜灰屏/死亡、结局固定 WorkStandard。第 1 天教学：早班后下午吃零食，吃完换天，不睡觉
+- 低压旁路：开局隐藏 `OutsideWalls`、解锁全部传送区（含 Lock1）、关闭离开锁定，且全程不触发 `NoOut`。出去探索再回工位后仍可再出去。不剥夺零食（超时次日仍播 `No snack` TTS）、不触发 `stageAdvanceCallbacks`、不进晚上（下午直接换天）、不判定熬夜灰屏/死亡、结局固定 WorkStandard。第 1 天教学：早班后下午吃零食；仓鼠关闭则吃完再敲键盘打满后播 `FreeToGo`，仓鼠开启则吃完直接播 `FreeToGo`；2 秒后再换天，不睡觉
+- 高压开局 `TeleportAreaLock1` 保持锁定，点 `Start` 按钮后解锁；离开后仍走 `lockAreaOnExit`（锁定自身并触发 `NoOut` / `Look around`）。Lock1 关闭 chaperone 玩法区域预览，网格密度对齐 `TeleportAreaWork`，射线打上去应是青色网格+绿色落点，不是巨大绿柱
 - 晚上仓鼠在玩家吃完薯片后才出现；零食复位走 local pose + 松手 + 还原 scale
+- 传送地面显示只开关 `MeshRenderer`，不要对 `TeleportArea` 整物体 `SetActive`；不要再唤醒已删除的 `TeleportAreaLock2`
 - 主监视器百分制在预制体 `workInfo/WorkProgressPercent`，脚本只改文字
 - 提交结果时说明：改了哪些文件、为什么改、如何在 Unity 里验证
 - 文档文件默认使用 UTF-8（建议带 BOM 以兼容 Windows PowerShell），更新后必须复查是否存在乱码
@@ -183,6 +188,7 @@
    - 手部靠近物体时不应触发交互高亮/Trigger；仅射线命中时触发
    - 射线前方存在非目标 Tag 遮挡时，应能穿透并命中后方目标 Tag 物体
    - 若涉及 laser：确认 `LaserPointerHandler.raycastLayers` 不为 `Nothing`；laser 应能悬停/抓取/Trigger。第 1 天教学不依赖点击旧 guide
+   - 若涉及传送：推遥感刚出地面高亮时不应再出现肉眼可见卡顿；松开后地面高亮应消失、弧线应能打到传送区；教学进 `TeleportAreaWork` 仍应出键盘。不要再依赖 `TeleportAreaLock2`
    - 若涉及手部碰撞球：手贴近道具按 `GrabGrip` 抓起/松开；贴近物体按 `InteractUI` 触发 TTS。第 1 天不要指望碰撞球/射线点击再触发旧 `TryTriggerGuideIntro`
    - 若涉及手部碰撞球：碰撞球抓食物→松开→手移开（食物离开球）后再按 grab，不应无条件重抓同一食物
    - 加了碰撞球后，laser 自身的悬停/抓取/Trigger 不应被破坏（两套交互可共存）
@@ -193,11 +199,11 @@
    - `GameManager.playerRayLength` 在运行时调节后，左右手射线可见长度与命中距离应同步变化
    - 抓起零食后按 Trigger 应播放对应零食 TTS；道具按 Trigger 应播放道具 TTS；首次拿起道具仍只触发一次首次拿起 TTS
    - 若涉及 `GameManager.currentWorkProgress`：运行时手动修改该值后，确认 `DataCenter.GameData.PlayerData.workProgress`、主监视器进度条与条右侧百分制同步变化
-   - 若涉及 `LowStressVersion`：勾选后 Play，`OutsideWalls` 应隐藏、传送区应可到达、超时后次日仍有零食、`stageAdvanceCallbacks` 绑定方法不触发、一天只有早/下午（下午工作或玩耍后直接到次日早上、天空盒不为夜晚、监视器时间不为 21:00）、不睡觉不灰屏不死、天数到齐只出 WorkStandard 结局；取消勾选后上述高压逻辑应全部恢复
+   - 若涉及 `LowStressVersion`：勾选后 Play，`OutsideWalls` 应隐藏、传送区应可到达、超时后次日仍有零食且第一次超时次日仍播 `No snack` TTS、`stageAdvanceCallbacks` 绑定方法不触发、一天只有早/下午（下午工作或玩耍后直接到次日早上、天空盒不为夜晚、监视器时间不为 21:00）、不睡觉不灰屏不死、天数到齐只出 WorkStandard 结局；取消勾选后上述高压逻辑应全部恢复。高压点 `Start` 前 `TeleportAreaLock1` 应为锁定，点 `Start` 后解锁；离开后仍锁定并触发 `NoOut` / `Look around`。传送弧打到 Lock1 应是半透明青色网格+绿色落点，不要出现巨大绿色 chaperone 立柱/大圈，也不要是实心蓝块
    - 若涉及低压探索：去过 `TeleportAreaLock1` 再回 `TeleportAreaWork` 后，仍应能再传送出去；`NoOut` 碰撞保持关闭、注视不应进 `Out`、不应播 `Look around`；高压离开 Lock1 后 `NoOut` 与 `Look around` 应照常触发
    - 若涉及阶段倒计时：从第 2 天开始确认阶段内倒计时会运行，推进到下一阶段后确认计时器重置
    - 若涉及超时奖惩：确认某天内任意阶段超时后，下一天 `SnackManager.container` 被隐藏；若当天全程未超时，则下一天显示
-   - 若涉及 `No snack` 提示：确认第一次超时后的次日会显示场景内 `No snack` 对象并播放其自身音频；后续天数中不应被 `GameManager` 反复触发
+   - 若涉及 `No snack` 提示：确认第一次超时后的次日会显示场景内 `No snack` 对象并播放其自身音频（低压超时次日也播，但不藏零食）；后续天数中不应被 `GameManager` 反复触发
    - 若涉及传送区域回调：传送到目标区域时，`onTeleportComplete` 是否触发；传送到其他区域或实际走出区域后，`onPlayerExitArea` 是否触发；若开启离开即锁定，确认该区域后续不可再次传送进入
    - 头显中心视线看向目标时，`onGazeEnter` 是否触发；移开后，`onGazeExit` 是否触发
    - 相关 UI Toggle / Button 是否触发正确逻辑
@@ -210,11 +216,11 @@
 - **改手部交互（射线/碰撞球）**：先分清是 `LaserPointerHandler`（远距射线）还是 `HandGrabCollider`（近距碰撞球）；两者各自维护抓取/Trigger/guide，碰撞球必须保持独立、不碰 laser 的 `isRayHovering`
 - **修 laser 失效**：先确认 `GetEffectiveRaycastLayers()` 兜底是否生效；再查目标 Tag/Layer；不要依赖改磁盘 `.unity` 修 `raycastLayers`
 - **改床/睡觉交互**：确认床 trigger 绑定的是 `SleepToNextDayFromInteraction()`；非晚上 TTS 为 `TTS/ItemGet/NotTimeToSleep`；第 1 天晚上还要过 `CanSleep`（已进入 `NightLookAtBed` 即可，不必先注视 2.5s）
-- **改第 1 天教学**：先改 `DayOneTutorialDirector`；仓鼠开关走 `enableHamster`；3 次 slap 只关动画；`requireHit` 跟场景值；晚上先吃后出仓鼠、禁摸只喂；TTS 挂 `stepHooks` 或 `PlayTutorialTTS`
+- **改第 1 天教学**：先改 `DayOneTutorialDirector`；仓鼠开关走 `enableHamster`；3 次 slap 只关动画；`requireHit` 跟场景值；仓鼠关闭且低压时吃完零食后先出键盘打满再换天，高压无仓鼠吃完直接看床；仓鼠开启时吃完直接喂或低压换天；晚上先吃后出仓鼠、禁摸只喂；TTS 挂 `stepHooks` 或 `PlayTutorialTTS`
 - **改中心视野逻辑**：优先修改 `PlayerSteamVRManager` 的统一视线检测参数或 `CenterGazeCallback` 的目标判定，不要为每个目标单独复制一套头显射线检测
 - **改 UI 交互**：优先增加 Inspector 可绑定入口，不要把 UI 查找逻辑写死
 - **改进度显示/调试入口**：优先复用 `DataCenter.GameData.PlayerData.workProgress` 与 `EventCommon.UPDATE_MONITOR` 链路；百分制对象已在预制体 `workInfo/WorkProgressPercent`，脚本只改文字；若需要手动调试，优先暴露 `GameManager.currentWorkProgress`
-- **改低压版本**：只改 `GameManager.LowStressVersion` 旁路，不要删高压代码；零食走 `LowStressVersion || !_hasTimedOutToday`，回调走 `InvokeStageAdvanceCallbacks()` 开头 return，阶段走下午直接换天、不进晚上，结局走 `EndingManager.HandleEndingTextAndGameObjects()` 的 WorkStandard 早退
+- **改低压版本**：只改 `GameManager.LowStressVersion` 旁路，不要删高压代码；零食走 `LowStressVersion || !_hasTimedOutToday`（低压不剥夺，超时次日仍播 `No snack` TTS），回调走 `InvokeStageAdvanceCallbacks()` 开头 return，阶段走下午直接换天、不进晚上，结局走 `EndingManager.HandleEndingTextAndGameObjects()` 的 WorkStandard 早退
 - **改场景行为**：先确认对象挂载脚本、事件回调、引用对象
 - **修 SDK 问题**：先尝试项目层兜底；只有项目层无法解决时再改 SDK
 - **修 NaN/Transform 报错**：优先在输入数据入口和赋值出口做合法性保护

@@ -162,7 +162,10 @@ namespace Valve.VR.InteractionSystem
 
 				pointIcon = lockedIcon;
 
-				animation.clip = animation.GetClip( lockedAnimation );
+				if ( animation != null )
+				{
+					animation.clip = animation.GetClip( lockedAnimation );
+				}
 			}
 			else
 			{
@@ -174,14 +177,20 @@ namespace Valve.VR.InteractionSystem
 						{
 							pointIcon = moveLocationIcon;
 
-							animation.clip = animation.GetClip( moveLocationAnimation );
+							if ( animation != null )
+							{
+								animation.clip = animation.GetClip( moveLocationAnimation );
+							}
 						}
 						break;
 					case TeleportPointType.SwitchToNewScene:
 						{
 							pointIcon = switchSceneIcon;
 
-							animation.clip = animation.GetClip( switchSceneAnimation );
+							if ( animation != null )
+							{
+								animation.clip = animation.GetClip( switchSceneAnimation );
+							}
 						}
 						break;
 				}

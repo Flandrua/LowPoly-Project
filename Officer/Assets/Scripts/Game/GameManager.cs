@@ -87,6 +87,7 @@ public class GameManager : MonoSingleton<GameManager>
     [SerializeField] private GameObject noSnackObject;
     [SerializeField] private GameObject outsideWalls;
     [SerializeField] private GameObject noOutObject;
+    [SerializeField] private string teleportAreaLock1Name = "TeleportAreaLock1";
     [Header("Player Ray")]
     [Min(0.05f)] public float playerRayLength = 100f;
     [SerializeField] private List<LaserPointerHandler> playerLaserPointers = new List<LaserPointerHandler>();
@@ -110,6 +111,8 @@ public class GameManager : MonoSingleton<GameManager>
     private bool _wasGrayFatigueActive;
     private bool _hasEvaluatedDayOneGuides;
     private bool _skipToNightOnNextChange;
+    private GameObject _startUiRoot;
+    private bool _hasUnlockedTeleportAreaLock1FromStartButton;
 
     public int TotalDays => Mathf.Max(1, totaldays);
     public int HamsterLoveEndingFavorabilityThreshold => Mathf.Max(0, hamsterLoveEndingFavorabilityThreshold);
@@ -167,6 +170,8 @@ public class GameManager : MonoSingleton<GameManager>
         ResolveOutsideWallsReference();
         _hasShownNoSnackObject = noSnackObject != null && noSnackObject.activeSelf;
         ApplyLowStressVersionState();
+        CacheStartUiRoot();
+        HidePlayAreaPreviewOnTeleportAreaLock1();
         ApplyHamsterFeatureState();
         ResolvePlayerRayPointers();
         ApplyPlayerRayLength();
@@ -578,7 +583,8 @@ public class GameManager : MonoSingleton<GameManager>
                 {
                     HandleDayOneGuideFallbackBeforeDayIncrement();
 
-                    bool shouldShowSnackContainerNextDay = LowStressVersion || !_hasTimedOutToday;
+                    bool timedOutYesterday = _hasTimedOutToday;
+                    bool shouldShowSnackContainerNextDay = LowStressVersion || !timedOutYesterday;
                     DataCenter.Instance.GameData.PlayerData.days++;
                     if (shouldShowSnackContainerNextDay)
                     {
@@ -589,6 +595,10 @@ public class GameManager : MonoSingleton<GameManager>
                     {
                         SnackManager.Instance.ClearCurrentSnack();
                         SnackManager.Instance.SetContainerVisible(false);
+                    }
+
+                    if (timedOutYesterday)
+                    {
                         ShowNoSnackObject();
                     }
 
@@ -797,6 +807,7 @@ public class GameManager : MonoSingleton<GameManager>
         TickStageCountDown();
         SyncWorkProgressBinding();
         TryConsumeDebugDecreaseWorkProgress();
+        TryUnlockTeleportAreaLock1AfterStartClicked();
     }
 
     private void SyncWorkProgressBinding()
@@ -1164,6 +1175,116 @@ public class GameManager : MonoSingleton<GameManager>
         UnlockAllTeleportAreasForExploration();
     }
 
+    private void HidePlayAreaPreviewOnTeleportAreaLock1()
+    {
+        TeleportArea lock1;
+        Vector3 workScale;
+        if (!TryGetTeleportAreaLock1(out lock1, out workScale))
+        {
+            return;
+        }
+
+        lock1.ConfigureCorridorVisuals(workScale);
+    }
+
+    private bool TryGetTeleportAreaLock1(out TeleportArea lock1, out Vector3 workScale)
+    {
+        lock1 = null;
+        workScale = new Vector3(0.3315342f, 0.4f, 0.13949926f);
+        if (string.IsNullOrEmpty(teleportAreaLock1Name))
+        {
+            return false;
+        }
+
+        TeleportArea[] areas = FindObjectsOfType<TeleportArea>(true);
+        if (areas == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < areas.Length; i++)
+        {
+            TeleportArea area = areas[i];
+            if (area == null || !area.gameObject.scene.IsValid())
+            {
+                continue;
+            }
+
+            if (area.name == "TeleportAreaWork")
+            {
+                workScale = area.transform.localScale;
+            }
+
+            if (string.Equals(area.name, teleportAreaLock1Name, StringComparison.Ordinal))
+            {
+                lock1 = area;
+            }
+        }
+
+        return lock1 != null;
+    }
+
+    private void CacheStartUiRoot()
+    {
+        if (_startUiRoot != null)
+        {
+            return;
+        }
+
+        Canvas[] canvases = FindObjectsOfType<Canvas>(true);
+        if (canvases == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < canvases.Length; i++)
+        {
+            Canvas canvas = canvases[i];
+            if (canvas == null || !canvas.gameObject.scene.IsValid() || canvas.name != "Start")
+            {
+                continue;
+            }
+
+            _startUiRoot = canvas.gameObject;
+            return;
+        }
+    }
+
+    private void TryUnlockTeleportAreaLock1AfterStartClicked()
+    {
+        if (_hasUnlockedTeleportAreaLock1FromStartButton || LowStressVersion)
+        {
+            return;
+        }
+
+        CacheStartUiRoot();
+        if (_startUiRoot == null || _startUiRoot.activeInHierarchy)
+        {
+            return;
+        }
+
+        UnlockTeleportAreaLock1FromStartButton();
+    }
+
+    public void UnlockTeleportAreaLock1FromStartButton()
+    {
+        if (_hasUnlockedTeleportAreaLock1FromStartButton)
+        {
+            return;
+        }
+
+        _hasUnlockedTeleportAreaLock1FromStartButton = true;
+        TeleportArea lock1;
+        Vector3 workScale;
+        if (!TryGetTeleportAreaLock1(out lock1, out workScale))
+        {
+            return;
+        }
+
+        lock1.SetLocked(false);
+        lock1.ConfigureCorridorVisuals(workScale);
+    }
+
     private void UnlockAllTeleportAreasForExploration()
     {
         TeleportArea[] areas = FindObjectsOfType<TeleportArea>(true);
@@ -1172,17 +1293,7 @@ public class GameManager : MonoSingleton<GameManager>
             for (int i = 0; i < areas.Length; i++)
             {
                 TeleportArea area = areas[i];
-                if (area == null || !area.gameObject.scene.IsValid())
-                {
-                    continue;
-                }
-
-                if (!area.gameObject.activeSelf)
-                {
-                    area.gameObject.SetActive(true);
-                }
-
-                if (!area.gameObject.activeInHierarchy)
+                if (area == null || !area.gameObject.scene.IsValid() || !area.gameObject.activeInHierarchy)
                 {
                     continue;
                 }

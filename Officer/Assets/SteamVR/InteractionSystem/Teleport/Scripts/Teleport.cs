@@ -385,7 +385,7 @@ namespace Valve.VR.InteractionSystem
 				{
 					//Show the play area marker if this is a teleport area
 					TeleportArea teleportArea = pointedAtTeleportMarker as TeleportArea;
-					if ( teleportArea != null && !teleportArea.locked && playAreaPreviewTransform != null )
+					if ( teleportArea != null && !teleportArea.locked && teleportArea.showPlayAreaPreview && playAreaPreviewTransform != null )
 					{
 						Vector3 offsetToUse = playerFeetOffset;
 
@@ -466,7 +466,8 @@ namespace Valve.VR.InteractionSystem
 				}
 			}
 
-			if ( playAreaPreviewTransform != null )
+			if ( playAreaPreviewTransform != null &&
+				playAreaPreviewTransform.gameObject.activeSelf != showPlayAreaPreview )
 			{
 				playAreaPreviewTransform.gameObject.SetActive( showPlayAreaPreview );
 			}
@@ -653,7 +654,7 @@ namespace Valve.VR.InteractionSystem
 			{
 				if ( teleportMarker != null && teleportMarker.markerActive && teleportMarker.gameObject != null )
 				{
-					teleportMarker.gameObject.SetActive( false );
+					teleportMarker.SetPointerVisible( false );
 				}
 			}
 
@@ -693,7 +694,7 @@ namespace Valve.VR.InteractionSystem
 				{
 					if ( teleportMarker.markerActive && teleportMarker.ShouldActivate( player.feetPositionGuess ) )
 					{
-						teleportMarker.gameObject.SetActive( true );
+						teleportMarker.SetPointerVisible( true );
 						teleportMarker.Highlight( false );
 					}
 				}
