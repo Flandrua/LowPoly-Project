@@ -127,9 +127,55 @@ public class SnackManager : MonoSingleton<SnackManager>
 
     public void ShowUIDec(bool flag)
     {
-        _content.text = _desc;
-        _name.text = _snackName;
+        string snackNameKey = "snack_name_" + LocalizationManager.NormalizeKey(_snackName);
+        string localizedSnackName = LocalizationManager.GetText(snackNameKey);
+
+        string snackDescKey = "snack_desc_" + LocalizationManager.NormalizeKey(_snackName);
+        string localizedSnackDesc = LocalizationManager.GetText(snackDescKey);
+
+        _content.text = localizedSnackDesc != snackDescKey
+            ? localizedSnackDesc
+            : (IsChinese ? GetLocalizedSnackDesc(_desc) : _desc);
+        _name.text = localizedSnackName != snackNameKey
+            ? localizedSnackName
+            : (IsChinese ? GetLocalizedSnackName(_snackName) : _snackName);
         UIMonitorController.Instance.Show(flag);
+    }
+
+    private bool IsChinese => GameManager.Instance != null && GameManager.Instance.IsChinese;
+
+    private string GetLocalizedSnackName(string englishName)
+    {
+        if (string.IsNullOrEmpty(englishName))
+        {
+            return englishName;
+        }
+
+        switch (englishName)
+        {
+            case "Beer": return "啤酒";
+            case "Chips": return "薯片";
+            case "Chocolate": return "巧克力";
+            case "Donut": return "甜甜圈";
+            case "Hamburger": return "汉堡";
+            case "Lemon": return "柠檬";
+            case "Lolipop": return "棒棒糖";
+            case "Peper":
+            case "Pepper": return "辣椒";
+            case "Sausage": return "香肠";
+            case "Sushi": return "寿司";
+            default: return englishName;
+        }
+    }
+
+    private string GetLocalizedSnackDesc(string englishDesc)
+    {
+        if (string.IsNullOrEmpty(englishDesc))
+        {
+            return englishDesc;
+        }
+
+        return englishDesc.Replace("Work efficiency", LocalizationManager.GetText("work_efficiency"));
     }
 
     private List<GameObject> GetChildren(Transform parent)

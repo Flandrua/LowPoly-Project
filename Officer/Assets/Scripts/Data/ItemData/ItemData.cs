@@ -42,10 +42,61 @@ public class ItemData : MonoBehaviour
     }
     public void ShowUIDec(bool flag)
     {
-        _content.text = desc;
-        _name.text = itemName;
+        string itemNameKey = "item_name_" + LocalizationManager.NormalizeKey(itemName);
+        string itemDescKey = "item_desc_" + LocalizationManager.NormalizeKey(itemName);
+
+        string localizedItemName = LocalizationManager.GetText(itemNameKey);
+        string localizedItemDesc = LocalizationManager.GetText(itemDescKey);
+
+        _content.text = localizedItemDesc != itemDescKey
+            ? localizedItemDesc
+            : (IsChinese ? GetLocalizedItemDesc(desc) : desc);
+        _name.text = localizedItemName != itemNameKey
+            ? localizedItemName
+            : (IsChinese ? GetLocalizedItemName(itemName) : itemName);
         //_outline.enabled = flag;
         UIMonitorController.Instance.Show(flag);
+    }
+
+    private bool IsChinese => GameManager.Instance != null && GameManager.Instance.IsChinese;
+
+    private string GetLocalizedItemName(string englishName)
+    {
+        if (string.IsNullOrEmpty(englishName))
+        {
+            return englishName;
+        }
+
+        switch (englishName)
+        {
+            case "CCTV Monitor": return "监控";
+            case "Cellphone": return "手机";
+            case "Goblin": return "哥布林";
+            case "Main Monitor": return "主监视器";
+            case "Info Monitor": return "信息监视器";
+            case "Mousepad": return "鼠标垫";
+            case "Notepad": return "记事本";
+            case "Pen": return "笔";
+            case "Viking": return "维京";
+            case "Webcam": return "摄像头";
+            default: return englishName;
+        }
+    }
+
+    private string GetLocalizedItemDesc(string englishDesc)
+    {
+        if (string.IsNullOrEmpty(englishDesc))
+        {
+            return englishDesc;
+        }
+
+        string result = englishDesc;
+        result = result.Replace("Work Efficiency", "工作效率");
+        result = result.Replace("work efficiency", "工作效率");
+        result = result.Replace("Favorability Ability", "好感度能力");
+        result = result.Replace("favorability ability", "好感度能力");
+        result = result.Replace("Check your progress and time", "查看你的进度和时间");
+        return result;
     }
 
     // Update is called once per frame

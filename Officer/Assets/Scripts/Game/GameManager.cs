@@ -55,6 +55,12 @@ public class GameManager : MonoSingleton<GameManager>
     [Tooltip("游戏显示语言：CN=中文，EN=英文。")]
     public Language LanguageSetting = Language.CN;
 
+    [Tooltip("中文语言使用的 TMP 字体资产。")]
+    public TMP_FontAsset ChineseFont;
+
+    [Tooltip("英文语言使用的 TMP 字体资产。")]
+    public TMP_FontAsset EnglishFont;
+
     private Animator _animator;
 
     public ReflectionProbe rp;
@@ -141,6 +147,7 @@ public class GameManager : MonoSingleton<GameManager>
     public bool IsSuddenDeathEndingDisabled => DisableSuddenDeathEnding;
     public Language CurrentLanguage => LanguageSetting;
     public bool IsChinese => LanguageSetting == Language.CN;
+    public TMP_FontAsset CurrentLanguageFont => LanguageSetting == Language.CN ? ChineseFont : EnglishFont;
     public bool IsPlayerInteractionEnabled => !manuallyDisablePlayerInteraction && playerInteractionLockCount <= 0;
     // True while a stage advance is in progress (the time-switching gap). Used to lock work/sleep/pet inputs.
     public bool IsStageAdvanceRequested => _isStageAdvanceRequested;
@@ -170,8 +177,135 @@ public class GameManager : MonoSingleton<GameManager>
         ResolvePlayerRayPointers();
         ApplyPlayerRayLength();
         EnsureDayOneTutorialDirector();
+        ApplyLanguageFonts();
 
     }
+    private static readonly System.Collections.Generic.Dictionary<string, string> UiBoardTextMap =
+        new System.Collections.Generic.Dictionary<string, string>
+        {
+            { "Office Partner", "办公室伙伴" },
+            { "Start", "开始" },
+            { "Snap Turn", "快速转向" },
+            { "Height", "高度" },
+            { "Slider", "滑块" },
+            { "Dropdown", "下拉菜单" },
+            { "Option A", "选项 A" },
+            { "Toggles", "开关" },
+            { "Toggle", "开关" },
+            { "Restart", "重新开始" },
+            { "Test Scrollview", "测试滚动视图" },
+        };
+
+    public void ApplyLanguageFonts()
+    {
+        TMP_FontAsset font = CurrentLanguageFont;
+
+        Transform workInfoRoot = null;
+        GameObject subMonitorRoot = GameObject.Find("SubMonitorForStatus");
+        if (subMonitorRoot != null)
+        {
+            workInfoRoot = subMonitorRoot.transform.Find("workInfo");
+        }
+
+        TMP_Text[] texts = FindObjectsOfType<TMP_Text>(true);
+        if (texts != null)
+        {
+            for (int i = 0; i < texts.Length; i++)
+            {
+                TMP_Text text = texts[i];
+                if (text == null || IsUnderWorkInfo(text.transform, workInfoRoot))
+                {
+                    continue;
+                }
+
+                if (font != null)
+                {
+                    text.font = font;
+                }
+                LocalizeStaticText(text);
+                if (IsChinese && UiBoardTextMap.TryGetValue(text.text, out string uiBoardCnTmp))
+                {
+                    text.text = uiBoardCnTmp;
+                }
+            }
+        }
+
+        UnityEngine.UI.Text[] legacyTexts = FindObjectsOfType<UnityEngine.UI.Text>(true);
+        if (legacyTexts != null)
+        {
+            for (int i = 0; i < legacyTexts.Length; i++)
+            {
+                UnityEngine.UI.Text text = legacyTexts[i];
+                if (text == null || IsUnderWorkInfo(text.transform, workInfoRoot))
+                {
+                    continue;
+                }
+
+                LocalizeStaticText(text);
+                if (IsChinese && UiBoardTextMap.TryGetValue(text.text, out string uiBoardCnLegacy))
+                {
+                    text.text = uiBoardCnLegacy;
+                }
+            }
+        }
+    }
+
+    private void LocalizeStaticText(TMP_Text text)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        if (text.text == "Work Progress" || text.text == "工作进度" || text.text == "work_progress")
+        {
+            text.text = LocalizationManager.GetText("work_progress");
+        }
+
+        if (text.text == "Performance" || text.text == "表现评估" || text.text == "performance")
+        {
+            text.text = LocalizationManager.GetText("performance");
+        }
+
+        if (text.text == "TOtal Progress" || text.text == "Total Progress" || text.text == "TotalProgress" || text.text == "total_progress")
+        {
+            text.text = LocalizationManager.GetText("total_progress");
+        }
+    }
+
+    private void LocalizeStaticText(UnityEngine.UI.Text text)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        if (text.text == "Work Progress" || text.text == "工作进度" || text.text == "work_progress")
+        {
+            text.text = LocalizationManager.GetText("work_progress");
+        }
+
+        if (text.text == "Performance" || text.text == "表现评估" || text.text == "performance")
+        {
+            text.text = LocalizationManager.GetText("performance");
+        }
+
+        if (text.text == "TOtal Progress" || text.text == "Total Progress" || text.text == "TotalProgress" || text.text == "total_progress")
+        {
+            text.text = LocalizationManager.GetText("total_progress");
+        }
+    }
+
+    private bool IsUnderWorkInfo(Transform transform, Transform workInfoRoot)
+    {
+        if (transform == null || workInfoRoot == null)
+        {
+            return false;
+        }
+
+        return transform == workInfoRoot || transform.IsChildOf(workInfoRoot);
+    }
+
     public void DecreaseWorkProcess()
     {
         debugDecreaseWorkProgress = true;
@@ -977,9 +1111,7 @@ public class GameManager : MonoSingleton<GameManager>
             return;
         }
 
-        _corridorWarningText.text = IsChinese
-            ? "如果我再不好好工作，领导可能会开除我。"
-            : "If I don't work harder, my boss might fire me.";
+        _corridorWarningText.text = LocalizationManager.GetText("corridor_warning");
         _corridorWarningCanvas.gameObject.SetActive(true);
 
         if (_corridorWarningRoutine != null)
@@ -1039,7 +1171,7 @@ public class GameManager : MonoSingleton<GameManager>
         textRect.offsetMax = new Vector2(-32f, -20f);
 
         _corridorWarningText = textObject.GetComponent<TextMeshProUGUI>();
-        _corridorWarningText.font = TMP_Settings.defaultFontAsset;
+        _corridorWarningText.font = CurrentLanguageFont != null ? CurrentLanguageFont : TMP_Settings.defaultFontAsset;
         _corridorWarningText.fontSize = 48f;
         _corridorWarningText.alignment = TextAlignmentOptions.Center;
         _corridorWarningText.color = Color.white;
@@ -1346,7 +1478,7 @@ public class GameManager : MonoSingleton<GameManager>
         while (remaining > 0f)
         {
             int displayedSeconds = Mathf.CeilToInt(remaining);
-            string label = $"{displayedSeconds} S";
+            string label = string.Format(LocalizationManager.GetText("countdown_seconds"), displayedSeconds);
             if (countingDownPhoneText != null)
             {
                 countingDownPhoneText.text = label;

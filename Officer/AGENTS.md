@@ -1,6 +1,6 @@
 ﻿# CLAUDE.md - Officer
 
-> Last updated: 2026-09-05 13:25 +08
+> Last updated: 2026-10-29 00:00 +08
 
 ## 项目概述
 这是一个基于 Unity `2022.3.22f1` 的 VR 办公室互动项目，集成了 `SteamVR`、`XR Interaction Toolkit`、`OpenXR` 与 `PICO XR` 相关能力。项目核心目标是实现玩家在办公室场景中的移动、转向、物品交互、数据/UI 展示，以及基于 VR 手柄的交互流程。
@@ -22,7 +22,8 @@
 - 数据定义与数据中心 → `Assets/Scripts/Data/`
 - 事件系统 → `Assets/Scripts/Event/`
 - 状态机辅助逻辑 → `Assets/Scripts/FSM/`
-- 通用工具/单例/时间工具 → `Assets/Scripts/Tools/`
+- 通用工具/单例/时间工具 → `Assets/Scripts/Tools/`（含 `LocalizationManager`、`LocalizationPaths`）
+- 本地化组件 → `Assets/Scripts/Game/LocalizedText.cs`（静态 UI 文本）与 `Assets/Scripts/Game/CCTVYRotationLimiter.cs`（CCTV 旋转限制）
 - 场景资源与流程验证 → 优先 `Assets/SteamVR/Simple Sample.unity`，其次 `Assets/Scenes/SteamVer.unity`
 - 第三方 SDK/样例 → `Assets/SteamVR/`、`Assets/Samples/`、`Assets/XR/`、`Assets/XRI/`
 - **禁止默认修改**：第三方 SDK、Samples、自动生成输入代码、外部资源包，除非问题明确出在这些文件且无法在项目脚本层修复。
@@ -44,11 +45,11 @@
 - 不把 `GameManager.LowStressVersion` 做成运行时切换；它只用于打包前勾选低压或高压
 
 ## 项目结构建议
-- `Assets/Scripts/Game/`：玩法、流程、玩家状态、关卡逻辑、第 1 天教学（`DayOneTutorialDirector.cs`、`GuideAnimationLoop.cs`）
+- `Assets/Scripts/Game/`：玩法、流程、玩家状态、关卡逻辑、第 1 天教学（`DayOneTutorialDirector.cs`、`GuideAnimationLoop.cs`）、本地化组件（`LocalizedText.cs`、`CCTVYRotationLimiter.cs`）
 - `Assets/Scripts/SteamVRScripts/`：手柄输入、射线交互、抓取、转向、传送回调
 - `Assets/Scripts/Data/`：`DataCenter`、`SnackData`、`ItemData`、`MainMonitorData` 等数据定义
 - `Assets/Scripts/Event/`：项目内事件广播与解耦
-- `Assets/Scripts/Tools/`：单例、时间管理、调试辅助、通用计算
+- `Assets/Scripts/Tools/`：单例、时间管理、调试辅助、通用计算、本地化（`LocalizationManager.cs`、`LocalizationPaths.cs`）
 - `Assets/SteamVR/Simple Sample.unity`：当前正常作业场景，优先用于 VR 输入、抓取、吃零食等交互验证
 - `Assets/Scenes/SteamVer.unity`：备用/并行保留场景，涉及 XRI 链路时再单独确认
 
@@ -61,6 +62,13 @@
 - 当前 `GameManager` 已暴露 `currentWorkProgress` 调试字段，并与 `DataCenter.GameData.PlayerData.workProgress` 和主监视器进度条、百分制保持同步
 - 当前 `GameManager` 已改为通过场景内 `No snack` 对象做超时后的次日提示，不再依赖外部音频资源路径；该提示只会被触发一次
 - 当前项目已新增“头显中心视野检测”项目侧实现：统一射线入口在 `PlayerSteamVRManager`，目标回调组件为 `CenterGazeCallback`
+- 当前项目已新增 CSV 本地化系统：`LocalizationManager`（MonoSingleton）加载 `Resources/Localization.csv`，`LocalizationPaths` 按语言选择 `TTS_CN/MSG_CN` 或 `TTS_EN/MSG_EN`；`LocalizedText` 组件用于静态 UI 文本；`GameManager.ApplyLanguageFonts()` 在 `Awake` 设置 `ChineseFont`/`EnglishFont` 并替换场景静态文本（排除 `SubMonitorForStatus/workInfo`）
+- 当前 `GameManager` 新增 `ChineseFont` / `EnglishFont` / `CurrentLanguageFont`，支持按 `LanguageSetting` 切换 TMP 字体
+- 当前 `TTSManager` 新增 `PlayStartStateTTS()`，运行时从 `LocalizationPaths.Tts("Introduce/Start State")` 加载音频，避免序列化 AudioClip 失效
+- 当前 `EndingManager` 新增 `TeleportPlayerToEndingPanelFront()`，结局时将玩家传送到名为 `TeleportAreaStart` 的区域前方并旋转 180°；`Ending()` 现在先调用 `HandleEndingTextAndGameObjects()`
+- 当前 `EndingManager` 低压结局改用 `LowPressure` 音频（资源已从 `Low-pressure` 重命名为 `LowPressure`）
+- 当前新增 `CCTVYRotationLimiter` 组件，限制 CCTV 在 Y 轴旋转范围，可接管或仅钳制 `LookAtConstraint`
+- 当前 `MsgAudioBinder` 改为直接赋值 clip（含 null 警告），`SubMonitorStatusController` 缓存 `Unhappy`/`Smile` Transform，`ItemData`/`SnackManager`/`UIMonitorController`/`MainMonitorData`/`DebugHelper` 全部改为通过 `LocalizationManager`/`LocalizationPaths` 获取本地化文本
 - 当前项目同时保留了官方示例和自定义实现，修改前需分清“示例代码”与“项目实际使用代码”
 - `Assets/SteamVR/Simple Sample.unity` 是目前正常作业和默认回归测试场景
 - `Assets/SteamVR/Simple Sample.unity` 当前实际验证链路使用 `PlayerSteamVRManager` 与 `MyInteractableSteamVR`，不是 `XRGrabInteractable`
@@ -123,6 +131,10 @@
 - 当前离开区域判定同时覆盖两种情况：传送到其他 `TeleportArea`，或玩家传送到该区域后通过房间尺度实际走出区域边界
 - `TeleportAreaCallback` 当前还支持在离开区域时直接调用 `TeleportArea.SetLocked(true)` 锁定自身区域，适合做一次性传送点
 - 当前可视提示与正常玩法链路都以 `Assets/SteamVR/Simple Sample.unity` 为准；若要同步到 `SteamVer.unity`，需分别确认 XRI 链路
+- CSV 本地化链路：`Resources/Localization.csv` + `LocalizationManager` + `LocalizedText` 组件；脚本字符串通过 `LocalizationManager.GetText(key)` 获取，静态场景文本在 `GameManager.ApplyLanguageFonts()` 中按 CSV 替换（忽略 `SubMonitorForStatus/workInfo`）
+- 字体链路：`GameManager.ChineseFont` / `EnglishFont` → `CurrentLanguageFont`；`ApplyLanguageFonts()` 在 `Awake` 对所有 `TMP_Text`/`UnityEngine.UI.Text` 设置字体并本地化；走廊提示 `_corridorWarningText` 使用 `CurrentLanguageFont`；`DebugHelper` / `UIMonitorController` / `MainMonitorData` / `ItemData` / `SnackManager` 通过 `LocalizationManager.GetText` 与 `LocalizationPaths.Tts/Msg` 获取文本与音频路径
+- TTS 启动链路：Start 按钮可调用 `TTSManager.PlayStartStateTTS()`，运行时加载 `LocalizationPaths.Tts("Introduce/Start State")` 音频
+- 结局传送链路：`EndingManager.Ending()` / `EndingDeath()` / `TriggerWorkFailedEnding()` 调用 `TeleportPlayerToEndingPanelFront()`，将玩家传送到 `TeleportAreaStart` 前方并旋转 180°
 - 每日状态监视器链路：`SubMonitorStatusController` 监听 `EventCommon.UPDATE_MONITOR`，读取 `DataCenter.GameData.PlayerData.dailyTimedOut`，按 `workInfo/Day1..Day6` 下的 `Unhappy`/`Smile` 子对象显隐表示该天是否超时；Day1 默认 `Unhappy`。记录发生在 `GameManager.ChangeTime()` 换天时（Day1 强制 true，Day2 起用 `_hasTimedOutToday`）。
 - 猝死结局开关：`GameManager.DisableSuddenDeathEnding` 勾选后不进入猝死结局，但灰屏与 `Special/SuddenDeath` 警告照常触发；`EndingManager.EndingDeath()` 误入时改走 `Ending()`。
 
@@ -136,7 +148,7 @@
 - 零食：换天时 `shouldShowSnackContainerNextDay = LowStressVersion || !_hasTimedOutToday`，低压始终 `SetContainerVisible(true)` + `RandomSnack()`，不剥夺。高压超时才藏零食。前一天超时进入次日时，高压/低压都会 `ShowNoSnackObject()` 播提示 TTS（只一次）
 - 事件：`InvokeStageAdvanceCallbacks()` 开头 return，Inspector 里 Stage Advance Callbacks 绑定的方法（发光、减进度、激活物体等）都不触发
 - 疲劳：换天不 `AddFatigue` / `ResetFatigue`；`ApplyHalfOnByFatigue()` 强制 `gray=false`；`EvaluateDailyFatigueState()` 返回 false，不触发猝死结局
-- 结局：`EndingManager.HandleEndingTextAndGameObjects()` 固定 `TTS/Ending/Work/WorkStandard`，不拼仓鼠结局、不走 Workaholic / WorkFailed / WorkDead。若误入 `EndingDeath()` 也改走 `Ending()`
+- 结局：`EndingManager.HandleEndingTextAndGameObjects()` 低压固定 `TTS/Ending/Work/LowPressure`，高压按工作/仓鼠结果拼接结局；不走 Workaholic / WorkFailed / WorkDead。若误入 `EndingDeath()` 也改走 `Ending()`
 - 第 1 天：低压早班后进下午出零食，吃完 `PREPARE_CHANGE_TIME` 换天；不进晚上、不睡觉、不播 Sleep。高压才走晚上吃/喂/床
 - 涉及脚本：`Assets/Scripts/Game/GameManager.cs`、`Assets/Scripts/Game/EndingManager.cs`、`Assets/Scripts/SteamVRScripts/TeleportAreaCallback.cs`
 
@@ -153,8 +165,10 @@
 - 改睡觉/换天逻辑：非晚上反馈走 `SleepToNextDayFromInteraction()`；实际推进仍由 `TrySleepToNextDay()` 负责，注意 `_isStageAdvanceRequested` 空档期；第 1 天晚上要过 `DayOneTutorialDirector.CanSleep`（已进入 `NightLookAtBed`，站在床 trigger 互动即可）。低压版不进晚上，换天只改 `ChangeTime()` 的下午旁路，不要让床在低压里直接 `TrySleepToNextDay()`
 - 改第 1 天教学：只改 `DayOneTutorialDirector` 及它调用的门禁（键盘 slap、仓鼠摸/打、零食吃/喂、`GameManager._skipToNightOnNextChange`）。不要重新打开旧 `enableGuideIntro`。`requireHit` 跟场景值；3 次 slap 只关动画；晚上先吃后出仓鼠，禁摸只喂
 - 改进度百分制：只改 `MainMonitorData.workProgressPercent` 的刷新文字；对象必须已在 `MainMonitor/workInfo/WorkProgressPercent`，不要运行时 `new GameObject`，不要改进度条坐标
-- 改低压版本：只加 `LowStressVersion` 判断，不删高压分支；打包靠 Inspector 勾选区分两个版本。零食走 `LowStressVersion || !_hasTimedOutToday`（低压不剥夺，但超时次日仍 `ShowNoSnackObject` 播 TTS），回调走 `InvokeStageAdvanceCallbacks()` 开头 return，阶段走下午直接换天、不进晚上，结局走 `EndingManager` 的 WorkStandard 早退
+- 改低压版本：只加 `LowStressVersion` 判断，不删高压分支；打包靠 Inspector 勾选区分两个版本。零食走 `LowStressVersion || !_hasTimedOutToday`（低压不剥夺，但超时次日仍 `ShowNoSnackObject` 播 TTS），回调走 `InvokeStageAdvanceCallbacks()` 开头 return，阶段走下午直接换天、不进晚上，结局走 `EndingManager` 的 LowPressure 早退
 - 改 guide 生命周期：第 1 天只认导演循环动画；进第 2 天必须 `FinishTutorial()` 停 `Shining` 并清 lock，不能只靠 `ForceCompleteGuideIntro()`
+- 改本地化：优先在 `Localization.csv` 增加 key，再在脚本用 `LocalizationManager.GetText(key)`；音频路径统一走 `LocalizationPaths.Tts/Msg`；静态 UI 文本挂 `LocalizedText`；字体切换只改 `GameManager.ChineseFont/EnglishFont` 与 `LanguageSetting`，不要在运行时直接改所有字体资产。`ApplyLanguageFonts()` 排除 `SubMonitorForStatus/workInfo`，避免破坏监视器状态显示
+- 改 CCTV 旋转限制：优先调整 `CCTVYRotationLimiter.minY/maxY` 或 `overrideLookAt`，不要直接改 `LookAtConstraint` 源码；目标优先从 constraint/`FollowHead` 自动获取
 - 场景相关问题：优先查组件引用、事件回调、Layer/Collider、Toggle 状态，再改代码
 - 第三方代码必须改时：尽量做最小补丁，并在本文档记录原因、影响范围、回退方式
 
@@ -171,11 +185,12 @@
 - VR 改动必须区分输入源、场景引用、Toggle/Inspector 绑定
 - 第 1 天教学走 `DayOneTutorialDirector`，不要再启用旧的并行 `enableGuideIntro`
 - 低压版开关是 `GameManager.LowStressVersion`：勾选打包低压，不勾选打包高压；开局生效，不支持中途切换；不删高压代码
-- 低压旁路：开局隐藏 `OutsideWalls`、`TeleportAreaLock1`/`TeleportAreaWork` 保持锁定直到点 Start、关闭离开锁定，且全程不触发 `NoOut`。出去探索再回工位后仍可再出去。不剥夺零食（超时次日仍播 `No snack` TTS）、不触发 `stageAdvanceCallbacks`、不进晚上（下午直接换天）、不判定熬夜灰屏/死亡、结局固定 WorkStandard。第 1 天教学：早班后下午吃零食；仓鼠关闭则吃完再敲键盘打满后播 `FreeToGo`，仓鼠开启则吃完直接播 `FreeToGo`；2 秒后再换天，不睡觉
+- 低压旁路：开局隐藏 `OutsideWalls`、`TeleportAreaLock1`/`TeleportAreaWork` 保持锁定直到点 Start、关闭离开锁定，且全程不触发 `NoOut`。出去探索再回工位后仍可再出去。不剥夺零食（超时次日仍播 `No snack` TTS）、不触发 `stageAdvanceCallbacks`、不进晚上（下午直接换天）、不判定熬夜灰屏/死亡、结局固定 LowPressure。第 1 天教学：早班后下午吃零食；仓鼠关闭则吃完再敲键盘打满后播 `FreeToGo`，仓鼠开启则吃完直接播 `FreeToGo`；2 秒后再换天，不睡觉
 - 高压开局 `TeleportAreaLock1` 保持锁定，点 `Start` 按钮后解锁；离开后仍走 `lockAreaOnExit`（锁定自身并触发 `NoOut` / `Look around`）。Lock1 地板材质按 SteamVR 默认 visible/highlighted/locked 切换，不要改走廊 UV，也不要关 chaperone 预览
 - 晚上仓鼠在玩家吃完薯片后才出现；零食复位走 local pose + 松手 + 还原 scale
 - 传送地面显示只开关 `MeshRenderer`，不要对 `TeleportArea` 整物体 `SetActive`；不要再唤醒已删除的 `TeleportAreaLock2`
 - 主监视器百分制在预制体 `workInfo/WorkProgressPercent`，脚本只改文字
+- 本地化：`LocalizationManager` 读 `Resources/Localization.csv`，`LocalizationPaths` 按语言选 `TTS_CN/MSG_CN` 或 `TTS_EN/MSG_EN`，`GameManager.ApplyLanguageFonts()` 切换 `ChineseFont/EnglishFont` 与静态文本；`LocalizedText` 组件刷新 UI
 - 提交结果时说明：改了哪些文件、为什么改、如何在 Unity 里验证
 - 文档文件默认使用 UTF-8（建议带 BOM 以兼容 Windows PowerShell），更新后必须复查是否存在乱码
 
@@ -200,7 +215,7 @@
    - `GameManager.playerRayLength` 在运行时调节后，左右手射线可见长度与命中距离应同步变化
    - 抓起零食后按 Trigger 应播放对应零食 TTS；道具按 Trigger 应播放道具 TTS；首次拿起道具仍只触发一次首次拿起 TTS
    - 若涉及 `GameManager.currentWorkProgress`：运行时手动修改该值后，确认 `DataCenter.GameData.PlayerData.workProgress`、主监视器进度条与条右侧百分制同步变化
-   - 若涉及 `LowStressVersion`：勾选后 Play，`OutsideWalls` 应隐藏、`TeleportAreaLock1`/`TeleportAreaWork` 在点 `Start` 前保持锁定、点 `Start` 后可到达且离开后仍可再去、超时后次日仍有零食且第一次超时次日仍播 `No snack` TTS、`stageAdvanceCallbacks` 绑定方法不触发、一天只有早/下午（下午工作或玩耍后直接到次日早上、天空盒不为夜晚、监视器时间不为 21:00）、不睡觉不灰屏不死、天数到齐只出 WorkStandard 结局；取消勾选后上述高压逻辑应全部恢复。高压点 `Start` 前 `TeleportAreaLock1` 应为锁定，点 `Start` 后解锁；离开后仍锁定并触发 `NoOut` / `Look around`。传送弧打到已解锁的 Lock1 应保持 `TeleportAreaVisibleBright` 高亮，不要闪一下又回到 `TeleportAreaVisible`，也不要实心蓝块或按遥感第一帧明显卡顿
+   - 若涉及 `LowStressVersion`：勾选后 Play，`OutsideWalls` 应隐藏、`TeleportAreaLock1`/`TeleportAreaWork` 在点 `Start` 前保持锁定、点 `Start` 后可到达且离开后仍可再去、超时后次日仍有零食且第一次超时次日仍播 `No snack` TTS、`stageAdvanceCallbacks` 绑定方法不触发、一天只有早/下午（下午工作或玩耍后直接到次日早上、天空盒不为夜晚、监视器时间不为 21:00）、不睡觉不灰屏不死、天数到齐只出 LowPressure 结局；取消勾选后上述高压逻辑应全部恢复。高压点 `Start` 前 `TeleportAreaLock1` 应为锁定，点 `Start` 后解锁；离开后仍锁定并触发 `NoOut` / `Look around`。传送弧打到已解锁的 Lock1 应保持 `TeleportAreaVisibleBright` 高亮，不要闪一下又回到 `TeleportAreaVisible`，也不要实心蓝块或按遥感第一帧明显卡顿
    - 若涉及 `DisableSuddenDeathEnding`：勾选后连续不睡觉，疲劳≥3 时仍出现灰屏与 `Special/SuddenDeath` 警告，但不会进入猝死结局；天数跑满后走正常 `Ending()`；取消勾选后疲劳≥4 时恢复猝死结局
    - 若涉及低压探索：去过 `TeleportAreaLock1` 再回 `TeleportAreaWork` 后，仍应能再传送出去；`NoOut` 碰撞保持关闭、注视不应进 `Out`、不应播 `Look around`；高压离开 Lock1 后 `NoOut` 与 `Look around` 应照常触发
    - 若涉及阶段倒计时：从第 2 天开始确认阶段内倒计时会运行，推进到下一阶段后确认计时器重置
@@ -209,6 +224,10 @@
    - 若涉及每日状态监视器：确认 Day1 换天后 `workInfo/Day1/Unhappy` 显示、`Smile` 隐藏；Day2 起超时天显示 `Unhappy`、未超时天显示 `Smile`；未经历天数两者隐藏；存档重进后状态恢复。确认 `SubMonitorStatusController` 已挂到场景并引用正确
    - 若涉及传送区域回调：传送到目标区域时，`onTeleportComplete` 是否触发；传送到其他区域或实际走出区域后，`onPlayerExitArea` 是否触发；若开启离开即锁定，确认该区域后续不可再次传送进入
    - 头显中心视线看向目标时，`onGazeEnter` 是否触发；移开后，`onGazeExit` 是否触发
+   - 若涉及本地化：切换 `GameManager.LanguageSetting` 或 `ChineseFont`/`EnglishFont` 后，确认 `ApplyLanguageFonts()` 更新所有 TMP/UGUI 文本与字体；`LocalizedText` 组件在 `OnEnable` 刷新；`LocalizationManager` 从 `Resources/Localization.csv` 加载；`LocalizationPaths.Tts/Msg` 按语言返回正确路径；`ItemData`/`SnackManager` UI 显示本地化名称与描述；`UIMonitorController`/`MainMonitorData`/`DebugHelper` 显示本地化文本
+   - 若涉及 TTS 启动：Start 按钮调用 `TTSManager.PlayStartStateTTS()` 是否播放 `Introduce/Start State`；若资源缺失应输出错误日志
+   - 若涉及 CCTV 旋转限制：`CCTVYRotationLimiter` 是否按 `minY/maxY` 钳制 Y 轴；`overrideLookAt` 开关是否正确接管/仅钳制
+   - 若涉及结局：`Ending()` 是否先调用 `HandleEndingTextAndGameObjects()` 并将玩家传送到 `TeleportAreaStart` 前方；低压是否播放 `LowPressure` 音频
    - 相关 UI Toggle / Button 是否触发正确逻辑
 4. 检查是否误改第三方 SDK 或样例资源
 5. 若修改的是输入或场景绑定，至少说明一个可复现的手动验证步骤
@@ -223,7 +242,9 @@
 - **改中心视野逻辑**：优先修改 `PlayerSteamVRManager` 的统一视线检测参数或 `CenterGazeCallback` 的目标判定，不要为每个目标单独复制一套头显射线检测
 - **改 UI 交互**：优先增加 Inspector 可绑定入口，不要把 UI 查找逻辑写死
 - **改进度显示/调试入口**：优先复用 `DataCenter.GameData.PlayerData.workProgress` 与 `EventCommon.UPDATE_MONITOR` 链路；百分制对象已在预制体 `workInfo/WorkProgressPercent`，脚本只改文字；若需要手动调试，优先暴露 `GameManager.currentWorkProgress`
-- **改低压版本**：只改 `GameManager.LowStressVersion` 旁路，不要删高压代码；零食走 `LowStressVersion || !_hasTimedOutToday`（低压不剥夺，超时次日仍播 `No snack` TTS），回调走 `InvokeStageAdvanceCallbacks()` 开头 return，阶段走下午直接换天、不进晚上，结局走 `EndingManager.HandleEndingTextAndGameObjects()` 的 WorkStandard 早退
+- **改低压版本**：只改 `GameManager.LowStressVersion` 旁路，不要删高压代码；零食走 `LowStressVersion || !_hasTimedOutToday`（低压不剥夺，超时次日仍播 `No snack` TTS），回调走 `InvokeStageAdvanceCallbacks()` 开头 return，阶段走下午直接换天、不进晚上，结局走 `EndingManager.HandleEndingTextAndGameObjects()` 的 LowPressure 早退
+- **改本地化**：先在 `Localization.csv` 增加 key，再用 `LocalizationManager.GetText` / `LocalizedText` / `LocalizationPaths`；字体切换走 `GameManager.ChineseFont/EnglishFont` 与 `LanguageSetting`，`ApplyLanguageFonts()` 自动刷新
+- **改 CCTV 旋转限制**：调整 `CCTVYRotationLimiter` 参数或开关，目标自动从 `LookAtConstraint`/`FollowHead` 获取
 - **改场景行为**：先确认对象挂载脚本、事件回调、引用对象
 - **修 SDK 问题**：先尝试项目层兜底；只有项目层无法解决时再改 SDK
 - **修 NaN/Transform 报错**：优先在输入数据入口和赋值出口做合法性保护
@@ -254,3 +275,25 @@
 ### 屏幕提示文字
 - `ShowCorridorWarning` 改为在玩家主摄像机上创建居中提示框（ScreenSpaceCamera），5 秒后自动隐藏。
 - 文案按语言切换：CN "如果我再不好好工作，领导可能会开除我。" / EN "If I don't work harder, my boss might fire me."
+
+## 最近变更记录（2026-10-29）
+
+### CSV 本地化与字体切换
+- 新增 `Assets/Scripts/Tools/LocalizationManager.cs`（MonoSingleton）加载 `Resources/Localization.csv`，提供 `Get`/`GetText`/`NormalizeKey`。
+- 新增 `Assets/Scripts/Tools/LocalizationPaths.cs`，按 `GameManager.IsChinese` 返回 `TTS_CN/MSG_CN` 或 `TTS_EN/MSG_EN` 路径。
+- 新增 `Assets/Scripts/Game/LocalizedText.cs` 组件，`Awake`/`OnEnable` 自动刷新文本。
+- `GameManager` 新增 `ChineseFont`/`EnglishFont`/`CurrentLanguageFont`，`Awake` 调用 `ApplyLanguageFonts()`，对所有 `TMP_Text`/`UnityEngine.UI.Text` 设置字体并本地化（排除 `SubMonitorForStatus/workInfo`）。
+- `ItemData`、`SnackManager`、`UIMonitorController`、`MainMonitorData`、`DebugHelper` 改为通过 `LocalizationManager`/`LocalizationPaths` 获取文本与音频路径。
+- `MsgAudioBinder` 直接赋值 clip（null 时警告）。
+
+### CCTV 旋转限制
+- 新增 `Assets/Scripts/Game/CCTVYRotationLimiter.cs`，支持接管或仅钳制 `LookAtConstraint`，Y 轴范围可配置，目标自动从 constraint/`FollowHead` 获取。
+
+### TTS 与结局链路
+- `TTSManager` 新增 `PlayStartStateTTS()`，运行时加载 `LocalizationPaths.Tts("Introduce/Start State")`。
+- `EndingManager` 新增 `TeleportPlayerToEndingPanelFront()`，结局时将玩家传送到 `TeleportAreaStart` 前方并旋转 180°；`Ending()` 先调用 `HandleEndingTextAndGameObjects()`。
+- 低压结局音频从 `Low-pressure` 重命名为 `LowPressure`，代码统一使用 `LocalizationPaths.Tts("Ending/Work/LowPressure")`。
+
+### 监视器与字体
+- `SubMonitorStatusController` 缓存 `Unhappy`/`Smile` Transform，避免重复查找。
+- 走廊提示 `_corridorWarningText` 使用 `CurrentLanguageFont`。

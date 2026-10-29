@@ -118,6 +118,22 @@ public class TTSManager : MonoSingleton<TTSManager>
     {
         PlayTTS(audioClip, DefaultCategory, null);
     }
+
+    // Plays the Day 1 "Start State" TTS without relying on a serialized AudioClip reference,
+    // which can become stale/broken and throw during UnityEvent invocation.
+    public void PlayStartStateTTS()
+    {
+        string path = LocalizationPaths.Tts("Introduce/Start State");
+        AudioClip clip = Resources.Load<AudioClip>(path);
+        if (clip != null)
+        {
+            PlayTTS(clip, DefaultCategory, null);
+        }
+        else
+        {
+            Debug.LogError($"TTSManager: 无法加载音频资源: {path}");
+        }
+    }
     /// <summary>
     /// 播放TTS语音（通过资源路径）
     /// </summary>

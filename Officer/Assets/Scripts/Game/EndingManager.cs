@@ -55,6 +55,7 @@ public class EndingManager : MonoSingleton<EndingManager>
     public void TriggerWorkFailedEnding()
     {
         LockTeleportAreasForEnding();
+        TeleportPlayerToEndingPanelFront();
         SetDeadBodyVisible(false);
         ResetHamsterEndingVisuals();
         hamsterEnding = string.Empty;
@@ -66,7 +67,9 @@ public class EndingManager : MonoSingleton<EndingManager>
     }
     public void Ending()
     {
+        HandleEndingTextAndGameObjects();
         LockTeleportAreasForEnding();
+        TeleportPlayerToEndingPanelFront();
         arrowIcon.SetActive(false);
         endingTxt.text = string.IsNullOrEmpty(hamsterEnding) ? workEnding : workEnding + "\r" + hamsterEnding;
         Container.SetActive(true);
@@ -81,10 +84,11 @@ public class EndingManager : MonoSingleton<EndingManager>
         }
 
         LockTeleportAreasForEnding();
+        TeleportPlayerToEndingPanelFront();
         SetDeadBodyVisible(true);
         ResetHamsterEndingVisuals();
         hamsterEnding = string.Empty;
-        LoadWorkEndingText("TTS/Ending/Work/WorkDead");
+        LoadWorkEndingText(LocalizationPaths.Tts("Ending/Work/WorkDead"));
         arrowIcon.SetActive(false);
         endingTxt.text = workEnding;
         Container.SetActive(true);
@@ -97,8 +101,8 @@ public class EndingManager : MonoSingleton<EndingManager>
 
         if (GameManager.Instance != null && GameManager.Instance.IsLowStressVersion)
         {
-            LoadWorkEndingText("TTS/Ending/Work/WorkStandard");
-            TTSManager.Instance.PlayTTS("TTS/Ending/Work/WorkStandard");
+            LoadWorkEndingText(LocalizationPaths.Tts("Ending/Work/LowPressure"));
+            TTSManager.Instance.PlayTTS(LocalizationPaths.Tts("Ending/Work/LowPressure"));
             return;
         }
 
@@ -111,23 +115,23 @@ public class EndingManager : MonoSingleton<EndingManager>
 
         if (workSuccess && hamsterLoveEnding)
         {
-            LoadHamsterEndingText("TTS/Ending/Hamster/HamsterLover");
-            LoadWorkEndingText("TTS/Ending/Work/Workaholic");
+            LoadHamsterEndingText(LocalizationPaths.Tts("Ending/Hamster/HamsterLover"));
+            LoadWorkEndingText(LocalizationPaths.Tts("Ending/Work/Workaholic"));
             hamsterLove.gameObject.SetActive(true);
-            TTSManager.Instance.PlayTTS("TTS/Ending/Work/Workaholic");
-            TTSManager.Instance.EnqueueTTS("TTS/Ending/Hamster/HamsterLover");
+            TTSManager.Instance.PlayTTS(LocalizationPaths.Tts("Ending/Work/Workaholic"));
+            TTSManager.Instance.EnqueueTTS(LocalizationPaths.Tts("Ending/Hamster/HamsterLover"));
             return;
         }
 
         if (workSuccess)
         {
-            LoadWorkEndingText("TTS/Ending/Work/WorkStandard");
-            TTSManager.Instance.PlayTTS("TTS/Ending/Work/WorkStandard");
+            LoadWorkEndingText(LocalizationPaths.Tts("Ending/Work/WorkStandard"));
+            TTSManager.Instance.PlayTTS(LocalizationPaths.Tts("Ending/Work/WorkStandard"));
         }
         else
         {
-            LoadWorkEndingText("TTS/Ending/Work/WorkFailed");
-            TTSManager.Instance.PlayTTS("TTS/Ending/Work/WorkFailed");
+            LoadWorkEndingText(LocalizationPaths.Tts("Ending/Work/WorkFailed"));
+            TTSManager.Instance.PlayTTS(LocalizationPaths.Tts("Ending/Work/WorkFailed"));
         }
 
         if (!hamsterGameplayEnabled)
@@ -137,21 +141,21 @@ public class EndingManager : MonoSingleton<EndingManager>
 
         if (hamsterLoveEnding)
         {
-            LoadHamsterEndingText("TTS/Ending/Hamster/HamsterLover");
+            LoadHamsterEndingText(LocalizationPaths.Tts("Ending/Hamster/HamsterLover"));
             hamsterLove.gameObject.SetActive(true);
-            TTSManager.Instance.EnqueueTTS("TTS/Ending/Hamster/HamsterLover");
+            TTSManager.Instance.EnqueueTTS(LocalizationPaths.Tts("Ending/Hamster/HamsterLover"));
         }
         else if (hamsterDeadEnding)
         {
-            LoadHamsterEndingText("TTS/Ending/Hamster/HamsterBad");
+            LoadHamsterEndingText(LocalizationPaths.Tts("Ending/Hamster/HamsterBad"));
             hamsterDead.gameObject.SetActive(true);
-            TTSManager.Instance.EnqueueTTS("TTS/Ending/Hamster/HamsterBad");
+            TTSManager.Instance.EnqueueTTS(LocalizationPaths.Tts("Ending/Hamster/HamsterBad"));
         }
         else
         {
-            LoadHamsterEndingText("TTS/Ending/Hamster/HamsterNormal");
+            LoadHamsterEndingText(LocalizationPaths.Tts("Ending/Hamster/HamsterNormal"));
             hamsterNormal.gameObject.SetActive(true);
-            TTSManager.Instance.EnqueueTTS("TTS/Ending/Hamster/HamsterNormal");
+            TTSManager.Instance.EnqueueTTS(LocalizationPaths.Tts("Ending/Hamster/HamsterNormal"));
         }
     }
 
@@ -171,6 +175,41 @@ public class EndingManager : MonoSingleton<EndingManager>
         }
 
         deadBodyObject.SetActive(visible);
+    }
+
+    private void TeleportPlayerToEndingPanelFront()
+    {
+        if (Player.instance == null)
+        {
+            return;
+        }
+
+        TeleportArea startArea = null;
+        TeleportArea[] areas = FindObjectsOfType<TeleportArea>(true);
+        for (int i = 0; i < areas.Length; i++)
+        {
+            TeleportArea area = areas[i];
+            if (area != null && area.name == TeleportAreaStartName)
+            {
+                startArea = area;
+                break;
+            }
+        }
+
+        if (startArea == null)
+        {
+            return;
+        }
+
+        Transform trackingOrigin = Player.instance.trackingOriginTransform;
+        if (trackingOrigin == null)
+        {
+            return;
+        }
+
+        Vector3 feetOffset = trackingOrigin.position - Player.instance.feetPositionGuess;
+        trackingOrigin.position = startArea.transform.position + feetOffset;
+        trackingOrigin.rotation = Quaternion.Euler(0f, 180f, 0f);
     }
 
     private void LockTeleportAreasForEnding()

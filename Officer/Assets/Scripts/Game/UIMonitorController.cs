@@ -57,10 +57,7 @@ public class UIMonitorController : MonoSingleton<UIMonitorController>
 
         int efficiency = DataCenter.Instance.GetTotalWorkEfficiency();
         int favorabilityAbility = DataCenter.Instance.GetTotalFavorabilityAbility();
-        bool chinese = GameManager.Instance != null && GameManager.Instance.IsChinese;
-        playerInfo.text = chinese
-            ? $"工作效率：{efficiency}\n好感度：{favorabilityAbility}"
-            : $"Work Efficiency: {efficiency}\nFavorability: {favorabilityAbility}";
+        playerInfo.text = string.Format(LocalizationManager.GetText("player_info"), efficiency, favorabilityAbility);
     }
 
     // Update is called once per frame

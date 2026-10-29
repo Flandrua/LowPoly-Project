@@ -11,6 +11,10 @@ public class SubMonitorStatusController : MonoBehaviour
     [Tooltip("Day1..Day6 对应的状态文本/对象根；留空时按 workInfo 下的 Day1..Day6 自动查找。")]
     [SerializeField] private Transform[] dayRoots;
 
+    private Transform[] _unhappyTransforms;
+    private Transform[] _smileTransforms;
+    private bool _resolved;
+
     private void Start()
     {
         ResolveReferences();
@@ -25,6 +29,11 @@ public class SubMonitorStatusController : MonoBehaviour
 
     private void ResolveReferences()
     {
+        if (_resolved && _unhappyTransforms != null && _smileTransforms != null)
+        {
+            return;
+        }
+
         if (workInfoRoot == null)
         {
             GameObject found = GameObject.Find("workInfo");
@@ -34,13 +43,8 @@ public class SubMonitorStatusController : MonoBehaviour
             }
         }
 
-        if (dayRoots == null || dayRoots.Length == 0)
+        if ((dayRoots == null || dayRoots.Length == 0) && workInfoRoot != null)
         {
-            if (workInfoRoot == null)
-            {
-                return;
-            }
-
             List<Transform> roots = new List<Transform>();
             for (int i = 1; i <= 6; i++)
             {
@@ -52,16 +56,38 @@ public class SubMonitorStatusController : MonoBehaviour
             }
             dayRoots = roots.ToArray();
         }
+
+        if (dayRoots == null || dayRoots.Length == 0)
+        {
+            return;
+        }
+
+        _unhappyTransforms = new Transform[dayRoots.Length];
+        _smileTransforms = new Transform[dayRoots.Length];
+
+        for (int i = 0; i < dayRoots.Length; i++)
+        {
+            Transform day = dayRoots[i];
+            if (day == null)
+            {
+                continue;
+            }
+
+            _unhappyTransforms[i] = day.Find("Unhappy");
+            _smileTransforms[i] = day.Find("Smile");
+        }
+
+        _resolved = true;
     }
 
     public void Refresh()
     {
-        if (dayRoots == null || dayRoots.Length == 0)
+        if (!_resolved)
         {
             ResolveReferences();
         }
 
-        if (dayRoots == null || dayRoots.Length == 0)
+        if (_unhappyTransforms == null || _smileTransforms == null)
         {
             return;
         }
@@ -75,19 +101,13 @@ public class SubMonitorStatusController : MonoBehaviour
             data = DataCenter.Instance.GameData.PlayerData.dailyTimedOut;
         }
 
-        for (int i = 0; i < dayRoots.Length; i++)
+        int count = Mathf.Min(_unhappyTransforms.Length, _smileTransforms.Length);
+        for (int i = 0; i < count; i++)
         {
-            Transform day = dayRoots[i];
-            if (day == null)
-            {
-                continue;
-            }
+            Transform unhappy = _unhappyTransforms[i];
+            Transform smile = _smileTransforms[i];
 
-            Transform unhappy = day.Find("Unhappy");
-            Transform smile = day.Find("Smile");
-
-            int recordIndex = i;
-            bool hasRecord = data != null && recordIndex < data.Count;
+            bool hasRecord = data != null && i < data.Count;
 
             if (!hasRecord)
             {
@@ -96,7 +116,7 @@ public class SubMonitorStatusController : MonoBehaviour
                 continue;
             }
 
-            bool isUnhappy = data[recordIndex];
+            bool isUnhappy = data[i];
             if (unhappy != null) unhappy.gameObject.SetActive(isUnhappy);
             if (smile != null) smile.gameObject.SetActive(!isUnhappy);
         }

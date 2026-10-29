@@ -35,9 +35,7 @@ public class MainMonitorData : ItemData
             int dayValue = DataCenter.Instance.GameData.PlayerData.days;
             int totalDays = GameManager.Instance.TotalDays;
             string time = GameManager.Instance.CurrentTimeDisplay;
-            day.text = chinese
-                ? $"第{dayValue}天 / 共{totalDays}天 {time}"
-                : $"Day:{dayValue}/{totalDays} {time}";
+            day.text = string.Format(LocalizationManager.GetText("day_format"), dayValue, totalDays, time);
         }
 
         int percent = GetWorkProgressPercent();

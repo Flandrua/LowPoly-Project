@@ -61,11 +61,8 @@ public class MsgAudioBinder : MonoBehaviour
 
             string fullPath = LocalizationPaths.Msg(entry.msgRelativePath);
             AudioClip clip = Resources.Load<AudioClip>(fullPath);
-            if (clip != null)
-            {
-                entry.audioSource.clip = clip;
-            }
-            else
+            entry.audioSource.clip = clip;
+            if (clip == null)
             {
                 Debug.LogWarning($"MsgAudioBinder: Could not load MSG clip at '{fullPath}'.", this);
             }
