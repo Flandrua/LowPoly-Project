@@ -52,11 +52,21 @@ public class EndingManager : MonoSingleton<EndingManager>
     {
     }
 
-    public void Ending()
+    public void TriggerWorkFailedEnding()
     {
         LockTeleportAreasForEnding();
         SetDeadBodyVisible(false);
-        HandleEndingTextAndGameObjects();
+        ResetHamsterEndingVisuals();
+        hamsterEnding = string.Empty;
+        LoadWorkEndingText(LocalizationPaths.Tts("Ending/Work/WorkFailed"));
+        TTSManager.Instance.PlayTTS(LocalizationPaths.Tts("Ending/Work/WorkFailed"));
+        arrowIcon.SetActive(false);
+        endingTxt.text = workEnding;
+        Container.SetActive(true);
+    }
+    public void Ending()
+    {
+        LockTeleportAreasForEnding();
         arrowIcon.SetActive(false);
         endingTxt.text = string.IsNullOrEmpty(hamsterEnding) ? workEnding : workEnding + "\r" + hamsterEnding;
         Container.SetActive(true);
@@ -64,7 +74,7 @@ public class EndingManager : MonoSingleton<EndingManager>
 
     public void EndingDeath()
     {
-        if (GameManager.Instance != null && GameManager.Instance.IsLowStressVersion)
+        if (GameManager.Instance != null && (GameManager.Instance.IsLowStressVersion || GameManager.Instance.IsSuddenDeathEndingDisabled))
         {
             Ending();
             return;

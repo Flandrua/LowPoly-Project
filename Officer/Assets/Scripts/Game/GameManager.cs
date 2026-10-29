@@ -1,9 +1,12 @@
 using UnityEditor;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
+using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 
 using UnityEngine.Serialization;
 using Valve.VR.InteractionSystem;
@@ -43,6 +46,14 @@ public class GameManager : MonoSingleton<GameManager>
     [Header("Build Version")]
     [Tooltip("勾选后进入低压版本：不限制探索、不剥夺零食、不触发 Stage Advance Callbacks、隐藏 OutsideWalls、一天只有早/下午（下午推进直接换天，不进入晚上）、不判定熬夜灰屏/死亡，结局固定为 WorkStandard。仅用于打包不同版本，不支持运行中途切换。")]
     public bool LowStressVersion;
+
+    [Header("Sudden Death")]
+    [Tooltip("勾选后：玩家不睡觉也不会进入猝死结局，但猝死的灰屏与警告效果照常触发。")]
+    public bool DisableSuddenDeathEnding;
+
+    [Header("Language")]
+    [Tooltip("游戏显示语言：CN=中文，EN=英文。")]
+    public Language LanguageSetting = Language.CN;
 
     private Animator _animator;
 
@@ -113,13 +124,23 @@ public class GameManager : MonoSingleton<GameManager>
     private bool _hasEvaluatedDayOneGuides;
     private bool _skipToNightOnNextChange;
     private GameObject _startUiRoot;
+    private int _corridorExplorationCount;
     private bool _hasUnlockedTeleportAreaLock1FromStartButton;
+    private Canvas _corridorWarningCanvas;
+    private TextMeshProUGUI _corridorWarningText;
+    private Coroutine _corridorWarningRoutine;
+    [SerializeField] private Text countingDownPhoneText;
+    [SerializeField] private TextMeshProUGUI countingDownPhoneTextTmp;
+    private bool _hasShownTimeoutVoice;
 
     public int TotalDays => Mathf.Max(1, totaldays);
     public int HamsterLoveEndingFavorabilityThreshold => Mathf.Max(0, hamsterLoveEndingFavorabilityThreshold);
 
     public bool IsHamsterGameplayEnabled => enableHamster;
     public bool IsLowStressVersion => LowStressVersion;
+    public bool IsSuddenDeathEndingDisabled => DisableSuddenDeathEnding;
+    public Language CurrentLanguage => LanguageSetting;
+    public bool IsChinese => LanguageSetting == Language.CN;
     public bool IsPlayerInteractionEnabled => !manuallyDisablePlayerInteraction && playerInteractionLockCount <= 0;
     // True while a stage advance is in progress (the time-switching gap). Used to lock work/sleep/pet inputs.
     public bool IsStageAdvanceRequested => _isStageAdvanceRequested;
@@ -180,6 +201,7 @@ public class GameManager : MonoSingleton<GameManager>
         ResetStageCountDown();
         ApplyHalfOnByFatigue();
 
+        Teleport.Player.AddListener(OnPlayerTeleportedToCorridor);
     }
 
 
@@ -192,16 +214,25 @@ public class GameManager : MonoSingleton<GameManager>
 
         EventManager.RemoveListener<bool>(EventCommon.CHANGE_TIME, SendAnimatorPostSignal);
 
+        Teleport.Player.RemoveListener(OnPlayerTeleportedToCorridor);
+
+        if (_corridorWarningRoutine != null)
+        {
+            StopCoroutine(_corridorWarningRoutine);
+        }
+
+        if (_corridorWarningCanvas != null)
+        {
+            Destroy(_corridorWarningCanvas.gameObject);
+        }
+
     }
 
 
 
     private void OnValidate()
-
     {
-
         ResolveNoSnackObjectReference();
-        ResolveOutsideWallsReference();
         ResolvePlayerRayPointers();
 
         if (!Application.isPlaying)
@@ -570,6 +601,10 @@ public class GameManager : MonoSingleton<GameManager>
             bool isDeathEnding = !LowStressVersion && EvaluateDailyFatigueState();
             if (!isDeathEnding)
             {
+                int finishedDay = GetCurrentDaySafe();
+                bool finishedDayTimedOut = finishedDay <= 1 ? true : _hasTimedOutToday;
+                DataCenter.Instance.RecordDayTimeoutStatus(finishedDay, finishedDayTimedOut);
+
                 if (DataCenter.Instance.GameData.PlayerData.days >= TotalDays)
 
                 {
@@ -600,6 +635,7 @@ public class GameManager : MonoSingleton<GameManager>
                     if (timedOutYesterday)
                     {
                         ShowNoSnackObject();
+                        HandleTimeoutNextDayEffects();
                     }
 
                     _hasTimedOutToday = false;
@@ -777,7 +813,7 @@ public class GameManager : MonoSingleton<GameManager>
         {
             if (TTSManager.Instance != null)
             {
-                TTSManager.Instance.PlayTTS("TTS/ItemGet/NotTimeToSleep");
+                TTSManager.Instance.PlayTTS(LocalizationPaths.Tts("Introduce/Not time to sleep"));
             }
             return;
         }
@@ -883,6 +919,11 @@ public class GameManager : MonoSingleton<GameManager>
         _hasTimedOutThisStage = true;
         _hasTimedOutToday = true;
 
+        if (!_isStageAdvanceRequested)
+        {
+            PrepareChangeTime("timeout");
+        }
+
     }
 
 
@@ -900,10 +941,129 @@ public class GameManager : MonoSingleton<GameManager>
 
 
 
-    private void ResetStageCountDown()
-
+    private void OnPlayerTeleportedToCorridor(TeleportMarkerBase marker)
     {
+        if (marker == null)
+        {
+            return;
+        }
 
+        string markerName = marker.name;
+        if (string.IsNullOrEmpty(markerName) ||
+            (!markerName.Contains("Lock1") && !markerName.Contains("Corridor")))
+        {
+            return;
+        }
+
+        _corridorExplorationCount++;
+        if (_corridorExplorationCount == 2)
+        {
+            ShowCorridorWarning();
+        }
+        else if (_corridorExplorationCount >= 3)
+        {
+            if (EndingManager.Instance != null)
+            {
+                EndingManager.Instance.TriggerWorkFailedEnding();
+            }
+        }
+    }
+
+    private void ShowCorridorWarning()
+    {
+        if (!TryCreateCorridorWarningUI())
+        {
+            Debug.LogWarning("GameManager: Unable to show the corridor warning because no player camera is available.", this);
+            return;
+        }
+
+        _corridorWarningText.text = IsChinese
+            ? "如果我再不好好工作，领导可能会开除我。"
+            : "If I don't work harder, my boss might fire me.";
+        _corridorWarningCanvas.gameObject.SetActive(true);
+
+        if (_corridorWarningRoutine != null)
+        {
+            StopCoroutine(_corridorWarningRoutine);
+        }
+
+        _corridorWarningRoutine = StartCoroutine(HideCorridorWarningAfterDelay());
+    }
+
+    private bool TryCreateCorridorWarningUI()
+    {
+        if (_corridorWarningCanvas != null && _corridorWarningText != null)
+        {
+            return true;
+        }
+
+        Camera playerCamera = Camera.main;
+        if (playerCamera == null)
+        {
+            return false;
+        }
+
+        GameObject canvasObject = new GameObject("CorridorWarningCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
+        canvasObject.transform.SetParent(playerCamera.transform, false);
+
+        _corridorWarningCanvas = canvasObject.GetComponent<Canvas>();
+        _corridorWarningCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+        _corridorWarningCanvas.worldCamera = playerCamera;
+        _corridorWarningCanvas.planeDistance = Mathf.Max(0.5f, playerCamera.nearClipPlane + 0.1f);
+        _corridorWarningCanvas.sortingOrder = 100;
+
+        CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        GameObject backgroundObject = new GameObject("Background", typeof(RectTransform), typeof(Image));
+        backgroundObject.transform.SetParent(canvasObject.transform, false);
+        RectTransform backgroundRect = backgroundObject.GetComponent<RectTransform>();
+        backgroundRect.anchorMin = new Vector2(0.5f, 0.5f);
+        backgroundRect.anchorMax = new Vector2(0.5f, 0.5f);
+        backgroundRect.pivot = new Vector2(0.5f, 0.5f);
+        backgroundRect.anchoredPosition = new Vector2(0f, 120f);
+        backgroundRect.sizeDelta = new Vector2(1400f, 180f);
+
+        Image background = backgroundObject.GetComponent<Image>();
+        background.color = new Color(0f, 0f, 0f, 0.72f);
+        background.raycastTarget = false;
+
+        GameObject textObject = new GameObject("WarningText", typeof(RectTransform), typeof(TextMeshProUGUI));
+        textObject.transform.SetParent(backgroundObject.transform, false);
+        RectTransform textRect = textObject.GetComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = new Vector2(32f, 20f);
+        textRect.offsetMax = new Vector2(-32f, -20f);
+
+        _corridorWarningText = textObject.GetComponent<TextMeshProUGUI>();
+        _corridorWarningText.font = TMP_Settings.defaultFontAsset;
+        _corridorWarningText.fontSize = 48f;
+        _corridorWarningText.alignment = TextAlignmentOptions.Center;
+        _corridorWarningText.color = Color.white;
+        _corridorWarningText.enableWordWrapping = true;
+        _corridorWarningText.raycastTarget = false;
+
+        canvasObject.SetActive(false);
+        return _corridorWarningText.font != null;
+    }
+
+    private IEnumerator HideCorridorWarningAfterDelay()
+    {
+        yield return new WaitForSecondsRealtime(5f);
+
+        if (_corridorWarningCanvas != null)
+        {
+            _corridorWarningCanvas.gameObject.SetActive(false);
+        }
+
+        _corridorWarningRoutine = null;
+    }
+
+    private void ResetStageCountDown()
+    {
         _remainingCountDown = Mathf.Max(0f, countDown);
         _hasTimedOutThisStage = false;
 
@@ -1050,7 +1210,7 @@ public class GameManager : MonoSingleton<GameManager>
 
         if (isGrayFatigueActive && !_wasGrayFatigueActive && TTSManager.Instance != null)
         {
-            TTSManager.Instance.PlayTTS("TTS/Special/SuddenDeath");
+            TTSManager.Instance.PlayTTS(LocalizationPaths.Tts("Special/SuddenDeath"));
         }
 
         _wasGrayFatigueActive = isGrayFatigueActive;
@@ -1066,6 +1226,11 @@ public class GameManager : MonoSingleton<GameManager>
         ApplyHalfOnByFatigue();
 
         if (_hasTriggeredDeathEnding || GetCurrentFatigueSafe() < Mathf.Max(0, deathFatigueThreshold))
+        {
+            return false;
+        }
+
+        if (DisableSuddenDeathEnding)
         {
             return false;
         }
@@ -1127,10 +1292,88 @@ public class GameManager : MonoSingleton<GameManager>
 
     }
 
-    private void ShowNoSnackObject()
-
+    private void HandleTimeoutNextDayEffects()
     {
+        if (!_hasShownTimeoutVoice)
+        {
+            _hasShownTimeoutVoice = true;
+            PlayMsgVoice("Boss/Timeout");
+        }
+        else
+        {
+            PlayMsgVoice("Boss/Timeout-simple");
+        }
 
+        if (countingDownPhoneText == null && countingDownPhoneTextTmp == null)
+        {
+            Debug.LogWarning("GameManager: Assign the CountingDownPhone Text component in the Inspector.", this);
+            return;
+        }
+
+        if (countingDownPhoneText != null)
+        {
+            countingDownPhoneText.gameObject.SetActive(true);
+        }
+
+        if (countingDownPhoneTextTmp != null)
+        {
+            countingDownPhoneTextTmp.gameObject.SetActive(true);
+        }
+
+        StartCoroutine(CountingDownPhoneRoutine(Mathf.Max(1f, countDown)));
+    }
+
+    private void PlayMsgVoice(string relativePath)
+    {
+        if (TTSManager.Instance == null)
+        {
+            return;
+        }
+
+        AudioClip clip = Resources.Load<AudioClip>(LocalizationPaths.Msg(relativePath));
+        if (clip == null)
+        {
+            Debug.LogWarning($"GameManager: MSG clip not found: {LocalizationPaths.Msg(relativePath)}", this);
+            return;
+        }
+
+        TTSManager.Instance.PlayTTS(clip);
+    }
+
+    private IEnumerator CountingDownPhoneRoutine(float seconds)
+    {
+        float remaining = seconds;
+        while (remaining > 0f)
+        {
+            int displayedSeconds = Mathf.CeilToInt(remaining);
+            string label = $"{displayedSeconds} S";
+            if (countingDownPhoneText != null)
+            {
+                countingDownPhoneText.text = label;
+            }
+
+            if (countingDownPhoneTextTmp != null)
+            {
+                countingDownPhoneTextTmp.text = label;
+            }
+
+            yield return new WaitForSeconds(1f);
+            remaining -= 1f;
+        }
+
+        if (countingDownPhoneText != null)
+        {
+            countingDownPhoneText.gameObject.SetActive(false);
+        }
+
+        if (countingDownPhoneTextTmp != null)
+        {
+            countingDownPhoneTextTmp.gameObject.SetActive(false);
+        }
+    }
+
+    private void ShowNoSnackObject()
+    {
         ResolveNoSnackObjectReference();
 
         if (noSnackObject == null)
@@ -1420,4 +1663,12 @@ public class GameManager : MonoSingleton<GameManager>
     }
 
 }
+
+
+
+
+
+
+
+
 

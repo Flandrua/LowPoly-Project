@@ -50,12 +50,12 @@ public class DayOneTutorialDirector : MonoBehaviour
 
     [Header("TTS Hooks")]
     [SerializeField] private StepHook[] stepHooks;
-    [SerializeField] private string keyboardIntroTtsPath = "TTS/Introduce/keyboard";
-    [SerializeField] private string hamsterIntroTtsPath = "TTS/Introduce/Hamster";
-    [SerializeField] private string snackIntroTtsPath = "TTS/Introduce/Snack";
-    [SerializeField] private string snackIntroNoHamsterTtsPath = "TTS/Introduce/Snack1";
-    [SerializeField] private string freeToGoTtsPath = "TTS/Introduce/FreeToGo";
-    [SerializeField] private string sleepIntroTtsPath = "TTS/Introduce/Sleep";
+    [SerializeField] private string keyboardIntroTtsPath = "Introduce/keyboard";
+    [SerializeField] private string hamsterIntroTtsPath = "Introduce/Hamster";
+    [SerializeField] private string snackIntroTtsPath = "Introduce/Snack";
+    [SerializeField] private string snackIntroNoHamsterTtsPath = "Introduce/Snack1";
+    [SerializeField] private string freeToGoTtsPath = "Free/Free to go";
+    [SerializeField] private string sleepIntroTtsPath = "Introduce/Sleep";
     [SerializeField] private string workTeleportAreaName = "TeleportAreaWork";
     [Min(0f)] [SerializeField] private float lowStressDayAdvanceDelay = 2f;
 
@@ -891,7 +891,14 @@ public class DayOneTutorialDirector : MonoBehaviour
             return null;
         }
 
-        AudioClip clip = Resources.Load<AudioClip>(resourcePath);
+        AudioClip clip = Resources.Load<AudioClip>(LocalizationPaths.Tts(resourcePath));
+        if (clip != null)
+        {
+            return clip;
+        }
+
+        // Backward compatibility for old serialized full paths.
+        clip = Resources.Load<AudioClip>(resourcePath);
         if (clip != null)
         {
             return clip;

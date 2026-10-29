@@ -32,6 +32,7 @@ public class PlayerData
     public int workEfficiency = 1;
     public int favorabilityAbility = 1;
     public List<ItemData> ownedItem = new List<ItemData>();
+    public List<bool> dailyTimedOut = new List<bool>();
 }
 public class DataCenter : Singleton<DataCenter>
 {
@@ -98,6 +99,11 @@ public class DataCenter : Singleton<DataCenter>
         if (_gameData.PlayerData.ownedItem == null)
         {
             _gameData.PlayerData.ownedItem = new List<ItemData>();
+        }
+
+        if (_gameData.PlayerData.dailyTimedOut == null)
+        {
+            _gameData.PlayerData.dailyTimedOut = new List<bool>();
         }
 
         _gameData.PlayerData.days = Mathf.Max(1, _gameData.PlayerData.days);
@@ -186,5 +192,27 @@ public class DataCenter : Singleton<DataCenter>
         }
 
         GameData.PlayerData.fatigue = 0;
+    }
+
+    public void RecordDayTimeoutStatus(int day, bool timedOut)
+    {
+        if (GameData == null || GameData.PlayerData == null)
+        {
+            return;
+        }
+
+        if (GameData.PlayerData.dailyTimedOut == null)
+        {
+            GameData.PlayerData.dailyTimedOut = new List<bool>();
+        }
+
+        int index = Mathf.Max(0, day - 1);
+        while (GameData.PlayerData.dailyTimedOut.Count <= index)
+        {
+            GameData.PlayerData.dailyTimedOut.Add(false);
+        }
+
+        GameData.PlayerData.dailyTimedOut[index] = timedOut;
+        SaveData();
     }
 }

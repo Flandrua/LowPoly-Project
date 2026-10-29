@@ -23,7 +23,7 @@ public class KeyboardController : MonoSingleton<KeyboardController>, IPointerCli
     [Header("Guide Intro")]
     [SerializeField] private bool enableGuideIntro = true;
     [SerializeField] private bool guideTriggered;
-    [SerializeField] private string guideIntroTtsPath = "TTS/Introduce/keyboard";
+    [SerializeField] private string guideIntroTtsPath = "Introduce/keyboard";
     [SerializeField] private string guideAnimatorTrigger = "Shining";
     [SerializeField] private Animator guideAnimator;
     [Tooltip("Manual assignment only. Drag scene Outline components here.")]
@@ -166,7 +166,7 @@ public class KeyboardController : MonoSingleton<KeyboardController>, IPointerCli
 
         if (!string.IsNullOrEmpty(guideIntroTtsPath) && TTSManager.Instance != null)
         {
-            AudioClip guideClip = Resources.Load<AudioClip>(guideIntroTtsPath);
+            AudioClip guideClip = Resources.Load<AudioClip>(LocalizationPaths.Tts(guideIntroTtsPath));
             if (guideClip != null)
             {
                 if (GameManager.Instance != null)

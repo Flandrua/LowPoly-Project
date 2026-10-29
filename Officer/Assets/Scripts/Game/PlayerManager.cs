@@ -289,13 +289,13 @@ public class PlayerManager : MonoBehaviour
         DataCenter.Instance.GetWorkEfficiency(snack.workEfficiency);
         if (snack.isSpicy)
         {
-            TTSManager.Instance.PlayTTS("TTS/Special/PeperPlayer");
+            TTSManager.Instance.PlayTTS(LocalizationPaths.Tts("Special/PeperPlayer"));
             _flame.Play();
         }
 
         if (snack.isWine)
         {
-            TTSManager.Instance.PlayTTS("TTS/Special/BeerPlayer");
+            TTSManager.Instance.PlayTTS(LocalizationPaths.Tts("Special/BeerPlayer"));
         }
     }
 }

@@ -1,0 +1,2 @@
+Your gym membership has expired. Would you like to renew it?
+你的健身卡已经过期了，还要续订吗？

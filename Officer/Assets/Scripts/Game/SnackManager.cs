@@ -630,7 +630,7 @@ public class SnackManager : MonoSingleton<SnackManager>
                 continue;
             }
 
-            string path = $"TTS/SnackIteraction/{key}";
+            string path = LocalizationPaths.Tts($"SnackIteraction/{key}");
             if (Resources.Load<AudioClip>(path) != null)
             {
                 return path;

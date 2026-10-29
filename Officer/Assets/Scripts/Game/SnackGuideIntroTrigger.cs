@@ -8,7 +8,7 @@ public class SnackGuideIntroTrigger : MonoBehaviour
     [SerializeField] private bool guideTriggered;
 
     [Header("Guide Content")]
-    [SerializeField] private string guideIntroTtsPath = "TTS/Introduce/Snack";
+    [SerializeField] private string guideIntroTtsPath = "Introduce/Snack";
     [SerializeField] private string guideAnimatorTrigger = "Shining";
     [SerializeField] private Animator guideAnimator;
     [SerializeField] private Outline[] guideOutlines;
@@ -46,7 +46,7 @@ public class SnackGuideIntroTrigger : MonoBehaviour
 
         if (!string.IsNullOrEmpty(guideIntroTtsPath) && TTSManager.Instance != null)
         {
-            AudioClip guideClip = Resources.Load<AudioClip>(guideIntroTtsPath);
+            AudioClip guideClip = Resources.Load<AudioClip>(LocalizationPaths.Tts(guideIntroTtsPath));
             if (guideClip != null)
             {
                 if (GameManager.Instance != null)

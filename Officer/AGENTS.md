@@ -123,6 +123,8 @@
 - 当前离开区域判定同时覆盖两种情况：传送到其他 `TeleportArea`，或玩家传送到该区域后通过房间尺度实际走出区域边界
 - `TeleportAreaCallback` 当前还支持在离开区域时直接调用 `TeleportArea.SetLocked(true)` 锁定自身区域，适合做一次性传送点
 - 当前可视提示与正常玩法链路都以 `Assets/SteamVR/Simple Sample.unity` 为准；若要同步到 `SteamVer.unity`，需分别确认 XRI 链路
+- 每日状态监视器链路：`SubMonitorStatusController` 监听 `EventCommon.UPDATE_MONITOR`，读取 `DataCenter.GameData.PlayerData.dailyTimedOut`，按 `workInfo/Day1..Day6` 下的 `Unhappy`/`Smile` 子对象显隐表示该天是否超时；Day1 默认 `Unhappy`。记录发生在 `GameManager.ChangeTime()` 换天时（Day1 强制 true，Day2 起用 `_hasTimedOutToday`）。
+- 猝死结局开关：`GameManager.DisableSuddenDeathEnding` 勾选后不进入猝死结局，但灰屏与 `Special/SuddenDeath` 警告照常触发；`EndingManager.EndingDeath()` 误入时改走 `Ending()`。
 
 ## 低压版本（LowStressVersion）
 - 开关：`GameManager` Inspector 的 `Low Stress Version`（字段 `LowStressVersion`）；其他脚本读 `GameManager.Instance.IsLowStressVersion`
@@ -199,10 +201,12 @@
    - 抓起零食后按 Trigger 应播放对应零食 TTS；道具按 Trigger 应播放道具 TTS；首次拿起道具仍只触发一次首次拿起 TTS
    - 若涉及 `GameManager.currentWorkProgress`：运行时手动修改该值后，确认 `DataCenter.GameData.PlayerData.workProgress`、主监视器进度条与条右侧百分制同步变化
    - 若涉及 `LowStressVersion`：勾选后 Play，`OutsideWalls` 应隐藏、`TeleportAreaLock1`/`TeleportAreaWork` 在点 `Start` 前保持锁定、点 `Start` 后可到达且离开后仍可再去、超时后次日仍有零食且第一次超时次日仍播 `No snack` TTS、`stageAdvanceCallbacks` 绑定方法不触发、一天只有早/下午（下午工作或玩耍后直接到次日早上、天空盒不为夜晚、监视器时间不为 21:00）、不睡觉不灰屏不死、天数到齐只出 WorkStandard 结局；取消勾选后上述高压逻辑应全部恢复。高压点 `Start` 前 `TeleportAreaLock1` 应为锁定，点 `Start` 后解锁；离开后仍锁定并触发 `NoOut` / `Look around`。传送弧打到已解锁的 Lock1 应保持 `TeleportAreaVisibleBright` 高亮，不要闪一下又回到 `TeleportAreaVisible`，也不要实心蓝块或按遥感第一帧明显卡顿
+   - 若涉及 `DisableSuddenDeathEnding`：勾选后连续不睡觉，疲劳≥3 时仍出现灰屏与 `Special/SuddenDeath` 警告，但不会进入猝死结局；天数跑满后走正常 `Ending()`；取消勾选后疲劳≥4 时恢复猝死结局
    - 若涉及低压探索：去过 `TeleportAreaLock1` 再回 `TeleportAreaWork` 后，仍应能再传送出去；`NoOut` 碰撞保持关闭、注视不应进 `Out`、不应播 `Look around`；高压离开 Lock1 后 `NoOut` 与 `Look around` 应照常触发
    - 若涉及阶段倒计时：从第 2 天开始确认阶段内倒计时会运行，推进到下一阶段后确认计时器重置
    - 若涉及超时奖惩：确认某天内任意阶段超时后，下一天 `SnackManager.container` 被隐藏；若当天全程未超时，则下一天显示
    - 若涉及 `No snack` 提示：确认第一次超时后的次日会显示场景内 `No snack` 对象并播放其自身音频（低压超时次日也播，但不藏零食）；后续天数中不应被 `GameManager` 反复触发
+   - 若涉及每日状态监视器：确认 Day1 换天后 `workInfo/Day1/Unhappy` 显示、`Smile` 隐藏；Day2 起超时天显示 `Unhappy`、未超时天显示 `Smile`；未经历天数两者隐藏；存档重进后状态恢复。确认 `SubMonitorStatusController` 已挂到场景并引用正确
    - 若涉及传送区域回调：传送到目标区域时，`onTeleportComplete` 是否触发；传送到其他区域或实际走出区域后，`onPlayerExitArea` 是否触发；若开启离开即锁定，确认该区域后续不可再次传送进入
    - 头显中心视线看向目标时，`onGazeEnter` 是否触发；移开后，`onGazeExit` 是否触发
    - 相关 UI Toggle / Button 是否触发正确逻辑
@@ -234,3 +238,19 @@
 
 ---
 **记住**：你是在维护一个真实使用中的 Unity VR 项目。优先做最小、稳定、可验证的修改；先确认场景和挂载对象，再改代码；优先保持 Inspector 兼容和现有工作流不被破坏。
+## 最近变更记录（2026-09-05）
+
+### CountingDownPhone 倒计时
+- `GameManager` 新增 `countingDownPhoneText` / `countingDownPhoneTextTmp` 字段，移除 `GameObject.Find("CountingDownPhone")` 按名称查找。
+- 通过 MCP 在 `SteamVer` 场景中按组件类型遍历找到 `CountingDownPhone` 及其子对象 `Text (TMP)`，绑定到 `GameManager` 字段并保存场景。
+- 倒计时显示格式统一为 `{n} S`（去除 "CountingDown"/"倒计时：" 前缀）。
+- `HandleTimeoutNextDayEffects` 中超时语音改为先 `Resources.Load<AudioClip>` 再 `TTSManager.Instance.PlayTTS(AudioClip)`。
+
+### MSG 音频按语言自动重分配
+- 新增 `Assets/Scripts/Game/MsgAudioBinder.cs`，挂载到 `GameManager`。
+- 自动发现 `Boss`/`Colleagues`/`Others` 下的 `AudioSource`，映射到 `Resources/MSG_CN` / `MSG_EN` 对应文件（含 clip 名称不匹配时的 fallback 映射）。
+- `RefreshAll()` 可在语言切换时调用，重新加载并赋值所有 clip。
+
+### 屏幕提示文字
+- `ShowCorridorWarning` 改为在玩家主摄像机上创建居中提示框（ScreenSpaceCamera），5 秒后自动隐藏。
+- 文案按语言切换：CN "如果我再不好好工作，领导可能会开除我。" / EN "If I don't work harder, my boss might fire me."
