@@ -385,7 +385,7 @@ namespace Valve.VR.InteractionSystem
 				{
 					//Show the play area marker if this is a teleport area
 					TeleportArea teleportArea = pointedAtTeleportMarker as TeleportArea;
-					if ( teleportArea != null && !teleportArea.locked && teleportArea.showPlayAreaPreview && playAreaPreviewTransform != null )
+					if ( teleportArea != null && !teleportArea.locked && playAreaPreviewTransform != null )
 					{
 						Vector3 offsetToUse = playerFeetOffset;
 

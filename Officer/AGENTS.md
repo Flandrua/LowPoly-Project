@@ -1,6 +1,6 @@
 ﻿# CLAUDE.md - Officer
 
-> Last updated: 2026-09-05 12:35 +08
+> Last updated: 2026-09-05 13:25 +08
 
 ## 项目概述
 这是一个基于 Unity `2022.3.22f1` 的 VR 办公室互动项目，集成了 `SteamVR`、`XR Interaction Toolkit`、`OpenXR` 与 `PICO XR` 相关能力。项目核心目标是实现玩家在办公室场景中的移动、转向、物品交互、数据/UI 展示，以及基于 VR 手柄的交互流程。
@@ -74,8 +74,7 @@
 - 当前 `MyInteractableSteamVR` 暴露 `DispatchTriggerFromExternalHand(Hand)` 作为碰撞球的 Trigger 入口，内部仍走 `TryDispatchTriggerFromHand` 的同帧去重，避免与 laser 重复触发
 - 当前 `HandGrabCollider` 释放物体后会把它加入“忽略集”，直到它真正离开碰撞球才允许再次抓取，防止吸附在手上的物体被反复重抓
 - ⚠️ 已知坑：`LaserPointerHandler` 的 `raycastLayers`（Inspector 里的 Raycast Layers）会反复被序列化成 `Nothing`（`m_Bits: 0`），导致 `RaycastAll` 打不到任何东西、laser 完全失效（不悬停/不抓取/不点击 guide），并连带让零食 guide outline 卡在常亮；**注意：Unity 开着场景时改磁盘 `.unity` 文件无效，会被内存版本覆盖回 0**
-- ⚠️ 已知坑：SteamVR 原版每次显示传送弧都会 `SetActive` 全部 `TeleportArea`（非凸 Plane 网格）并用 `areaMesh.material` 实例化材质，按下遥感的第一帧会出现 60ms+ 尖峰（Profiler：`WaitForLastPresentationAndUpdateTime` + `GarbageCollector.CollectIncremental`）。项目补丁改为只开关 `MeshRenderer`，颜色用**一次性缓存的材质实例** `SetColor`，不要用 `MaterialPropertyBlock`：Highlight shader 开了 GPU instancing 且把 `_MainTex` 放进 instancing buffer，MPB 只写 `_TintColor` 时贴图会丢，传送区会变成不透明蓝色实心平面（Lock1 面积最大最明显），并因 fillrate 掉帧。`TeleportPoint` 仍可 `SetActive`
-- ⚠️ 已知坑：`TeleportAreaLock1` 是窄长走廊（约 7m×1m）。解锁后射线打上去会画出 SteamVR chaperone 的 `playAreaPreview`（绿色立柱/大圈），工位垫 `TeleportAreaWork` 够大所以看起来像落点标记，走廊里就会变成巨大绿柱。Highlight shader 在 Unity 2018+ 路径不走 `TRANSFORM_TEX`，`SetTextureScale` 无效，Lock1 的 Plane UV 0–1 被拉满整条走廊，网格会变得很稀甚至像实心色块。开局对 Lock1 调 `ConfigureCorridorVisuals`：关掉 `showPlayAreaPreview`，并按 `TeleportAreaWork` 的 localScale 重排网格 UV
+- ⚠️ 已知坑：SteamVR 原版每次显示传送弧都会 `SetActive` 全部 `TeleportArea`，并且 `Highlight`/`SetAlpha`/`UpdateVisuals` 用 `areaMesh.material =` 克隆材质。Lock1 面积大，按下遥感第一帧会 60ms+ 尖峰，Highlight shader 开了 GPU instancing 时反复实例化会丢掉 `_MainTex`，看起来像实心蓝块。项目补丁：显示只开关 `MeshRenderer`；材质状态仍按 SteamVR 默认三态（locked / visible / highlighted），但开局缓存一份材质副本，用 `sharedMaterial` 切换并用 `SetColor` 淡出，关掉副本 instancing，不要 `MaterialPropertyBlock`，不要改 UV、不要关 `playAreaPreview`。同一帧还有重复路径：`ShowPointer` 对全部区域 `Highlight(false)`，随后 `UpdatePointer` 对命中区域 `Highlight(true)`；淡出期间 `SetAlpha` 若走 `.material` 还会再实例化。`TeleportPoint` 仍可 `SetActive`
 - ⚠️ 已知坑：`KeyboardController` 若 `using System`，`Random.Range` 会和 `System.Random` 冲突（CS0104），必须写 `UnityEngine.Random.Range`
 - ⚠️ 已知坑：Unity MCP 的 `unity-log` 在编译失败时可能返回 0 条 error；以 `EditorUtility.scriptCompilationFailed` 和 `%LOCALAPPDATA%\Unity\Editor\Editor.log` 为准
 - ⚠️ 已知坑：第 1 天导演 `Start` 会先 `ClearCurrentSnack()`。若 `SnackManager` 还没记下出生点，`ResetSnackRootState` 会把世界坐标写成 `(0,0,0)`，薯片会出现在场景原点/沙发附近地板上。出生点必须在 `Awake` 用 `Snacks` 相对 `SnacksRespawnPoint` 的 local pose 捕获，复位也走 local，不要用尚未赋值的世界坐标
@@ -129,7 +128,7 @@
 - 开关：`GameManager` Inspector 的 `Low Stress Version`（字段 `LowStressVersion`）；其他脚本读 `GameManager.Instance.IsLowStressVersion`
 - 打包：同一套场景打两个包。勾选后打低压包，不勾选打高压包。只在 `Start -> ApplyLowStressVersionState()` 生效，**不要做成运行中途切换**
 - 原则：高压逻辑全部保留，只在关键路径用 `if (LowStressVersion)` 旁路；不要删 `stageAdvanceCallbacks`、疲劳、晚上阶段或原有结局分支
-- 开局：`ApplyLowStressVersionState()` 隐藏 `GameManager/OutsideWalls`（`outsideWalls` 为空时 `transform.Find("OutsideWalls")`）；解锁场景内已激活的 `TeleportArea`（不要再 `SetActive` 未激活物体，`TeleportAreaLock2` 已删除）；把各 `TeleportAreaCallback.lockAreaOnExit` 全部设为 false（含 `TeleportAreaLock1`）；关闭 `NoOut` 注视碰撞，离开任何传送区都不要触发高压的 `onPlayerExitArea`（因此不会启用 `NoOut`、不会播 `Look around`）。高压不要在 `GameManager.Start` 解锁 Lock1；等玩家点 `Start` 按钮关掉名为 `Start` 的 Canvas 后，由 `GameManager.TryUnlockTeleportAreaLock1AfterStartClicked()` 再 `SetLocked(false)`。不要只依赖按钮 UnityEvent 里排在最后的 Lock1 `SetLocked`（前面的调用抛错时不会执行）。离开后仍走 `lockAreaOnExit`
+- 开局：`ApplyLowStressVersionState()` 隐藏 `GameManager/OutsideWalls`（`outsideWalls` 为空时 `transform.Find("OutsideWalls")`）；不要在低压开局解锁 `TeleportAreaLock1` / `TeleportAreaWork`，这两个和高压一样等点 `Start` 后再解。仍可解锁其它已激活传送区，并把各 `TeleportAreaCallback.lockAreaOnExit` 全部设为 false（含 Lock1）；关闭 `NoOut` 注视碰撞。高压/低压都不要在 `GameManager.Start` 解锁 Lock1/Work；等玩家点 `Start` 按钮关掉名为 `Start` 的 Canvas 后，由 `GameManager.TryUnlockTeleportAreaLock1AfterStartClicked()` 再 `SetLocked(false)`。不要只依赖按钮 UnityEvent 里排在最后的 Lock1 `SetLocked`（前面的调用抛错时不会执行）。高压离开后仍走 `lockAreaOnExit`
 - 探索：低压全程不限制。出去探索后再回工位，仍可再出去；传送点保持解锁，`OutsideWalls` 保持隐藏，`NoOut` 不触发。高压离开 `TeleportAreaLock1` 才启用 `NoOut` 并播 `Look around`
 - 阶段：高压仍是早→午→晚→次日早。低压 `ChangeTime()` 为早→午→次日早（`curTimeStage == 1 && LowStressVersion` 走换天，不把天空盒切到 night，监视器时间不会到 21:00）。换天仍由键盘工作 / 仓鼠玩耍发 `PREPARE_CHANGE_TIME`，不依赖睡觉
 - 零食：换天时 `shouldShowSnackContainerNextDay = LowStressVersion || !_hasTimedOutToday`，低压始终 `SetContainerVisible(true)` + `RandomSnack()`，不剥夺。高压超时才藏零食。前一天超时进入次日时，高压/低压都会 `ShowNoSnackObject()` 播提示 TTS（只一次）
@@ -161,7 +160,7 @@
 - `Packages/puerts-mcp/Resources/McpServer/main.cjs`：为兼容当前 Codex/RMCP 调用链，调整 POST 响应为 JSON，避免 `text/event-stream` 导致客户端解码失败
 - `Packages/puerts-mcp/Editor/McpServerWindow.cs`：增加 MCP Server 自动启动状态持久化，减少 Unity 重载后服务未恢复的问题
 - 上述补丁仅用于恢复 Unity MCP 联调能力；后续若上游修复，需要优先评估是否回退到官方实现
-- `Assets/SteamVR/InteractionSystem/Teleport/Scripts/Teleport.cs`、`TeleportMarkerBase.cs`、`TeleportArea.cs`：传送弧显示/隐藏对 `TeleportArea` 只开关 `MeshRenderer`；高亮/淡出用开局缓存的材质实例 `SetColor`，禁止 `MaterialPropertyBlock`（会让 instanced Highlight shader 丢掉网格贴图变成实心蓝块）。`TeleportArea.showPlayAreaPreview` 为 false 时不画 chaperone 预览。回退：`SetPointerVisible` 改回 `gameObject.SetActive`，`Highlight`/`SetAlpha` 改回 `areaMesh.material`，并去掉 `showPlayAreaPreview` 判断
+- `Assets/SteamVR/InteractionSystem/Teleport/Scripts/Teleport.cs`、`TeleportMarkerBase.cs`、`TeleportArea.cs`：传送弧显示/隐藏对 `TeleportArea` 只开关 `MeshRenderer`。地板高亮仍按 SteamVR 三态切换，但用开局缓存的材质副本 `sharedMaterial` + `SetColor`，禁止每帧 `areaMesh.material` 和 `MaterialPropertyBlock`。回退显示补丁：`SetPointerVisible` 改回 `gameObject.SetActive`
 
 ## Compact Instructions（上下文压缩时必须保留）
 - 这是 Unity VR 项目，主逻辑在 `Assets/Scripts/`
@@ -170,8 +169,8 @@
 - VR 改动必须区分输入源、场景引用、Toggle/Inspector 绑定
 - 第 1 天教学走 `DayOneTutorialDirector`，不要再启用旧的并行 `enableGuideIntro`
 - 低压版开关是 `GameManager.LowStressVersion`：勾选打包低压，不勾选打包高压；开局生效，不支持中途切换；不删高压代码
-- 低压旁路：开局隐藏 `OutsideWalls`、解锁全部传送区（含 Lock1）、关闭离开锁定，且全程不触发 `NoOut`。出去探索再回工位后仍可再出去。不剥夺零食（超时次日仍播 `No snack` TTS）、不触发 `stageAdvanceCallbacks`、不进晚上（下午直接换天）、不判定熬夜灰屏/死亡、结局固定 WorkStandard。第 1 天教学：早班后下午吃零食；仓鼠关闭则吃完再敲键盘打满后播 `FreeToGo`，仓鼠开启则吃完直接播 `FreeToGo`；2 秒后再换天，不睡觉
-- 高压开局 `TeleportAreaLock1` 保持锁定，点 `Start` 按钮后解锁；离开后仍走 `lockAreaOnExit`（锁定自身并触发 `NoOut` / `Look around`）。Lock1 关闭 chaperone 玩法区域预览，网格密度对齐 `TeleportAreaWork`，射线打上去应是青色网格+绿色落点，不是巨大绿柱
+- 低压旁路：开局隐藏 `OutsideWalls`、`TeleportAreaLock1`/`TeleportAreaWork` 保持锁定直到点 Start、关闭离开锁定，且全程不触发 `NoOut`。出去探索再回工位后仍可再出去。不剥夺零食（超时次日仍播 `No snack` TTS）、不触发 `stageAdvanceCallbacks`、不进晚上（下午直接换天）、不判定熬夜灰屏/死亡、结局固定 WorkStandard。第 1 天教学：早班后下午吃零食；仓鼠关闭则吃完再敲键盘打满后播 `FreeToGo`，仓鼠开启则吃完直接播 `FreeToGo`；2 秒后再换天，不睡觉
+- 高压开局 `TeleportAreaLock1` 保持锁定，点 `Start` 按钮后解锁；离开后仍走 `lockAreaOnExit`（锁定自身并触发 `NoOut` / `Look around`）。Lock1 地板材质按 SteamVR 默认 visible/highlighted/locked 切换，不要改走廊 UV，也不要关 chaperone 预览
 - 晚上仓鼠在玩家吃完薯片后才出现；零食复位走 local pose + 松手 + 还原 scale
 - 传送地面显示只开关 `MeshRenderer`，不要对 `TeleportArea` 整物体 `SetActive`；不要再唤醒已删除的 `TeleportAreaLock2`
 - 主监视器百分制在预制体 `workInfo/WorkProgressPercent`，脚本只改文字
@@ -199,7 +198,7 @@
    - `GameManager.playerRayLength` 在运行时调节后，左右手射线可见长度与命中距离应同步变化
    - 抓起零食后按 Trigger 应播放对应零食 TTS；道具按 Trigger 应播放道具 TTS；首次拿起道具仍只触发一次首次拿起 TTS
    - 若涉及 `GameManager.currentWorkProgress`：运行时手动修改该值后，确认 `DataCenter.GameData.PlayerData.workProgress`、主监视器进度条与条右侧百分制同步变化
-   - 若涉及 `LowStressVersion`：勾选后 Play，`OutsideWalls` 应隐藏、传送区应可到达、超时后次日仍有零食且第一次超时次日仍播 `No snack` TTS、`stageAdvanceCallbacks` 绑定方法不触发、一天只有早/下午（下午工作或玩耍后直接到次日早上、天空盒不为夜晚、监视器时间不为 21:00）、不睡觉不灰屏不死、天数到齐只出 WorkStandard 结局；取消勾选后上述高压逻辑应全部恢复。高压点 `Start` 前 `TeleportAreaLock1` 应为锁定，点 `Start` 后解锁；离开后仍锁定并触发 `NoOut` / `Look around`。传送弧打到 Lock1 应是半透明青色网格+绿色落点，不要出现巨大绿色 chaperone 立柱/大圈，也不要是实心蓝块
+   - 若涉及 `LowStressVersion`：勾选后 Play，`OutsideWalls` 应隐藏、`TeleportAreaLock1`/`TeleportAreaWork` 在点 `Start` 前保持锁定、点 `Start` 后可到达且离开后仍可再去、超时后次日仍有零食且第一次超时次日仍播 `No snack` TTS、`stageAdvanceCallbacks` 绑定方法不触发、一天只有早/下午（下午工作或玩耍后直接到次日早上、天空盒不为夜晚、监视器时间不为 21:00）、不睡觉不灰屏不死、天数到齐只出 WorkStandard 结局；取消勾选后上述高压逻辑应全部恢复。高压点 `Start` 前 `TeleportAreaLock1` 应为锁定，点 `Start` 后解锁；离开后仍锁定并触发 `NoOut` / `Look around`。传送弧打到已解锁的 Lock1 应保持 `TeleportAreaVisibleBright` 高亮，不要闪一下又回到 `TeleportAreaVisible`，也不要实心蓝块或按遥感第一帧明显卡顿
    - 若涉及低压探索：去过 `TeleportAreaLock1` 再回 `TeleportAreaWork` 后，仍应能再传送出去；`NoOut` 碰撞保持关闭、注视不应进 `Out`、不应播 `Look around`；高压离开 Lock1 后 `NoOut` 与 `Look around` 应照常触发
    - 若涉及阶段倒计时：从第 2 天开始确认阶段内倒计时会运行，推进到下一阶段后确认计时器重置
    - 若涉及超时奖惩：确认某天内任意阶段超时后，下一天 `SnackManager.container` 被隐藏；若当天全程未超时，则下一天显示

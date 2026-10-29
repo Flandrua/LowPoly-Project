@@ -28,10 +28,6 @@ namespace Valve.VR.InteractionSystem
 		private Material runtimeVisibleMaterial;
 		private Material runtimeHighlightedMaterial;
 		private Material runtimeLockedMaterial;
-		private Mesh corridorSourceMesh;
-		private Mesh corridorTiledMesh;
-		private bool corridorVisualsConfigured;
-		public bool showPlayAreaPreview = true;
 
 		//-------------------------------------------------
 		public void Awake()
@@ -55,7 +51,6 @@ namespace Valve.VR.InteractionSystem
 			highlightedTintColor = Teleport.instance.areaHighlightedMaterial.GetColor( tintColorId );
 			lockedTintColor = Teleport.instance.areaLockedMaterial.GetColor( tintColorId );
 			CacheRuntimeMaterials();
-			UpdateVisuals();
 		}
 
 
@@ -65,7 +60,6 @@ namespace Valve.VR.InteractionSystem
 			DestroyRuntimeMaterial( ref runtimeVisibleMaterial );
 			DestroyRuntimeMaterial( ref runtimeHighlightedMaterial );
 			DestroyRuntimeMaterial( ref runtimeLockedMaterial );
-			DestroyRuntimeMesh( ref corridorTiledMesh );
 		}
 
 
@@ -97,12 +91,19 @@ namespace Valve.VR.InteractionSystem
 		//-------------------------------------------------
 		public override void Highlight( bool highlight )
 		{
-			if ( !locked )
+			if ( locked )
 			{
-				highlighted = highlight;
-				ApplyActiveRuntimeMaterial();
-				ApplyTint( currentAlphaPercent );
+				return;
 			}
+
+			if ( highlighted == highlight && areaMesh != null && areaMesh.sharedMaterial == GetActiveRuntimeMaterial() )
+			{
+				return;
+			}
+
+			highlighted = highlight;
+			ApplyActiveRuntimeMaterial();
+			ApplyTint( currentAlphaPercent );
 		}
 
 
@@ -117,6 +118,11 @@ namespace Valve.VR.InteractionSystem
 		//-------------------------------------------------
 		public override void UpdateVisuals()
 		{
+			if ( locked )
+			{
+				highlighted = false;
+			}
+
 			ApplyActiveRuntimeMaterial();
 			ApplyTint( currentAlphaPercent );
 		}
@@ -125,7 +131,7 @@ namespace Valve.VR.InteractionSystem
 		//-------------------------------------------------
 		public void UpdateVisualsInEditor()
 		{
-            if (Teleport.instance == null)
+            if ( Application.isPlaying || Teleport.instance == null )
                 return;
 
 			areaMesh = GetComponent<MeshRenderer>();
@@ -152,76 +158,6 @@ namespace Valve.VR.InteractionSystem
 
 
 		//-------------------------------------------------
-		public void ConfigureCorridorVisuals( Vector3 referenceLocalScale )
-		{
-			showPlayAreaPreview = false;
-			CacheRuntimeMaterials();
-			ApplyCorridorGridTiling( referenceLocalScale );
-			UpdateVisuals();
-		}
-
-
-		//-------------------------------------------------
-		private void ApplyCorridorGridTiling( Vector3 referenceLocalScale )
-		{
-			if ( corridorVisualsConfigured )
-			{
-				return;
-			}
-
-			MeshFilter meshFilter = GetComponent<MeshFilter>();
-			if ( meshFilter == null )
-			{
-				return;
-			}
-
-			if ( corridorSourceMesh == null )
-			{
-				corridorSourceMesh = meshFilter.sharedMesh;
-			}
-
-			if ( corridorSourceMesh == null )
-			{
-				return;
-			}
-
-			float referenceX = Mathf.Abs( referenceLocalScale.x );
-			float referenceZ = Mathf.Abs( referenceLocalScale.z );
-			if ( referenceX < 0.0001f )
-			{
-				referenceX = 0.3315342f;
-			}
-			if ( referenceZ < 0.0001f )
-			{
-				referenceZ = 0.13949926f;
-			}
-
-			Vector2 tiling = new Vector2(
-				Mathf.Max( 0.01f, Mathf.Abs( transform.localScale.x ) / referenceX ),
-				Mathf.Max( 0.01f, Mathf.Abs( transform.localScale.z ) / referenceZ )
-			);
-
-			corridorTiledMesh = Instantiate( corridorSourceMesh );
-			corridorTiledMesh.name = corridorSourceMesh.name + "_CorridorGrid";
-			Vector2[] uvs = corridorTiledMesh.uv;
-			if ( uvs == null || uvs.Length == 0 )
-			{
-				DestroyRuntimeMesh( ref corridorTiledMesh );
-				return;
-			}
-
-			for ( int i = 0; i < uvs.Length; i++ )
-			{
-				uvs[i] = new Vector2( uvs[i].x * tiling.x, uvs[i].y * tiling.y );
-			}
-
-			corridorTiledMesh.uv = uvs;
-			meshFilter.sharedMesh = corridorTiledMesh;
-			corridorVisualsConfigured = true;
-		}
-
-
-		//-------------------------------------------------
 		private void CacheRuntimeMaterials()
 		{
 			if ( runtimeVisibleMaterial != null || Teleport.instance == null )
@@ -229,9 +165,23 @@ namespace Valve.VR.InteractionSystem
 				return;
 			}
 
-			runtimeVisibleMaterial = new Material( Teleport.instance.areaVisibleMaterial );
-			runtimeHighlightedMaterial = new Material( Teleport.instance.areaHighlightedMaterial );
-			runtimeLockedMaterial = new Material( Teleport.instance.areaLockedMaterial );
+			runtimeVisibleMaterial = CreateRuntimeMaterial( Teleport.instance.areaVisibleMaterial );
+			runtimeHighlightedMaterial = CreateRuntimeMaterial( Teleport.instance.areaHighlightedMaterial );
+			runtimeLockedMaterial = CreateRuntimeMaterial( Teleport.instance.areaLockedMaterial );
+		}
+
+
+		//-------------------------------------------------
+		private static Material CreateRuntimeMaterial( Material source )
+		{
+			if ( source == null )
+			{
+				return null;
+			}
+
+			Material material = new Material( source );
+			material.enableInstancing = false;
+			return material;
 		}
 
 
@@ -299,27 +249,6 @@ namespace Valve.VR.InteractionSystem
 			}
 
 			material = null;
-		}
-
-
-		//-------------------------------------------------
-		private static void DestroyRuntimeMesh( ref Mesh mesh )
-		{
-			if ( mesh == null )
-			{
-				return;
-			}
-
-			if ( Application.isPlaying )
-			{
-				Destroy( mesh );
-			}
-			else
-			{
-				DestroyImmediate( mesh );
-			}
-
-			mesh = null;
 		}
 
 

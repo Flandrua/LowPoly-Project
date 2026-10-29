@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 using Valve.VR.InteractionSystem;
@@ -14,7 +15,8 @@ public class DayOneTutorialDirector : MonoBehaviour
         NightEatChips = 4,
         NightFeedChips = 5,
         NightLookAtBed = 6,
-        Completed = 7
+        Completed = 7,
+        PostSnackKeyboard = 8
     }
 
     [Serializable]
@@ -51,8 +53,11 @@ public class DayOneTutorialDirector : MonoBehaviour
     [SerializeField] private string keyboardIntroTtsPath = "TTS/Introduce/keyboard";
     [SerializeField] private string hamsterIntroTtsPath = "TTS/Introduce/Hamster";
     [SerializeField] private string snackIntroTtsPath = "TTS/Introduce/Snack";
+    [SerializeField] private string snackIntroNoHamsterTtsPath = "TTS/Introduce/Snack1";
+    [SerializeField] private string freeToGoTtsPath = "TTS/Introduce/FreeToGo";
     [SerializeField] private string sleepIntroTtsPath = "TTS/Introduce/Sleep";
     [SerializeField] private string workTeleportAreaName = "TeleportAreaWork";
+    [Min(0f)] [SerializeField] private float lowStressDayAdvanceDelay = 2f;
 
     [Header("Runtime")]
     [SerializeField] private Step currentStep = Step.Inactive;
@@ -71,6 +76,7 @@ public class DayOneTutorialDirector : MonoBehaviour
     private int _ttsLockCount;
     private bool _wantHamsterVisible;
     private bool _sessionStarted;
+    private Coroutine _lowStressDayAdvanceCoroutine;
 
     public bool IsRunning => enableTutorial && _sessionStarted && !_hasFinished && currentStep != Step.Completed;
     public bool ShouldShowHamster => IsRunning && _wantHamsterVisible && IsHamsterEnabled;
@@ -78,6 +84,7 @@ public class DayOneTutorialDirector : MonoBehaviour
     public bool ShouldSkipAfternoonAfterMorningWork => IsRunning && !IsHamsterEnabled && !IsLowStressVersion;
     public bool ShouldSuppressDayOneNightStageCallbacks => IsRunning && currentStep != Step.NightLookAtBed;
     public bool ShouldSuppressLegacyTeleportIntro => IsRunning && currentStep == Step.WaitForWorkArea;
+    public bool ShouldSuppressKeyboardStageAdvance => IsRunning && currentStep == Step.PostSnackKeyboard;
     public bool HasLookedAtBed { get; private set; }
     public Step CurrentStep => currentStep;
 
@@ -98,6 +105,7 @@ public class DayOneTutorialDirector : MonoBehaviour
         }
 
         Unsubscribe();
+        StopLowStressDayAdvance();
         ReleaseAllTtsLocks();
     }
 
@@ -429,6 +437,23 @@ public class DayOneTutorialDirector : MonoBehaviour
         SetStep(Step.NightEatChips);
     }
 
+    private void EnterPostSnackKeyboard()
+    {
+        SetSnackGuide(false);
+        SetSnackVisible(false);
+        SetSnackRule(SnackManager.TutorialSnackRule.None);
+        SetHamsterVisible(false);
+        SetHamsterGuide(false);
+        SetKeyboardVisible(true);
+        if (keyboardController != null)
+        {
+            keyboardController.ResetToDefault();
+        }
+
+        SetKeyboardGuide(true);
+        SetStep(Step.PostSnackKeyboard);
+    }
+
     private void EnterNightFeedChips()
     {
         SetHamsterVisible(IsHamsterEnabled);
@@ -454,7 +479,7 @@ public class DayOneTutorialDirector : MonoBehaviour
 
     private void OnKeyboardValidHit(int actualHit)
     {
-        if (currentStep != Step.MorningKeyboard)
+        if (currentStep != Step.MorningKeyboard && currentStep != Step.PostSnackKeyboard)
         {
             return;
         }
@@ -463,6 +488,14 @@ public class DayOneTutorialDirector : MonoBehaviour
         {
             SetKeyboardGuide(false);
             InvokeHook(currentStep, hook => hook.onGuideDismissed?.Invoke());
+        }
+
+        if (currentStep == Step.PostSnackKeyboard &&
+            keyboardController != null &&
+            actualHit >= keyboardController.requireHit)
+        {
+            CompleteCurrentStep();
+            ContinueAfterPostSnackKeyboard();
         }
     }
 
@@ -487,20 +520,19 @@ public class DayOneTutorialDirector : MonoBehaviour
 
         SetSnackGuide(false);
         CompleteCurrentStep();
-        if (IsLowStressVersion)
+        if (IsHamsterEnabled)
         {
-            RequestAdvanceToNextDay();
+            ContinueAfterPostSnackKeyboard();
             return;
         }
 
-        if (IsHamsterEnabled)
+        if (IsLowStressVersion)
         {
-            EnterNightFeedChips();
+            EnterPostSnackKeyboard();
+            return;
         }
-        else
-        {
-            EnterNightLookAtBed();
-        }
+
+        EnterNightLookAtBed();
     }
 
     private void OnHamsterFinishedEating(SnackData snack)
@@ -513,6 +545,27 @@ public class DayOneTutorialDirector : MonoBehaviour
         SetSnackGuide(false);
         CompleteCurrentStep();
         EnterNightLookAtBed();
+    }
+
+    private void ContinueAfterPostSnackKeyboard()
+    {
+        SetKeyboardGuide(false);
+        if (IsLowStressVersion)
+        {
+            PlayTutorialTTS(freeToGoTtsPath);
+            ScheduleLowStressAdvanceToNextDay();
+            return;
+        }
+
+        SetKeyboardVisible(false);
+        if (IsHamsterEnabled)
+        {
+            EnterNightFeedChips();
+        }
+        else
+        {
+            EnterNightLookAtBed();
+        }
     }
 
     private void OnNextStage()
@@ -652,6 +705,34 @@ public class DayOneTutorialDirector : MonoBehaviour
     private void RequestAdvanceToNextDay()
     {
         EventManager.DispatchEvent(EventCommon.PREPARE_CHANGE_TIME, "tutorial");
+    }
+
+    private void ScheduleLowStressAdvanceToNextDay()
+    {
+        StopLowStressDayAdvance();
+        _lowStressDayAdvanceCoroutine = StartCoroutine(DelayedLowStressAdvanceToNextDay());
+    }
+
+    private IEnumerator DelayedLowStressAdvanceToNextDay()
+    {
+        if (lowStressDayAdvanceDelay > 0f)
+        {
+            yield return new WaitForSeconds(lowStressDayAdvanceDelay);
+        }
+
+        _lowStressDayAdvanceCoroutine = null;
+        RequestAdvanceToNextDay();
+    }
+
+    private void StopLowStressDayAdvance()
+    {
+        if (_lowStressDayAdvanceCoroutine == null)
+        {
+            return;
+        }
+
+        StopCoroutine(_lowStressDayAdvanceCoroutine);
+        _lowStressDayAdvanceCoroutine = null;
     }
 
     public void NotifyBedInteracted()
@@ -795,7 +876,7 @@ public class DayOneTutorialDirector : MonoBehaviour
                 PlayTutorialTTS(hamsterIntroTtsPath);
                 break;
             case Step.NightEatChips:
-                PlayTutorialTTS(snackIntroTtsPath);
+                PlayTutorialTTS(IsHamsterEnabled ? snackIntroTtsPath : snackIntroNoHamsterTtsPath);
                 break;
             case Step.NightLookAtBed:
                 PlaySceneSleepCue();

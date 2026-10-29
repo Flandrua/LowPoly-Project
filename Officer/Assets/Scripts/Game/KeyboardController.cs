@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -50,7 +50,10 @@ public class KeyboardController : MonoSingleton<KeyboardController>, IPointerCli
     public void ResetToDefault()
     {
         actualHit = 0;
-        _bar.size= 0;
+        if (_bar != null)
+        {
+            _bar.size = 0;
+        }
     }
     // Update is called once per frame
     void Update()
@@ -126,9 +129,14 @@ public class KeyboardController : MonoSingleton<KeyboardController>, IPointerCli
             _bar.size = (float)actualHit / Mathf.Max(1, requireHit);
         }
 
+        bool willComplete = actualHit >= requireHit;
+        bool suppressStageAdvance = willComplete &&
+            DayOneTutorialDirector.Instance != null &&
+            DayOneTutorialDirector.Instance.ShouldSuppressKeyboardStageAdvance;
+
         ValidHit?.Invoke(actualHit);
 
-        if (actualHit < requireHit)
+        if (!willComplete)
         {
             return;
         }
@@ -136,6 +144,11 @@ public class KeyboardController : MonoSingleton<KeyboardController>, IPointerCli
         if (_star != null)
         {
             _star.Play();
+        }
+
+        if (suppressStageAdvance)
+        {
+            return;
         }
 
         EventManager.DispatchEvent<string>(EventCommon.PREPARE_CHANGE_TIME, "work");

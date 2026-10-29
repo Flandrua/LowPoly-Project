@@ -88,6 +88,7 @@ public class GameManager : MonoSingleton<GameManager>
     [SerializeField] private GameObject outsideWalls;
     [SerializeField] private GameObject noOutObject;
     [SerializeField] private string teleportAreaLock1Name = "TeleportAreaLock1";
+    [SerializeField] private string teleportAreaWorkName = "TeleportAreaWork";
     [Header("Player Ray")]
     [Min(0.05f)] public float playerRayLength = 100f;
     [SerializeField] private List<LaserPointerHandler> playerLaserPointers = new List<LaserPointerHandler>();
@@ -171,7 +172,6 @@ public class GameManager : MonoSingleton<GameManager>
         _hasShownNoSnackObject = noSnackObject != null && noSnackObject.activeSelf;
         ApplyLowStressVersionState();
         CacheStartUiRoot();
-        HidePlayAreaPreviewOnTeleportAreaLock1();
         ApplyHamsterFeatureState();
         ResolvePlayerRayPointers();
         ApplyPlayerRayLength();
@@ -1175,23 +1175,57 @@ public class GameManager : MonoSingleton<GameManager>
         UnlockAllTeleportAreasForExploration();
     }
 
-    private void HidePlayAreaPreviewOnTeleportAreaLock1()
+    private void TryUnlockTeleportAreaLock1AfterStartClicked()
     {
-        TeleportArea lock1;
-        Vector3 workScale;
-        if (!TryGetTeleportAreaLock1(out lock1, out workScale))
+        if (_hasUnlockedTeleportAreaLock1FromStartButton)
         {
             return;
         }
 
-        lock1.ConfigureCorridorVisuals(workScale);
+        CacheStartUiRoot();
+        if (_startUiRoot == null || _startUiRoot.activeInHierarchy)
+        {
+            return;
+        }
+
+        UnlockTeleportAreaLock1FromStartButton();
     }
 
-    private bool TryGetTeleportAreaLock1(out TeleportArea lock1, out Vector3 workScale)
+    public void UnlockTeleportAreaLock1FromStartButton()
     {
-        lock1 = null;
-        workScale = new Vector3(0.3315342f, 0.4f, 0.13949926f);
-        if (string.IsNullOrEmpty(teleportAreaLock1Name))
+        if (_hasUnlockedTeleportAreaLock1FromStartButton)
+        {
+            return;
+        }
+
+        _hasUnlockedTeleportAreaLock1FromStartButton = true;
+        UnlockNamedTeleportAreaIfLocked(teleportAreaLock1Name);
+        UnlockNamedTeleportAreaIfLocked(teleportAreaWorkName);
+    }
+
+    private void UnlockNamedTeleportAreaIfLocked(string areaName)
+    {
+        if (string.IsNullOrEmpty(areaName))
+        {
+            return;
+        }
+
+        TeleportArea area;
+        if (!TryGetTeleportAreaByName(areaName, out area) || area == null)
+        {
+            return;
+        }
+
+        if (area.locked)
+        {
+            area.SetLocked(false);
+        }
+    }
+
+    private bool TryGetTeleportAreaByName(string areaName, out TeleportArea result)
+    {
+        result = null;
+        if (string.IsNullOrEmpty(areaName))
         {
             return false;
         }
@@ -1210,18 +1244,20 @@ public class GameManager : MonoSingleton<GameManager>
                 continue;
             }
 
-            if (area.name == "TeleportAreaWork")
+            if (string.Equals(area.name, areaName, StringComparison.Ordinal))
             {
-                workScale = area.transform.localScale;
-            }
-
-            if (string.Equals(area.name, teleportAreaLock1Name, StringComparison.Ordinal))
-            {
-                lock1 = area;
+                result = area;
+                return true;
             }
         }
 
-        return lock1 != null;
+        return false;
+    }
+
+    private bool IsStartLockedTeleportArea(string areaName)
+    {
+        return string.Equals(areaName, teleportAreaLock1Name, StringComparison.Ordinal)
+            || string.Equals(areaName, teleportAreaWorkName, StringComparison.Ordinal);
     }
 
     private void CacheStartUiRoot()
@@ -1250,41 +1286,6 @@ public class GameManager : MonoSingleton<GameManager>
         }
     }
 
-    private void TryUnlockTeleportAreaLock1AfterStartClicked()
-    {
-        if (_hasUnlockedTeleportAreaLock1FromStartButton || LowStressVersion)
-        {
-            return;
-        }
-
-        CacheStartUiRoot();
-        if (_startUiRoot == null || _startUiRoot.activeInHierarchy)
-        {
-            return;
-        }
-
-        UnlockTeleportAreaLock1FromStartButton();
-    }
-
-    public void UnlockTeleportAreaLock1FromStartButton()
-    {
-        if (_hasUnlockedTeleportAreaLock1FromStartButton)
-        {
-            return;
-        }
-
-        _hasUnlockedTeleportAreaLock1FromStartButton = true;
-        TeleportArea lock1;
-        Vector3 workScale;
-        if (!TryGetTeleportAreaLock1(out lock1, out workScale))
-        {
-            return;
-        }
-
-        lock1.SetLocked(false);
-        lock1.ConfigureCorridorVisuals(workScale);
-    }
-
     private void UnlockAllTeleportAreasForExploration()
     {
         TeleportArea[] areas = FindObjectsOfType<TeleportArea>(true);
@@ -1294,6 +1295,11 @@ public class GameManager : MonoSingleton<GameManager>
             {
                 TeleportArea area = areas[i];
                 if (area == null || !area.gameObject.scene.IsValid() || !area.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                if (IsStartLockedTeleportArea(area.name))
                 {
                     continue;
                 }
