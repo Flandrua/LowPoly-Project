@@ -12,8 +12,21 @@ public class LocalizationManager : MonoSingleton<LocalizationManager>
     public int KeyCount => _table.Count;
     public string LastError = "";
 
+    private bool _loaded;
+
     private void Awake()
     {
+        EnsureLoaded();
+    }
+
+    private void EnsureLoaded()
+    {
+        if (_loaded)
+        {
+            return;
+        }
+
+        _loaded = true;
         Load();
     }
 
@@ -116,6 +129,10 @@ public class LocalizationManager : MonoSingleton<LocalizationManager>
         {
             return key;
         }
+
+        // Localization can be requested from another component's Awake() before this
+        // component's Awake() has run, so make sure the table is loaded on first use.
+        EnsureLoaded();
 
         if (_table.TryGetValue(key, out string[] values))
         {

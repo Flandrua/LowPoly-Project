@@ -131,6 +131,8 @@ public class GameManager : MonoSingleton<GameManager>
     private bool _skipToNightOnNextChange;
     private GameObject _startUiRoot;
     private int _corridorExplorationCount;
+
+    private bool _isPlayerInCorridor;
     private bool _hasUnlockedTeleportAreaLock1FromStartButton;
     private Canvas _corridorWarningCanvas;
     private TextMeshProUGUI _corridorWarningText;
@@ -334,6 +336,7 @@ public class GameManager : MonoSingleton<GameManager>
         SyncExposedFatigueFromData();
         ResetStageCountDown();
         ApplyHalfOnByFatigue();
+        ApplyLanguageFonts();
 
         Teleport.Player.AddListener(OnPlayerTeleportedToCorridor);
     }
@@ -1083,12 +1086,26 @@ public class GameManager : MonoSingleton<GameManager>
         }
 
         string markerName = marker.name;
-        if (string.IsNullOrEmpty(markerName) ||
-            (!markerName.Contains("Lock1") && !markerName.Contains("Corridor")))
+        bool isCorridorMarker = !string.IsNullOrEmpty(markerName) &&
+                                (markerName.Contains("Lock1") || markerName.Contains("Corridor"));
+
+        if (!isCorridorMarker)
+        {
+            // Teleporting anywhere outside the corridor means the player has left it, so the
+            // next corridor teleport starts a new exploration visit.
+            _isPlayerInCorridor = false;
+            return;
+        }
+
+        // All markers inside the corridor (Lock1 <-> Corridor points) belong to the same visit.
+        // Only count the transition from outside into the corridor; hopping between corridor
+        // markers must not consume extra exploration attempts.
+        if (_isPlayerInCorridor)
         {
             return;
         }
 
+        _isPlayerInCorridor = true;
         _corridorExplorationCount++;
         if (_corridorExplorationCount == 2)
         {
@@ -1109,6 +1126,12 @@ public class GameManager : MonoSingleton<GameManager>
         {
             Debug.LogWarning("GameManager: Unable to show the corridor warning because no player camera is available.", this);
             return;
+        }
+
+        TMP_FontAsset languageFont = CurrentLanguageFont != null ? CurrentLanguageFont : TMP_Settings.defaultFontAsset;
+        if (languageFont != null)
+        {
+            _corridorWarningText.font = languageFont;
         }
 
         _corridorWarningText.text = LocalizationManager.GetText("corridor_warning");

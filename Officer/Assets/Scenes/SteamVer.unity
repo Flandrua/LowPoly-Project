@@ -11626,8 +11626,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 159789964}
-  - component: {fileID: 159789965}
-  - component: {fileID: 731234570}
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Untagged
@@ -11651,26 +11649,6 @@ Transform:
   - {fileID: 714305226}
   m_Father: {fileID: 562435265}
   m_LocalEulerAnglesHint: {x: 21.22, y: 72.097, z: 0}
---- !u!1183024399 &159789965
-LookAtConstraint:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 159789963}
-  m_Enabled: 0
-  serializedVersion: 2
-  m_Weight: 1
-  m_RotationAtRest: {x: 0, y: 0, z: 0}
-  m_RotationOffset: {x: 0, y: 0, z: 0}
-  m_Roll: 0
-  m_WorldUpObject: {fileID: 0}
-  m_UseUpObject: 0
-  m_Active: 1
-  m_IsLocked: 1
-  m_Sources:
-  - sourceTransform: {fileID: 1892797808}
-    weight: 1
 --- !u!4 &160298129 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4255233571348482, guid: 88eeba5740346094a952e5fbeeccd7d2, type: 3}
@@ -30061,7 +30039,7 @@ MonoBehaviour:
         m_CallState: 2
   callbackDelay: 1
   triggerOnce: 1
-  lockAreaOnExit: 1
+  lockAreaOnExit: 0
   debugLog: 0
 --- !u!114 &404545297
 MonoBehaviour:
@@ -34807,8 +34785,8 @@ MonoBehaviour:
   LowStressVersion: 0
   DisableSuddenDeathEnding: 1
   LanguageSetting: 0
-  ChineseFont: {fileID: 0}
-  EnglishFont: {fileID: 0}
+  ChineseFont: {fileID: 11400000, guid: 4d19189453e55974f9b5397bc6966c43, type: 2}
+  EnglishFont: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   rp: {fileID: 724698929}
   morningProbe: {fileID: 8900000, guid: f1db0cfeddcb46440b750aa8dedf4d0c, type: 3}
   afternoonProbe: {fileID: 8900000, guid: 6546c5d81375a9b418ff0e46d7ba110c, type: 3}
@@ -54044,8 +54022,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 725688063}
-  - component: {fileID: 725688064}
-  - component: {fileID: 731234569}
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Untagged
@@ -54069,26 +54045,6 @@ Transform:
   - {fileID: 1470811198}
   m_Father: {fileID: 1428141798}
   m_LocalEulerAnglesHint: {x: 21.22, y: 72.097, z: 0}
---- !u!1183024399 &725688064
-LookAtConstraint:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 725688062}
-  m_Enabled: 0
-  serializedVersion: 2
-  m_Weight: 1
-  m_RotationAtRest: {x: 0, y: 0, z: 0}
-  m_RotationOffset: {x: 0, y: 0, z: 0}
-  m_Roll: 0
-  m_WorldUpObject: {fileID: 0}
-  m_UseUpObject: 0
-  m_Active: 1
-  m_IsLocked: 1
-  m_Sources:
-  - sourceTransform: {fileID: 1892797808}
-    weight: 1
 --- !u!4 &726125507 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4956043614827810, guid: 7939d7d0228420b4485c5a07b62b54d0, type: 3}
@@ -54530,38 +54486,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minY: -110
   maxY: 110
-  overrideLookAt: 1
-  target: {fileID: 0}
---- !u!114 &731234569
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 725688062}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3079428794ff4378b214ed7c18f3736d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  minY: -120
-  maxY: 120
-  overrideLookAt: 1
-  target: {fileID: 0}
---- !u!114 &731234570
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 159789963}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3079428794ff4378b214ed7c18f3736d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  minY: -120
-  maxY: 120
   overrideLookAt: 1
   target: {fileID: 0}
 --- !u!4 &731615773 stripped
