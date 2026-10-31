@@ -81,7 +81,7 @@ public class DayOneTutorialDirector : MonoBehaviour
     public bool IsRunning => enableTutorial && _sessionStarted && !_hasFinished && currentStep != Step.Completed;
     public bool ShouldShowHamster => IsRunning && _wantHamsterVisible && IsHamsterEnabled;
     public bool CanSleep => !IsRunning || currentStep == Step.NightLookAtBed;
-    public bool ShouldSkipAfternoonAfterMorningWork => IsRunning && !IsHamsterEnabled && !IsLowStressVersion;
+    public bool ShouldSkipAfternoonAfterMorningWork => false;
     public bool ShouldSuppressDayOneNightStageCallbacks => IsRunning && currentStep != Step.NightLookAtBed;
     public bool ShouldSuppressLegacyTeleportIntro => IsRunning && currentStep == Step.WaitForWorkArea;
     public bool ShouldSuppressKeyboardStageAdvance => IsRunning && currentStep == Step.PostSnackKeyboard;
@@ -469,6 +469,9 @@ public class DayOneTutorialDirector : MonoBehaviour
         SetSnackGuide(false);
         SetSnackVisible(false);
         SetSnackRule(SnackManager.TutorialSnackRule.None);
+        SetKeyboardVisible(false);
+        SetKeyboardGuide(false);
+        SetHamsterGuide(false);
         HasLookedAtBed = false;
         _isBedGazing = false;
         _bedGazeStartTime = -1f;
@@ -520,19 +523,21 @@ public class DayOneTutorialDirector : MonoBehaviour
 
         SetSnackGuide(false);
         CompleteCurrentStep();
-        if (IsHamsterEnabled)
-        {
-            ContinueAfterPostSnackKeyboard();
-            return;
-        }
-
         if (IsLowStressVersion)
         {
+            if (IsHamsterEnabled)
+            {
+                ContinueAfterPostSnackKeyboard();
+                return;
+            }
+
             EnterPostSnackKeyboard();
             return;
         }
 
-        EnterNightLookAtBed();
+        // High-pressure: snack is followed by the post-snack keyboard, then night sleep.
+        EnterPostSnackKeyboard();
+        return;
     }
 
     private void OnHamsterFinishedEating(SnackData snack)
@@ -557,15 +562,10 @@ public class DayOneTutorialDirector : MonoBehaviour
             return;
         }
 
+        // High-pressure: hide the keyboard and advance from afternoon to night.
+        // OnNextStage will then enter the night sleep tutorial.
         SetKeyboardVisible(false);
-        if (IsHamsterEnabled)
-        {
-            EnterNightFeedChips();
-        }
-        else
-        {
-            EnterNightLookAtBed();
-        }
+        EventManager.DispatchEvent(EventCommon.PREPARE_CHANGE_TIME, "tutorial");
     }
 
     private void OnNextStage()
@@ -583,21 +583,14 @@ public class DayOneTutorialDirector : MonoBehaviour
         if (currentStep == Step.MorningKeyboard && GameManager.Instance != null)
         {
             CompleteCurrentStep();
-            if (IsLowStressVersion || GameManager.Instance.IsNightStage || !IsHamsterEnabled)
-            {
-                EnterNightEatChips();
-            }
-            else
-            {
-                EnterAfternoonHamster();
-            }
-
+            EnterNightEatChips();
             return;
         }
 
-        if (currentStep == Step.AfternoonHamster && GameManager.Instance != null && GameManager.Instance.IsNightStage)
+        if (currentStep == Step.PostSnackKeyboard && GameManager.Instance != null && GameManager.Instance.IsNightStage)
         {
-            EnterNightEatChips();
+            EnterNightLookAtBed();
+            return;
         }
     }
 
@@ -689,25 +682,42 @@ public class DayOneTutorialDirector : MonoBehaviour
     private void PlaySceneSleepCue()
     {
         Transform sleepTransform = FindObjectByName<Transform>("Sleep");
-        if (sleepTransform != null)
+        if (sleepTransform == null)
         {
-            // The scene-placed "Sleep" object is only a visual/audio cue marker and its
-            // serialized clip may be missing or language-specific. Make sure it is visible,
-            // but always play the localized Sleep TTS so the voice is actually heard.
-            AudioSource sleepSource = sleepTransform.GetComponent<AudioSource>();
-            if (sleepSource != null)
-            {
-                sleepSource.playOnAwake = false;
-                sleepSource.Stop();
-            }
-
-            if (!sleepTransform.gameObject.activeSelf)
-            {
-                sleepTransform.gameObject.SetActive(true);
-            }
+            Debug.LogError("DayOneTutorialDirector: Sleep cue object not found.", this);
+            return;
         }
 
-        PlayTutorialTTS(sleepIntroTtsPath);
+        AudioSource sleepSource = sleepTransform.GetComponent<AudioSource>();
+        if (sleepSource == null)
+        {
+            Debug.LogError("DayOneTutorialDirector: Sleep cue has no AudioSource.", this);
+            return;
+        }
+
+        if (sleepSource.clip == null)
+        {
+            AudioClip clip = LoadTutorialClip(sleepIntroTtsPath);
+            if (clip == null)
+            {
+                Debug.LogError("DayOneTutorialDirector: Sleep cue AudioSource has no clip and TTS clip could not be loaded.", this);
+                return;
+            }
+
+            sleepSource.clip = clip;
+        }
+
+        sleepSource.playOnAwake = true;
+        if (!sleepTransform.gameObject.activeSelf)
+        {
+            sleepTransform.gameObject.SetActive(true);
+        }
+
+        sleepSource.Stop();
+        if (!sleepSource.isPlaying)
+        {
+            sleepSource.Play();
+        }
     }
 
     private void RequestAdvanceToNextDay()

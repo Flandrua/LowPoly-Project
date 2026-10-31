@@ -7,7 +7,7 @@ using UnityEngine;
 /// to the correct MSG_CN or MSG_EN file based on the current language.
 /// Each entry maps an AudioSource to a MSG relative path (without language prefix).
 /// </summary>
-[DefaultExecutionOrder(100)]
+[DefaultExecutionOrder(-1000)]
 public class MsgAudioBinder : MonoBehaviour
 {
     [Serializable]
@@ -30,6 +30,10 @@ public class MsgAudioBinder : MonoBehaviour
 
     void Awake()
     {
+        if (IsLowStressVersion())
+        {
+            DisableMsgAudioSources();
+        }
         // Delay initialization until Start so GameManager (and its language setting)
         // has finished Awake. Awake ordering is not guaranteed for components on
         // the same GameObject, and LocalizationPaths depend on GameManager.
@@ -37,6 +41,13 @@ public class MsgAudioBinder : MonoBehaviour
 
     void Start()
     {
+        if (IsLowStressVersion())
+        {
+            DisableMsgAudioSources();
+            _hasInitialized = true;
+            return;
+        }
+
         if (autoDiscover && (entries == null || entries.Count == 0))
         {
             DiscoverEntries();
@@ -49,7 +60,14 @@ public class MsgAudioBinder : MonoBehaviour
     {
         if (_hasInitialized)
         {
-            RefreshAll();
+            if (IsLowStressVersion())
+            {
+                DisableMsgAudioSources();
+            }
+            else
+            {
+                RefreshAll();
+            }
         }
     }
 
@@ -58,6 +76,12 @@ public class MsgAudioBinder : MonoBehaviour
     /// </summary>
     public void RefreshAll()
     {
+        if (IsLowStressVersion())
+        {
+            DisableMsgAudioSources();
+            return;
+        }
+
         if (entries == null) return;
 
         foreach (var entry in entries)
@@ -91,6 +115,12 @@ public class MsgAudioBinder : MonoBehaviour
     /// </summary>
     public void DiscoverAndRefresh()
     {
+        if (IsLowStressVersion())
+        {
+            DisableMsgAudioSources();
+            return;
+        }
+
         if (autoDiscover)
         {
             entries.Clear();
@@ -100,6 +130,10 @@ public class MsgAudioBinder : MonoBehaviour
     }
     private void DiscoverEntries()
     {
+        if (IsLowStressVersion())
+        {
+            return;
+        }
         // Hardcoded fallback mapping for AudioSources whose clip names don't match MSG file names
         var fallbackMap = new Dictionary<string, string>
         {
@@ -153,6 +187,48 @@ public class MsgAudioBinder : MonoBehaviour
                 else
                 {
                     Debug.LogWarning($"MsgAudioBinder: No MSG file found for AudioSource '{src.gameObject.name}' (clip: '{clipName}'). Manual mapping required.", this);
+                }
+            }
+        }
+    }
+
+    private bool IsLowStressVersion()
+    {
+        if (GameManager.Instance != null)
+        {
+            return GameManager.Instance.IsLowStressVersion;
+        }
+
+        GameManager gm = FindObjectOfType<GameManager>();
+        return gm != null && gm.LowStressVersion;
+    }
+
+    private void DisableMsgAudioSources()
+    {
+        string[] rootNames = { "Boss", "Colleagues", "Others" };
+        for (int r = 0; r < rootNames.Length; r++)
+        {
+            GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+            for (int i = 0; i < allObjects.Length; i++)
+            {
+                GameObject candidate = allObjects[i];
+                if (candidate == null || candidate.name != rootNames[r] || !candidate.scene.IsValid())
+                {
+                    continue;
+                }
+
+                AudioSource[] sources = candidate.GetComponentsInChildren<AudioSource>(true);
+                for (int s = 0; s < sources.Length; s++)
+                {
+                    AudioSource source = sources[s];
+                    if (source == null) continue;
+
+                    source.Stop();
+                    source.mute = true;
+                    source.volume = 0f;
+                    source.playOnAwake = false;
+                    source.clip = null;
+                    source.enabled = false;
                 }
             }
         }

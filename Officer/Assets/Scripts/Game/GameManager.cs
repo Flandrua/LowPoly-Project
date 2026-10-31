@@ -209,6 +209,10 @@ public class GameManager : MonoSingleton<GameManager>
         EnsureDayOneTutorialDirector();
         ApplyLanguageFonts();
 
+        if (LowStressVersion)
+        {
+            DisableLowStressMsgAudio();
+        }
     }
     private static readonly System.Collections.Generic.Dictionary<string, string> UiBoardTextMap =
         new System.Collections.Generic.Dictionary<string, string>
@@ -228,7 +232,16 @@ public class GameManager : MonoSingleton<GameManager>
 
     public void ApplyLanguageFonts()
     {
+        ApplyLanguageFontsInternal(true);
+    }
+
+    private void ApplyLanguageFontsInternal(bool localizeText)
+    {
         TMP_FontAsset font = CurrentLanguageFont;
+        if (font == null)
+        {
+            font = TMP_Settings.defaultFontAsset;
+        }
 
         Transform workInfoRoot = null;
         GameObject subMonitorRoot = GameObject.Find("SubMonitorForStatus");
@@ -248,10 +261,22 @@ public class GameManager : MonoSingleton<GameManager>
                     continue;
                 }
 
-                if (font != null)
+                if (font != null && text.font != font)
                 {
                     text.font = font;
+#if UNITY_EDITOR
+                    if (!Application.isPlaying)
+                    {
+                        UnityEditor.EditorUtility.SetDirty(text);
+                    }
+#endif
                 }
+
+                if (!localizeText)
+                {
+                    continue;
+                }
+
                 LocalizeStaticText(text);
                 if (IsChinese && UiBoardTextMap.TryGetValue(text.text, out string uiBoardCnTmp))
                 {
@@ -271,6 +296,22 @@ public class GameManager : MonoSingleton<GameManager>
                     continue;
                 }
 
+                if (font != null && font.sourceFontFile != null && text.font != font.sourceFontFile)
+                {
+                    text.font = font.sourceFontFile;
+#if UNITY_EDITOR
+                    if (!Application.isPlaying)
+                    {
+                        UnityEditor.EditorUtility.SetDirty(text);
+                    }
+#endif
+                }
+
+                if (!localizeText)
+                {
+                    continue;
+                }
+
                 LocalizeStaticText(text);
                 if (IsChinese && UiBoardTextMap.TryGetValue(text.text, out string uiBoardCnLegacy))
                 {
@@ -278,6 +319,13 @@ public class GameManager : MonoSingleton<GameManager>
                 }
             }
         }
+
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+        }
+#endif
     }
 
     private void LocalizeStaticText(TMP_Text text)
@@ -292,7 +340,7 @@ public class GameManager : MonoSingleton<GameManager>
             text.text = LocalizationManager.GetText("work_progress");
         }
 
-        if (text.text == "Performance" || text.text == "表现评估" || text.text == "performance")
+        if (text.text == "Performance" || text.text == "表现评估" || text.text == "表现" || text.text == "performance")
         {
             text.text = LocalizationManager.GetText("performance");
         }
@@ -408,6 +456,10 @@ public class GameManager : MonoSingleton<GameManager>
 
         {
 
+            ApplyLanguageFontsInternal(false);
+#if UNITY_EDITOR
+            UnityEditor.SceneView.RepaintAll();
+#endif
             return;
 
         }
@@ -419,6 +471,7 @@ public class GameManager : MonoSingleton<GameManager>
         SyncExposedWorkProgressFromData(true);
         ApplyInspectorFatigueDebugValue();
         TryConsumeDebugDecreaseWorkProgress();
+        ApplyLanguageFonts();
 
     }
 
@@ -1656,6 +1709,11 @@ public class GameManager : MonoSingleton<GameManager>
 
     private void PlayMsgVoice(string relativePath)
     {
+        if (LowStressVersion)
+        {
+            return;
+        }
+
         if (TTSManager.Instance == null)
         {
             return;
@@ -1715,6 +1773,7 @@ public class GameManager : MonoSingleton<GameManager>
 
         SuppressNoOutForLowStress();
         UnlockAllTeleportAreasForExploration();
+        DisableLowStressMsgAudio();
     }
 
     private void TryUnlockTeleportAreaLock1AfterStartClicked()
@@ -1881,6 +1940,40 @@ public class GameManager : MonoSingleton<GameManager>
         {
             noOutGaze.SetBoxColliderEnabled(false);
             noOutGaze.enabled = false;
+        }
+    }
+
+    private void DisableLowStressMsgAudio()
+    {
+        string[] rootNames = { "Boss", "Colleagues", "Others" };
+        for (int r = 0; r < rootNames.Length; r++)
+        {
+            GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+            for (int i = 0; i < allObjects.Length; i++)
+            {
+                GameObject candidate = allObjects[i];
+                if (candidate == null || candidate.name != rootNames[r] || !candidate.scene.IsValid())
+                {
+                    continue;
+                }
+
+                AudioSource[] sources = candidate.GetComponentsInChildren<AudioSource>(true);
+                for (int s = 0; s < sources.Length; s++)
+                {
+                    AudioSource source = sources[s];
+                    if (source == null)
+                    {
+                        continue;
+                    }
+
+                    source.Stop();
+                    source.mute = true;
+                    source.volume = 0f;
+                    source.playOnAwake = false;
+                    source.clip = null;
+                    source.enabled = false;
+                }
+            }
         }
     }
 
