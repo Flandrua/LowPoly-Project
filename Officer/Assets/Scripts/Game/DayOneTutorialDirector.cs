@@ -691,12 +691,20 @@ public class DayOneTutorialDirector : MonoBehaviour
         Transform sleepTransform = FindObjectByName<Transform>("Sleep");
         if (sleepTransform != null)
         {
+            // The scene-placed "Sleep" object is only a visual/audio cue marker and its
+            // serialized clip may be missing or language-specific. Make sure it is visible,
+            // but always play the localized Sleep TTS so the voice is actually heard.
+            AudioSource sleepSource = sleepTransform.GetComponent<AudioSource>();
+            if (sleepSource != null)
+            {
+                sleepSource.playOnAwake = false;
+                sleepSource.Stop();
+            }
+
             if (!sleepTransform.gameObject.activeSelf)
             {
                 sleepTransform.gameObject.SetActive(true);
             }
-
-            return;
         }
 
         PlayTutorialTTS(sleepIntroTtsPath);

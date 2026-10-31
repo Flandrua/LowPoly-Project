@@ -306,12 +306,29 @@ public class PlayerSteamVRManager : MonoSingleton<PlayerSteamVRManager>
 
     private void PlayerFinishEating(SnackData snack)
     {
+        PlayPowerUpSound();
         tempEfficiency = snack.workEfficiency;
         DataCenter.Instance.GetWorkEfficiency(snack.workEfficiency);
         SetSnackHintVisible(false);
         if (snack.isSpicy)
         {
             _flame.Play();
+        }
+    }
+
+    private void PlayPowerUpSound()
+    {
+        GameObject powerUp = GameObject.Find("PowerUp");
+        if (powerUp == null)
+        {
+            return;
+        }
+
+        AudioSource source = powerUp.GetComponent<AudioSource>();
+        if (source != null)
+        {
+            source.Stop();
+            source.Play();
         }
     }
 

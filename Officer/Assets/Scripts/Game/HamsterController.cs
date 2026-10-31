@@ -1032,7 +1032,7 @@ public class HamsterController : MonoSingleton<HamsterController>, IPointerClick
 
         {
 
-            TTSManager.Instance.PlayTTS("TTS/Special/ChocolateDead");
+            TTSManager.Instance.PlayTTS(LocalizationPaths.Tts("Special/ChocolateDead"));
 
             Death();
 
@@ -1044,7 +1044,7 @@ public class HamsterController : MonoSingleton<HamsterController>, IPointerClick
 
         {
 
-            TTSManager.Instance.PlayTTS("TTS/Special/LemonHamster");
+            TTSManager.Instance.PlayTTS(LocalizationPaths.Tts("Special/LemonHamster"));
 
             _animator.SetBool("Sour", true);
 
@@ -1068,7 +1068,7 @@ public class HamsterController : MonoSingleton<HamsterController>, IPointerClick
 
         {
 
-            TTSManager.Instance.PlayTTS("TTS/Special/BeerHamster");
+            TTSManager.Instance.PlayTTS(LocalizationPaths.Tts("Special/BeerHamster"));
 
             _animator.Play("Eyes_Spin", _animator.GetLayerIndex("Shapekey"));
 
@@ -1078,7 +1078,7 @@ public class HamsterController : MonoSingleton<HamsterController>, IPointerClick
 
         {
 
-            TTSManager.Instance.PlayTTS("TTS/Special/PeperHamster");
+            TTSManager.Instance.PlayTTS(LocalizationPaths.Tts("Special/PeperHamster"));
 
             _animator.Play("Eyes_Shrink", _animator.GetLayerIndex("Shapekey"));
 

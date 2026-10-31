@@ -36,10 +36,23 @@ public class SubMonitorStatusController : MonoBehaviour
 
         if (workInfoRoot == null)
         {
-            GameObject found = GameObject.Find("workInfo");
-            if (found != null)
+            Transform foundTransform = transform.Find("workInfo");
+            if (foundTransform == null)
             {
-                workInfoRoot = found.transform;
+                Transform[] descendants = GetComponentsInChildren<Transform>(true);
+                for (int i = 0; i < descendants.Length; i++)
+                {
+                    if (descendants[i] != null && descendants[i].name == "workInfo")
+                    {
+                        foundTransform = descendants[i];
+                        break;
+                    }
+                }
+            }
+
+            if (foundTransform != null)
+            {
+                workInfoRoot = foundTransform;
             }
         }
 
@@ -48,7 +61,7 @@ public class SubMonitorStatusController : MonoBehaviour
             List<Transform> roots = new List<Transform>();
             for (int i = 1; i <= 6; i++)
             {
-                Transform day = workInfoRoot.Find($"Day{i}");
+                Transform day = FindDescendant(workInfoRoot, $"Day{i}");
                 if (day != null)
                 {
                     roots.Add(day);
@@ -73,19 +86,40 @@ public class SubMonitorStatusController : MonoBehaviour
                 continue;
             }
 
-            _unhappyTransforms[i] = day.Find("Unhappy");
-            _smileTransforms[i] = day.Find("Smile");
+            _unhappyTransforms[i] = FindDescendant(day, "Unhappy");
+            _smileTransforms[i] = FindDescendant(day, "Smile");
         }
 
         _resolved = true;
     }
 
+    private static Transform FindDescendant(Transform root, string name)
+    {
+        if (root == null || string.IsNullOrEmpty(name))
+        {
+            return null;
+        }
+
+        if (root.name == name)
+        {
+            return root;
+        }
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform found = FindDescendant(root.GetChild(i), name);
+            if (found != null)
+            {
+                return found;
+            }
+        }
+
+        return null;
+    }
+
     public void Refresh()
     {
-        if (!_resolved)
-        {
-            ResolveReferences();
-        }
+        ResolveReferences();
 
         if (_unhappyTransforms == null || _smileTransforms == null)
         {

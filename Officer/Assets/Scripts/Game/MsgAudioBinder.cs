@@ -7,6 +7,7 @@ using UnityEngine;
 /// to the correct MSG_CN or MSG_EN file based on the current language.
 /// Each entry maps an AudioSource to a MSG relative path (without language prefix).
 /// </summary>
+[DefaultExecutionOrder(100)]
 public class MsgAudioBinder : MonoBehaviour
 {
     [Serializable]
@@ -29,7 +30,14 @@ public class MsgAudioBinder : MonoBehaviour
 
     void Awake()
     {
-        if (autoDiscover && entries.Count == 0)
+        // Delay initialization until Start so GameManager (and its language setting)
+        // has finished Awake. Awake ordering is not guaranteed for components on
+        // the same GameObject, and LocalizationPaths depend on GameManager.
+    }
+
+    void Start()
+    {
+        if (autoDiscover && (entries == null || entries.Count == 0))
         {
             DiscoverEntries();
         }
@@ -61,7 +69,16 @@ public class MsgAudioBinder : MonoBehaviour
 
             string fullPath = LocalizationPaths.Msg(entry.msgRelativePath);
             AudioClip clip = Resources.Load<AudioClip>(fullPath);
+            bool wasPlaying = entry.audioSource.isPlaying;
+            if (wasPlaying)
+            {
+                entry.audioSource.Stop();
+            }
             entry.audioSource.clip = clip;
+            if (wasPlaying && clip != null)
+            {
+                entry.audioSource.Play();
+            }
             if (clip == null)
             {
                 Debug.LogWarning($"MsgAudioBinder: Could not load MSG clip at '{fullPath}'.", this);

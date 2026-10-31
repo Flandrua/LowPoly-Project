@@ -6,7 +6,12 @@ public static class LocalizationPaths
     {
         get
         {
-            return GameManager.Instance != null && GameManager.Instance.IsChinese ? "TTS_CN" : "TTS_EN";
+            // Default to Chinese to match LocalizationManager when GameManager is not ready yet.
+            if (GameManager.Instance == null)
+            {
+                return "TTS_CN";
+            }
+            return GameManager.Instance.IsChinese ? "TTS_CN" : "TTS_EN";
         }
     }
 
@@ -14,7 +19,11 @@ public static class LocalizationPaths
     {
         get
         {
-            return GameManager.Instance != null && GameManager.Instance.IsChinese ? "MSG_CN" : "MSG_EN";
+            if (GameManager.Instance == null)
+            {
+                return "MSG_CN";
+            }
+            return GameManager.Instance.IsChinese ? "MSG_CN" : "MSG_EN";
         }
     }
 

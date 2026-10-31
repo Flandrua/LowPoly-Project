@@ -8,6 +8,7 @@ using System.Collections.Generic;
 /// </summary>
 public class TTSManager : MonoSingleton<TTSManager>
 {
+    private static TTSManager _instanceRef;
     [Header("音频设置")]
     [Tooltip("用于播放TTS音频的AudioSource组件")]
     private AudioSource audioSource;
@@ -42,6 +43,18 @@ public class TTSManager : MonoSingleton<TTSManager>
     // 音频播放队列
     private Queue<QueuedAudio> audioQueue = new Queue<QueuedAudio>();
     private bool isProcessingQueue = false; // 标记是否正在处理队列
+
+    private void Awake()
+    {
+        if (_instanceRef != null && _instanceRef != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        _instanceRef = this;
+        base.Awake();
+    }
 
     /// <summary>
     /// 初始化TTS管理器

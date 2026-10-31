@@ -13,6 +13,7 @@ using Valve.VR.InteractionSystem;
 
 
 
+[DefaultExecutionOrder(-100)]
 public class GameManager : MonoSingleton<GameManager>
 
 {
@@ -118,6 +119,7 @@ public class GameManager : MonoSingleton<GameManager>
     private bool _hasTimedOutThisStage;
 
     private bool _hasTimedOutToday;
+    private bool _hasShownTimeoutVoice;
 
     private bool _hasShownNoSnackObject;
 
@@ -134,12 +136,38 @@ public class GameManager : MonoSingleton<GameManager>
 
     private bool _isPlayerInCorridor;
     private bool _hasUnlockedTeleportAreaLock1FromStartButton;
+    [Header("Corridor Warning UI")]
+    [Tooltip("警告框相对屏幕中心的偏移，单位是参考分辨率(1920x1080)像素。X>0 向右，Y>0 向上。")]
+    [SerializeField] private Vector2 corridorWarningAnchoredPosition = new Vector2(0f, 120f);
+    [Tooltip("警告背景框尺寸（参考分辨率像素）。")]
+    [SerializeField] private Vector2 corridorWarningSize = new Vector2(1400f, 180f);
+    [Tooltip("警告文字字号。")]
+    [SerializeField] private float corridorWarningFontSize = 48f;
+    [Tooltip("警告显示时长（秒）。")]
+    [SerializeField] private float corridorWarningDuration = 5f;
+    [Tooltip("警告背景颜色。")]
+    [SerializeField] private Color corridorWarningBackgroundColor = new Color(0f, 0f, 0f, 0.72f);
+
+    public Vector2 CorridorWarningAnchoredPosition
+    {
+        get => corridorWarningAnchoredPosition;
+        set
+        {
+            corridorWarningAnchoredPosition = value;
+            ApplyCorridorWarningLayout();
+        }
+    }
+
     private Canvas _corridorWarningCanvas;
     private TextMeshProUGUI _corridorWarningText;
+    private RectTransform _corridorWarningBackgroundRect;
     private Coroutine _corridorWarningRoutine;
     [SerializeField] private Text countingDownPhoneText;
     [SerializeField] private TextMeshProUGUI countingDownPhoneTextTmp;
-    private bool _hasShownTimeoutVoice;
+    private List<AudioSource> _cricketsSources = new List<AudioSource>();
+    private bool _cricketsResolved;
+    private bool _isTimeoutPenaltyActive;
+    private int _lastCountdownDisplaySeconds = int.MinValue;
 
     public int TotalDays => Mathf.Max(1, totaldays);
     public int HamsterLoveEndingFavorabilityThreshold => Mathf.Max(0, hamsterLoveEndingFavorabilityThreshold);
@@ -325,6 +353,7 @@ public class GameManager : MonoSingleton<GameManager>
         _animator = GetComponent<Animator>();
 
         ResolveNoSnackObjectReference();
+        DisableLegacyNoSnackAudio();
         ResolveOutsideWallsReference();
         _hasShownNoSnackObject = noSnackObject != null && noSnackObject.activeSelf;
         ApplyLowStressVersionState();
@@ -339,6 +368,9 @@ public class GameManager : MonoSingleton<GameManager>
         ApplyLanguageFonts();
 
         Teleport.Player.AddListener(OnPlayerTeleportedToCorridor);
+        EnsureSubMonitorStatusController();
+        ResolveCricketsSources();
+        UpdateCricketsAudio();
     }
 
 
@@ -444,6 +476,80 @@ public class GameManager : MonoSingleton<GameManager>
         {
             gameObject.AddComponent<DayOneTutorialDirector>();
         }
+    }
+
+    private void EnsureSubMonitorStatusController()
+    {
+        GameObject subMonitor = GameObject.Find("SubMonitorForStatus");
+        if (subMonitor == null)
+        {
+            return;
+        }
+
+        if (subMonitor.GetComponent<SubMonitorStatusController>() == null)
+        {
+            subMonitor.AddComponent<SubMonitorStatusController>();
+        }
+    }
+
+    private void UpdateCricketsAudio()
+    {
+        if (!_cricketsResolved || _cricketsSources.Count == 0)
+        {
+            ResolveCricketsSources();
+        }
+
+        bool isNight = IsNightStage;
+        for (int i = 0; i < _cricketsSources.Count; i++)
+        {
+            AudioSource source = _cricketsSources[i];
+            if (source == null)
+            {
+                continue;
+            }
+
+            source.playOnAwake = false;
+            if (isNight)
+            {
+                if (!source.isPlaying)
+                {
+                    source.Play();
+                }
+            }
+            else
+            {
+                if (source.isPlaying)
+                {
+                    source.Stop();
+                }
+            }
+        }
+    }
+
+    private void ResolveCricketsSources()
+    {
+        _cricketsSources.Clear();
+        AudioSource[] sources = FindObjectsOfType<AudioSource>(true);
+        for (int i = 0; i < sources.Length; i++)
+        {
+            AudioSource source = sources[i];
+            if (source == null || source.gameObject == null)
+            {
+                continue;
+            }
+
+            string objectName = source.gameObject.name;
+            string clipName = source.clip != null ? source.clip.name : string.Empty;
+            bool isCrickets = objectName.IndexOf("cricket", System.StringComparison.OrdinalIgnoreCase) >= 0
+                || clipName.IndexOf("cricket", System.StringComparison.OrdinalIgnoreCase) >= 0;
+
+            if (isCrickets)
+            {
+                _cricketsSources.Add(source);
+            }
+        }
+
+        _cricketsResolved = true;
     }
 
     private void ResolvePlayerRayPointers()
@@ -785,6 +891,8 @@ public class GameManager : MonoSingleton<GameManager>
         InvokeStageAdvanceCallbacks();
         ResetStageCountDown();
 
+        UpdateCricketsAudio();
+
         EventManager.DispatchEvent(EventCommon.UPDATE_MONITOR);
 
         TimeManager.Instance.AddTask(0.5f, false, () => { EventManager.DispatchEvent(EventCommon.NEXT_STAGE); }, this);
@@ -1027,53 +1135,108 @@ public class GameManager : MonoSingleton<GameManager>
     }
 
     private void TickStageCountDown()
-
     {
-
-        if (!ShouldRunStageCountDown() || _hasTimedOutThisStage)
-
+        bool shouldRun = ShouldRunStageCountDown();
+        if (!shouldRun)
         {
-
+            RefreshCountdownDisplay(false);
             return;
-
         }
 
-
-
-        _remainingCountDown -= Time.deltaTime;
-
-        if (_remainingCountDown > 0f)
-
+        // Do not drain the stage timer while a time-of-day transition is already playing,
+        // otherwise a normal work/sleep advance could be counted as an unfair timeout.
+        if (!_hasTimedOutThisStage && !_isStageAdvanceRequested)
         {
-
-            return;
-
+            _remainingCountDown -= Time.deltaTime;
+            if (_remainingCountDown <= 0f)
+            {
+                _remainingCountDown = 0f;
+                _hasTimedOutThisStage = true;
+                _hasTimedOutToday = true;
+                PrepareChangeTime("timeout");
+            }
         }
 
-
-
-        _remainingCountDown = 0f;
-        _hasTimedOutThisStage = true;
-        _hasTimedOutToday = true;
-
-        if (!_isStageAdvanceRequested)
-        {
-            PrepareChangeTime("timeout");
-        }
-
+        RefreshCountdownDisplay(true);
     }
 
-
-
     private bool ShouldRunStageCountDown()
-
     {
-
-        return DataCenter.Instance != null &&
+        return !IsEndingActive &&
+               !IsTutorialDay &&
+               DataCenter.Instance != null &&
                DataCenter.Instance.GameData != null &&
                DataCenter.Instance.GameData.PlayerData != null &&
                DataCenter.Instance.GameData.PlayerData.days >= 2;
+    }
 
+    private bool IsTutorialDay =>
+        GetCurrentDaySafe() <= 1 ||
+        (DayOneTutorialDirector.Instance != null && DayOneTutorialDirector.Instance.IsRunning);
+
+    private bool IsEndingActive => EndingManager.Instance != null &&
+                                   EndingManager.Instance.Container != null &&
+                                   EndingManager.Instance.Container.activeInHierarchy;
+
+    private void RefreshCountdownDisplay(bool shouldRun)
+    {
+        // The phone countdown only starts on the day after the player's first real timeout.
+        // Day 1 is the tutorial day, so before that nothing is shown even though the stage
+        // timer itself starts running from day 2.
+        bool visible = shouldRun && _isTimeoutPenaltyActive;
+        if (!visible)
+        {
+            SetCountingDownPhoneVisible(false);
+            _lastCountdownDisplaySeconds = int.MinValue;
+            return;
+        }
+
+        SetCountingDownPhoneVisible(true);
+
+        int seconds = Mathf.CeilToInt(Mathf.Max(0f, _remainingCountDown));
+        if (seconds == _lastCountdownDisplaySeconds)
+        {
+            return;
+        }
+
+        _lastCountdownDisplaySeconds = seconds;
+        string label = string.Format(LocalizationManager.GetText("countdown_seconds"), seconds);
+        if (countingDownPhoneText != null)
+        {
+            countingDownPhoneText.text = label;
+        }
+
+        if (countingDownPhoneTextTmp != null)
+        {
+            countingDownPhoneTextTmp.text = label;
+        }
+    }
+
+    private void SetCountingDownPhoneVisible(bool visible)
+    {
+        if (countingDownPhoneText != null)
+        {
+            if (countingDownPhoneText.transform.parent != null)
+            {
+                countingDownPhoneText.transform.parent.gameObject.SetActive(visible);
+            }
+            if (countingDownPhoneText.gameObject.activeSelf != visible)
+            {
+                countingDownPhoneText.gameObject.SetActive(visible);
+            }
+        }
+
+        if (countingDownPhoneTextTmp != null)
+        {
+            if (countingDownPhoneTextTmp.transform.parent != null)
+            {
+                countingDownPhoneTextTmp.transform.parent.gameObject.SetActive(visible);
+            }
+            if (countingDownPhoneTextTmp.gameObject.activeSelf != visible)
+            {
+                countingDownPhoneTextTmp.gameObject.SetActive(visible);
+            }
+        }
     }
 
 
@@ -1128,6 +1291,8 @@ public class GameManager : MonoSingleton<GameManager>
             return;
         }
 
+        ApplyCorridorWarningLayout();
+
         TMP_FontAsset languageFont = CurrentLanguageFont != null ? CurrentLanguageFont : TMP_Settings.defaultFontAsset;
         if (languageFont != null)
         {
@@ -1174,15 +1339,15 @@ public class GameManager : MonoSingleton<GameManager>
 
         GameObject backgroundObject = new GameObject("Background", typeof(RectTransform), typeof(Image));
         backgroundObject.transform.SetParent(canvasObject.transform, false);
-        RectTransform backgroundRect = backgroundObject.GetComponent<RectTransform>();
-        backgroundRect.anchorMin = new Vector2(0.5f, 0.5f);
-        backgroundRect.anchorMax = new Vector2(0.5f, 0.5f);
-        backgroundRect.pivot = new Vector2(0.5f, 0.5f);
-        backgroundRect.anchoredPosition = new Vector2(0f, 120f);
-        backgroundRect.sizeDelta = new Vector2(1400f, 180f);
+        _corridorWarningBackgroundRect = backgroundObject.GetComponent<RectTransform>();
+        _corridorWarningBackgroundRect.anchorMin = new Vector2(0.5f, 0.5f);
+        _corridorWarningBackgroundRect.anchorMax = new Vector2(0.5f, 0.5f);
+        _corridorWarningBackgroundRect.pivot = new Vector2(0.5f, 0.5f);
+        _corridorWarningBackgroundRect.anchoredPosition = corridorWarningAnchoredPosition;
+        _corridorWarningBackgroundRect.sizeDelta = corridorWarningSize;
 
         Image background = backgroundObject.GetComponent<Image>();
-        background.color = new Color(0f, 0f, 0f, 0.72f);
+        background.color = corridorWarningBackgroundColor;
         background.raycastTarget = false;
 
         GameObject textObject = new GameObject("WarningText", typeof(RectTransform), typeof(TextMeshProUGUI));
@@ -1195,7 +1360,7 @@ public class GameManager : MonoSingleton<GameManager>
 
         _corridorWarningText = textObject.GetComponent<TextMeshProUGUI>();
         _corridorWarningText.font = CurrentLanguageFont != null ? CurrentLanguageFont : TMP_Settings.defaultFontAsset;
-        _corridorWarningText.fontSize = 48f;
+        _corridorWarningText.fontSize = corridorWarningFontSize;
         _corridorWarningText.alignment = TextAlignmentOptions.Center;
         _corridorWarningText.color = Color.white;
         _corridorWarningText.enableWordWrapping = true;
@@ -1205,9 +1370,29 @@ public class GameManager : MonoSingleton<GameManager>
         return _corridorWarningText.font != null;
     }
 
+    private void ApplyCorridorWarningLayout()
+    {
+        if (_corridorWarningBackgroundRect != null)
+        {
+            _corridorWarningBackgroundRect.anchoredPosition = corridorWarningAnchoredPosition;
+            _corridorWarningBackgroundRect.sizeDelta = corridorWarningSize;
+
+            Image backgroundImage = _corridorWarningBackgroundRect.GetComponent<Image>();
+            if (backgroundImage != null)
+            {
+                backgroundImage.color = corridorWarningBackgroundColor;
+            }
+        }
+
+        if (_corridorWarningText != null)
+        {
+            _corridorWarningText.fontSize = corridorWarningFontSize;
+        }
+    }
+
     private IEnumerator HideCorridorWarningAfterDelay()
     {
-        yield return new WaitForSecondsRealtime(5f);
+        yield return new WaitForSecondsRealtime(corridorWarningDuration);
 
         if (_corridorWarningCanvas != null)
         {
@@ -1221,7 +1406,7 @@ public class GameManager : MonoSingleton<GameManager>
     {
         _remainingCountDown = Mathf.Max(0f, countDown);
         _hasTimedOutThisStage = false;
-
+        _lastCountdownDisplaySeconds = int.MinValue;
     }
 
 
@@ -1449,6 +1634,10 @@ public class GameManager : MonoSingleton<GameManager>
 
     private void HandleTimeoutNextDayEffects()
     {
+        // Called when entering the day after a real timeout. From now on the phone countdown
+        // stays visible for every stage, synced to the actual stage timer.
+        _isTimeoutPenaltyActive = true;
+
         if (!_hasShownTimeoutVoice)
         {
             _hasShownTimeoutVoice = true;
@@ -1462,20 +1651,7 @@ public class GameManager : MonoSingleton<GameManager>
         if (countingDownPhoneText == null && countingDownPhoneTextTmp == null)
         {
             Debug.LogWarning("GameManager: Assign the CountingDownPhone Text component in the Inspector.", this);
-            return;
         }
-
-        if (countingDownPhoneText != null)
-        {
-            countingDownPhoneText.gameObject.SetActive(true);
-        }
-
-        if (countingDownPhoneTextTmp != null)
-        {
-            countingDownPhoneTextTmp.gameObject.SetActive(true);
-        }
-
-        StartCoroutine(CountingDownPhoneRoutine(Mathf.Max(1f, countDown)));
     }
 
     private void PlayMsgVoice(string relativePath)
@@ -1493,38 +1669,6 @@ public class GameManager : MonoSingleton<GameManager>
         }
 
         TTSManager.Instance.PlayTTS(clip);
-    }
-
-    private IEnumerator CountingDownPhoneRoutine(float seconds)
-    {
-        float remaining = seconds;
-        while (remaining > 0f)
-        {
-            int displayedSeconds = Mathf.CeilToInt(remaining);
-            string label = string.Format(LocalizationManager.GetText("countdown_seconds"), displayedSeconds);
-            if (countingDownPhoneText != null)
-            {
-                countingDownPhoneText.text = label;
-            }
-
-            if (countingDownPhoneTextTmp != null)
-            {
-                countingDownPhoneTextTmp.text = label;
-            }
-
-            yield return new WaitForSeconds(1f);
-            remaining -= 1f;
-        }
-
-        if (countingDownPhoneText != null)
-        {
-            countingDownPhoneText.gameObject.SetActive(false);
-        }
-
-        if (countingDownPhoneTextTmp != null)
-        {
-            countingDownPhoneTextTmp.gameObject.SetActive(false);
-        }
     }
 
     private void ShowNoSnackObject()
@@ -1772,6 +1916,27 @@ public class GameManager : MonoSingleton<GameManager>
 
             noOutObject = candidate;
             return;
+        }
+    }
+
+    private void DisableLegacyNoSnackAudio()
+    {
+        if (noSnackObject == null)
+        {
+            return;
+        }
+
+        AudioSource[] sources = noSnackObject.GetComponentsInChildren<AudioSource>(true);
+        for (int i = 0; i < sources.Length; i++)
+        {
+            AudioSource source = sources[i];
+            if (source == null)
+            {
+                continue;
+            }
+
+            source.playOnAwake = false;
+            source.Stop();
         }
     }
 

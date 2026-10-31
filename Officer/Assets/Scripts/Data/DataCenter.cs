@@ -43,18 +43,9 @@ public class DataCenter : Singleton<DataCenter>
     /// </summary>
     public void InitData()
     {
-
-        //PlayerPrefs.DeleteKey("GameData");
-        string str = PlayerPrefs.GetString("GameData");
-        if (string.IsNullOrEmpty(str))
-        {
-            NewData();
-        }
-        else
-        {
-            _gameData = JsonMapper.ToObject<GameData>(str);
-            EnsureDataIntegrity();
-        }
+        // Do not restore a previous session's save data (including a stale day-2 state).
+        PlayerPrefs.DeleteKey("GameData");
+        NewData();
     }
 
     /// <summary>
@@ -62,11 +53,7 @@ public class DataCenter : Singleton<DataCenter>
     /// </summary>
     public void SaveData()
     {
-        _gameData.SaveTime = GetTimeStamp();
-        var json = JsonMapper.ToJson(_gameData);
-        PlayerPrefs.SetString("GameData", json);
-        PlayerPrefs.Save();
-        ;
+        // Save mechanism disabled: keep game state in memory only.
     }
 
     /// <summary>

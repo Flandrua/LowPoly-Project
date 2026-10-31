@@ -15,12 +15,24 @@ public class SnackManager : MonoSingleton<SnackManager>
     private XRGrabInteractable _grabInteractable;
     [SerializeField] private List<GameObject> _snacks = new List<GameObject>();
     [SerializeField] private GameObject _curSnacks;
+    [Header("Snack Disappear Effect")]
+    [Tooltip("Optional particle effect prefab instantiated when a snack disappears after being eaten.")]
+    public GameObject snackDisappearEffectPrefab;
+    [Tooltip("Optional lifetime in seconds for the spawned disappear effect. 0 keeps the prefab's own lifetime.")]
+    public float snackDisappearEffectLifetime = 0f;
     private string _snackName;
     private string _desc;
     [SerializeField] private TextMeshProUGUI _content = null;
     [SerializeField] private TextMeshProUGUI _name = null;
     private bool isEating = false;
     private bool _lastGrabState = false;
+    [Header("Snack Color Change (Emission)")]
+    [Tooltip("Emission color when the snack is grabbed but not being eaten.")]
+    [SerializeField] private Color grabbedEmissionColor = Color.red;
+    [Tooltip("Emission color when the snack is being eaten.")]
+    [SerializeField] private Color eatingEmissionColor = Color.green;
+    [Tooltip("Emission color when the snack is idle (not grabbed).")]
+    [SerializeField] private Color idleEmissionColor = Color.black;
     private bool _spawnOutlineHiddenBySnackGrab;
     [SerializeField] private float rayHideOutlineDelayAfterSpawn = 0.35f;
     private float _rayHideOutlineEnableTime;
@@ -307,6 +319,7 @@ public class SnackManager : MonoSingleton<SnackManager>
 
         if (_curSnacks != null)
         {
+            UpdateSnackEmissionColor();
             _curSnacks.SetActive(false);
         }
 
@@ -326,12 +339,13 @@ public class SnackManager : MonoSingleton<SnackManager>
         _snacks.RemoveAt(randomIndex);
         _col.enabled = true;
         SnackData snackData = _curSnacks.GetComponent<SnackData>();
-        _snackName = snackData.name;
-        _desc = snackData.desc;
+        _snackName = snackData != null ? snackData.snackName : _curSnacks.name;
+        _desc = snackData != null ? snackData.desc : string.Empty;
         audioAsset = ResolveSnackTtsPath(snackData);
         _lastGrabState = false;
         NotifySnackHint(false);
         SetSpawnObjectOutlineVisible(true);
+        UpdateSnackEmissionColor();
     }
 
     public void ClearCurrentSnack()
@@ -512,6 +526,9 @@ public class SnackManager : MonoSingleton<SnackManager>
 
     private void OnPlayerSnackHintChanged(bool visible)
     {
+        _lastGrabState = visible;
+        UpdateSnackEmissionColor();
+
         if (!visible)
         {
             return;
@@ -629,6 +646,106 @@ public class SnackManager : MonoSingleton<SnackManager>
         }
     }
 
+    private void UpdateSnackEmissionColor()
+    {
+        if (_curSnacks == null)
+        {
+            return;
+        }
+
+        bool isGrabbed = _lastGrabState;
+        Color emissionColor = isGrabbed
+            ? (isEating ? eatingEmissionColor : grabbedEmissionColor)
+            : idleEmissionColor;
+        bool enableEmission = isGrabbed;
+
+        Renderer[] renderers = _curSnacks.GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            Material[] materials = renderer.materials;
+            for (int j = 0; j < materials.Length; j++)
+            {
+                Material material = materials[j];
+                if (material == null || !material.HasProperty("_EmissionColor"))
+                {
+                    continue;
+                }
+
+                if (enableEmission)
+                {
+                    material.EnableKeyword("_EMISSION");
+                    material.SetColor("_EmissionColor", emissionColor);
+                }
+                else
+                {
+                    material.DisableKeyword("_EMISSION");
+                    material.SetColor("_EmissionColor", idleEmissionColor);
+                }
+            }
+        }
+    }
+
+    // Interface for adjusting the snack color-change (emission) colors at runtime.
+    // Use these instead of MCP evalJsCode to test color changes in Play mode.
+    public Color GrabbedEmissionColor
+    {
+        get => grabbedEmissionColor;
+        set { grabbedEmissionColor = value; UpdateSnackEmissionColor(); }
+    }
+
+    public Color EatingEmissionColor
+    {
+        get => eatingEmissionColor;
+        set { eatingEmissionColor = value; UpdateSnackEmissionColor(); }
+    }
+
+    public Color IdleEmissionColor
+    {
+        get => idleEmissionColor;
+        set { idleEmissionColor = value; UpdateSnackEmissionColor(); }
+    }
+
+    public void SetColorChangeColors(Color grabbedColor, Color eatingColor, Color idleColor = default)
+    {
+        grabbedEmissionColor = grabbedColor;
+        eatingEmissionColor = eatingColor;
+        if (idleColor != default)
+        {
+            idleEmissionColor = idleColor;
+        }
+        UpdateSnackEmissionColor();
+    }
+
+    public void SetGrabbedColor(Color color)
+    {
+        grabbedEmissionColor = color;
+        UpdateSnackEmissionColor();
+    }
+
+    public void SetEatingColor(Color color)
+    {
+        eatingEmissionColor = color;
+        UpdateSnackEmissionColor();
+    }
+
+    public void SetIdleColor(Color color)
+    {
+        idleEmissionColor = color;
+        UpdateSnackEmissionColor();
+    }
+
+    [ContextMenu("Apply Snack Color-Change Colors")]
+    private void ApplySnackColorChangeColorsFromInspector()
+    {
+        UpdateSnackEmissionColor();
+    }
+
     public void PlaySnackTTS()
     {
         if (_suppressNormalSnackTtsOnce)
@@ -676,14 +793,34 @@ public class SnackManager : MonoSingleton<SnackManager>
                 continue;
             }
 
-            string path = LocalizationPaths.Tts($"SnackIteraction/{key}");
-            if (Resources.Load<AudioClip>(path) != null)
+            string[] keyVariants = GetSnackTtsKeyVariants(key);
+            for (int j = 0; j < keyVariants.Length; j++)
             {
-                return path;
+                string path = LocalizationPaths.Tts($"SnackIteraction/{keyVariants[j]}");
+                if (Resources.Load<AudioClip>(path) != null)
+                {
+                    return path;
+                }
             }
         }
 
         return string.Empty;
+    }
+
+    // Some snack prefabs use a plural name (e.g. "Sausages") while the audio file is
+    // saved with the singular spelling (e.g. "Sausage"). Try both so the TTS still loads.
+    private string[] GetSnackTtsKeyVariants(string key)
+    {
+        string alternate = key.EndsWith("s", System.StringComparison.OrdinalIgnoreCase)
+            ? key.Substring(0, key.Length - 1)
+            : key + "s";
+
+        if (string.IsNullOrEmpty(alternate) || string.Equals(alternate, key, System.StringComparison.OrdinalIgnoreCase))
+        {
+            return new[] { key };
+        }
+
+        return new[] { key, alternate };
     }
 
     private string NormalizeSnackKey(string raw)
@@ -728,6 +865,11 @@ public class SnackManager : MonoSingleton<SnackManager>
 
         if (isPlayer) { return; }
         isEating = flag;
+        if (_lastGrabState)
+        {
+            UpdateSnackEmissionColor();
+        }
+
         if (flag)
         {
             isHamster = true;
@@ -752,6 +894,11 @@ public class SnackManager : MonoSingleton<SnackManager>
 
         if (isHamster) { return; }
         isEating = flag;
+        if (_lastGrabState)
+        {
+            UpdateSnackEmissionColor();
+        }
+
         if (flag)
         {
             isPlayer = true;
@@ -819,6 +966,11 @@ public class SnackManager : MonoSingleton<SnackManager>
         _lastGrabState = false;
         NotifySnackHint(false);
         _col.enabled = false;
+
+        Vector3 disappearPosition = _curSnacks != null ? _curSnacks.transform.position : transform.position;
+        Quaternion disappearRotation = _curSnacks != null ? _curSnacks.transform.rotation : transform.rotation;
+        bool wasPlayerEating = isPlayer;
+
         _curSnacks.SetActive(false);
         SnackData snack = _curSnacks.GetComponent<SnackData>();
         if (isHamster)
@@ -834,6 +986,38 @@ public class SnackManager : MonoSingleton<SnackManager>
 
         isPlayer = false;
         isHamster = false;
+
+        PlaySnackDisappearEffect(disappearPosition, disappearRotation, wasPlayerEating);
+    }
+
+    // Interface for playing a disappearance effect at the snack's last position.
+    // Subscribe to OnSnackDisappear or override this method to spawn your own particle.
+    public event System.Action<Vector3, Quaternion, bool> OnSnackDisappear;
+
+    public virtual void PlaySnackDisappearEffect(Vector3 position, Quaternion rotation, bool wasPlayerEating)
+    {
+        if (snackDisappearEffectPrefab != null)
+        {
+            GameObject effect = Instantiate(snackDisappearEffectPrefab, position, rotation);
+            if (effect != null)
+            {
+                ParticleSystem[] particleSystems = effect.GetComponentsInChildren<ParticleSystem>(true);
+                for (int i = 0; i < particleSystems.Length; i++)
+                {
+                    if (particleSystems[i] != null)
+                    {
+                        particleSystems[i].Play(true);
+                    }
+                }
+
+                if (snackDisappearEffectLifetime > 0f)
+                {
+                    Destroy(effect, snackDisappearEffectLifetime);
+                }
+            }
+        }
+
+        OnSnackDisappear?.Invoke(position, rotation, wasPlayerEating);
     }
 
     private void RegisterGrabEvents()
@@ -862,12 +1046,14 @@ public class SnackManager : MonoSingleton<SnackManager>
     {
         _lastGrabState = true;
         NotifySnackHint(true);
+        UpdateSnackEmissionColor();
     }
 
     private void OnSnackReleased(SelectExitEventArgs args)
     {
         _lastGrabState = false;
         NotifySnackHint(false);
+        UpdateSnackEmissionColor();
     }
 
     private void NotifySnackHint(bool showHint)
@@ -890,5 +1076,6 @@ public class SnackManager : MonoSingleton<SnackManager>
 
         _lastGrabState = isGrabbed;
         NotifySnackHint(isGrabbed);
+        UpdateSnackEmissionColor();
     }
 }

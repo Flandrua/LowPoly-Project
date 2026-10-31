@@ -120,7 +120,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd5f65ebf244ad54ba0c893adba729d2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  snackName: Lollipop
+  snackName: Lolipop
   desc: Work efficiency +1 or favorability +1
   workEfficiency: 1
   extraFavorability: 1

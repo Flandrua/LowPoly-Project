@@ -3,9 +3,9 @@ work_progress,工作进度,Work Progress
 performance,表现评估,Performance
 day_format,{0}天 / {1}天 {2},Day:{0}/{1} {2}
 player_info,工作效率：{0}\n好感度：{1},Work Efficiency: {0}\nFavorability: {1}
-corridor_warning,如果我再不好好工作，领导可能会开除我。,If I don't work harder, my boss might fire me.
+corridor_warning,如果我再不好好工作，领导可能会开除我。,"If I don't work harder, my boss might fire me."
 debug_title,调试,PM Debug
-debug_progress,"进度{0}, 好感 {1}",Progress{0}, Fav {1}
+debug_progress,"进度{0}, 好感 {1}","Progress{0}, Fav {1}"
 countdown_seconds,{0} 秒,{0} S
 work_efficiency,工作效率,Work efficiency
 item_name_cctv_monitor,监控,CCTV Monitor
@@ -34,18 +34,22 @@ snack_name_chocolate,巧克力,Chocolate
 snack_name_donut,甜甜圈,Donut
 snack_name_hamburger,汉堡,Hamburger
 snack_name_lemon,柠檬,Lemon
-snack_name_lollipop,棒棒糖,Lollipop
+snack_name_lolipop,棒棒糖,Lollipop
 snack_name_pepper,辣椒,Pepper
 snack_name_sausages,香肠,Sausages
 snack_name_sushi,寿司,Sushi
-snack_desc_beer,工作效率 +1，导致醉酒,Work efficiency +1,lead to drunkenness
+snack_desc_beer,工作效率 +1，导致醉酒,"Work efficiency +1,lead to drunkenness"
 snack_desc_chips,工作效率 +1 或 好感度 +1,Work efficiency +1 or favorability +1
-snack_desc_chocolate,工作效率 +1，最好不要喂给仓鼠,Work efficiency +1,better not feed this to hamster
+snack_desc_chocolate,工作效率 +1，最好不要喂给仓鼠,"Work efficiency +1,better not feed this to hamster"
 snack_desc_donut,工作效率 +1,Work Efficiency +1
 snack_desc_hamburger,工作效率 +1,Work Efficiency +1
-snack_desc_lemon,工作效率 +1，而且真的很酸,Work Efficiency +1,and this is really sour
-snack_desc_lollipop,工作效率 +1 或 好感度 +1,Work efficiency +1 or favorability +1
-snack_desc_pepper,工作效率 +1，当然很辣,Work Efficiency +1,of course it is spicy
+snack_desc_lemon,工作效率 +1，而且真的很酸,"Work Efficiency +1,and this is really sour"
+snack_desc_lolipop,工作效率 +1 或 好感度 +1,Work efficiency +1 or favorability +1
+snack_desc_pepper,工作效率 +1，当然很辣,"Work Efficiency +1,of course it is spicy"
 snack_desc_sausages,工作效率 +1,Work Efficiency +1
 snack_desc_sushi,工作效率 +1,Work Efficiency +1
 total_progress,总进度,Total Progress
+snack_name_sausage,香肠,Sausage
+snack_desc_sausage,工作效率 +1,Work Efficiency +1
+snack_name_peper,辣椒,Pepper
+snack_desc_peper,工作效率 +1，当然很辣,"Work Efficiency +1,of course it is spicy"

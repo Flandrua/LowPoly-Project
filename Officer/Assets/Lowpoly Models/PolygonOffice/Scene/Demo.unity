@@ -153636,7 +153636,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7061912810537790844, guid: c3d10e5877b0eca4884eb60ba6b59c2b, type: 3}
       propertyPath: m_Name
-      value: Lollipop
+      value: Lolipop
       objectReference: {fileID: 0}
     - target: {fileID: 7061912810537790844, guid: c3d10e5877b0eca4884eb60ba6b59c2b, type: 3}
       propertyPath: m_IsActive

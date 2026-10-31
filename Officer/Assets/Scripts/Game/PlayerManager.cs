@@ -283,8 +283,25 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
+    private void PlayPowerUpSound()
+    {
+        GameObject powerUp = GameObject.Find("PowerUp");
+        if (powerUp == null)
+        {
+            return;
+        }
+
+        AudioSource source = powerUp.GetComponent<AudioSource>();
+        if (source != null)
+        {
+            source.Stop();
+            source.Play();
+        }
+    }
+
     private void PlayerFinishEating(SnackData snack)
     {
+        PlayPowerUpSound();
         tempEfficiency = snack.workEfficiency;
         DataCenter.Instance.GetWorkEfficiency(snack.workEfficiency);
         if (snack.isSpicy)
