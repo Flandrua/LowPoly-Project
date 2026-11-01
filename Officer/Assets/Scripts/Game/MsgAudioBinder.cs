@@ -48,8 +48,9 @@ public class MsgAudioBinder : MonoBehaviour
             return;
         }
 
-        if (autoDiscover && (entries == null || entries.Count == 0))
+        if (autoDiscover)
         {
+            entries.Clear();
             DiscoverEntries();
         }
         RefreshAll();

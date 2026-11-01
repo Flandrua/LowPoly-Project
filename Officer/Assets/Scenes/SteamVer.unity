@@ -19564,7 +19564,7 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: ccb9607a32d7ff149b9481add6dd94fe, type: 3}
+  m_audioClip: {fileID: 8300000, guid: 486a00e1b0164ad0aab990becda0850d, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
@@ -34793,8 +34793,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46108abad3a7f784a9a8f1175c3323b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  countDown: 20
-  LowStressVersion: 0
+  countDown: 50
+  LowStressVersion: 1
   DisableSuddenDeathEnding: 1
   LanguageSetting: 1
   ChineseFont: {fileID: 11400000, guid: 4d19189453e55974f9b5397bc6966c43, type: 2}
@@ -34897,6 +34897,57 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 1
           m_CallState: 2
+  - stage: 2
+    day: 3
+    onTriggered:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 34937357}
+          m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+          m_MethodName: SetActive
+          m_Mode: 6
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 1
+          m_CallState: 2
+  - stage: 2
+    day: 4
+    onTriggered:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 587762}
+          m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+          m_MethodName: SetActive
+          m_Mode: 6
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 1
+          m_CallState: 2
+  - stage: 1
+    day: 6
+    onTriggered:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 1269176822}
+          m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+          m_MethodName: SetActive
+          m_Mode: 6
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 1
+          m_CallState: 2
   hamsterRoot: {fileID: 0}
   hamsterController: {fileID: 0}
   noSnackObject: {fileID: 263292087}
@@ -34910,10 +34961,10 @@ MonoBehaviour:
   - {fileID: 1839549366}
   manuallyDisablePlayerInteraction: 0
   playerInteractionLockCount: 0
-  corridorWarningAnchoredPosition: {x: 0, y: 80}
-  corridorWarningSize: {x: 1400, y: 180}
-  corridorWarningFontSize: 48
-  corridorWarningDuration: 5
+  corridorWarningAnchoredPosition: {x: 0, y: 20}
+  corridorWarningSize: {x: 1000, y: 180}
+  corridorWarningFontSize: 38
+  corridorWarningDuration: 10
   corridorWarningBackgroundColor: {r: 0, g: 0, b: 0, a: 0.72}
   countingDownPhoneText: {fileID: 0}
   countingDownPhoneTextTmp: {fileID: 1186666270}
@@ -34971,6 +35022,12 @@ MonoBehaviour:
     msgRelativePath: Others/Overtime weekend
   - audioSource: {fileID: 34937359}
     msgRelativePath: Others/gym expired
+  - audioSource: {fileID: 1675169305}
+    msgRelativePath: Boss/Cut work
+  - audioSource: {fileID: 1940043718}
+    msgRelativePath: Boss/Criticize for you
+  - audioSource: {fileID: 263292089}
+    msgRelativePath: Boss/No snack
   autoDiscover: 1
 --- !u!1001 &465989659
 PrefabInstance:
@@ -53848,17 +53905,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1beff61a305171641a76f9baf951ae59, type: 3}
---- !u!114 &722829921 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2446522869178478289, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
-  m_PrefabInstance: {fileID: 2525641776004269012}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2a4db7a114972834c8e4117be1d82ba3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &723904433 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4485671263612088, guid: ab77ddfb12a0d0b4483ddbb53202bcc2, type: 3}
@@ -132805,7 +132851,7 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: ce41f3cd745474547b5d248ec39ef1e1, type: 3}
+  m_audioClip: {fileID: 8300000, guid: 78ea7ef46165c1b469c65381d20b9d9a, type: 3}
   m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1
@@ -151170,7 +151216,7 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: 0eb4a06ac1720f44fbb484e324ab62e1, type: 3}
+  m_audioClip: {fileID: 8300000, guid: d7a8c33718974a37a4ee5b5fe4c50411, type: 3}
   m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1
@@ -173349,7 +173395,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a6be1ec560939a6418578becbc044e6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  requireHit: 10
+  requireHit: 20
+  lowStressRequireHit: 10
+  highStressRequireHit: 20
   sounds:
   - {fileID: 8300000, guid: eb1116b26b25f46438414ae149839c82, type: 3}
   - {fileID: 8300000, guid: 5d1dad50311121f41be30c6740e03d6e, type: 3}
@@ -176337,18 +176385,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: TotalProgress
       objectReference: {fileID: 0}
-    - target: {fileID: 4402184392195742994, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4402184392195742994, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4402184392195742994, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
-      propertyPath: m_AnchorMin.x
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 4594649068635628305, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -176382,10 +176418,6 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6469528000971077337, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
-      propertyPath: bar
-      value: 
-      objectReference: {fileID: 722829921}
-    - target: {fileID: 6469528000971077337, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
       propertyPath: day
       value: 
       objectReference: {fileID: 102933510}
@@ -176412,10 +176444,6 @@ PrefabInstance:
     - target: {fileID: 7648188542755716503, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
       propertyPath: m_Enabled
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8129384756102837464, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
-      propertyPath: m_text
-      value: 100%
       objectReference: {fileID: 0}
     - target: {fileID: 8129384756102837464, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
       propertyPath: m_fontSize
@@ -176491,15 +176519,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8884671854827891969, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.32
+      value: 0.3
       objectReference: {fileID: 0}
     - target: {fileID: 8884671854827891969, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -22.87
+      value: -18.7
       objectReference: {fileID: 0}
     - target: {fileID: 8884671854827891969, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 9000000000000000004, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9104763296692154606, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
       propertyPath: m_text

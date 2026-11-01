@@ -5,7 +5,7 @@ using UnityEngine.UI;
 public class MainMonitorData : ItemData
 {
     public TextMeshProUGUI day;
-    public Scrollbar bar;
+    public Image bar;
     public TextMeshProUGUI workProgressPercent;
 
     void Start()
@@ -41,7 +41,13 @@ public class MainMonitorData : ItemData
         int percent = GetWorkProgressPercent();
         if (bar != null)
         {
-            bar.size = percent / 100f;
+            // 用九宫格切图（Sliced）作为填充条：从左侧按百分比改变宽度，0% 宽度为 0 不可见，100% 填满。
+            float ratio = Mathf.Clamp01(percent / 100f);
+            RectTransform barRect = bar.rectTransform;
+            Vector2 anchorMax = barRect.anchorMax;
+            anchorMax.x = ratio;
+            barRect.anchorMax = anchorMax;
+            bar.enabled = ratio > 0f;
         }
 
         if (workProgressPercent != null)

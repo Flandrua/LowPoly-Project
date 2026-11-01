@@ -1233,6 +1233,14 @@ public class GameManager : MonoSingleton<GameManager>
 
     private void RefreshCountdownDisplay(bool shouldRun)
     {
+        // Low-stress version never shows the countdown phone.
+        if (LowStressVersion)
+        {
+            SetCountingDownPhoneVisible(false);
+            _lastCountdownDisplaySeconds = int.MinValue;
+            return;
+        }
+
         // The phone countdown only starts on the day after the player's first real timeout.
         // Day 1 is the tutorial day, so before that nothing is shown even though the stage
         // timer itself starts running from day 2.
@@ -1327,7 +1335,7 @@ public class GameManager : MonoSingleton<GameManager>
         {
             ShowCorridorWarning();
         }
-        else if (_corridorExplorationCount >= 3)
+        else if (_corridorExplorationCount >= 3 && !LowStressVersion)
         {
             if (EndingManager.Instance != null)
             {
@@ -1337,6 +1345,11 @@ public class GameManager : MonoSingleton<GameManager>
     }
 
     private void ShowCorridorWarning()
+    {
+        ShowCorridorWarning("corridor_warning");
+    }
+
+    private void ShowCorridorWarning(string localizationKey)
     {
         if (!TryCreateCorridorWarningUI())
         {
@@ -1352,7 +1365,7 @@ public class GameManager : MonoSingleton<GameManager>
             _corridorWarningText.font = languageFont;
         }
 
-        _corridorWarningText.text = LocalizationManager.GetText("corridor_warning");
+        _corridorWarningText.text = LocalizationManager.GetText(string.IsNullOrEmpty(localizationKey) ? "corridor_warning" : localizationKey);
         _corridorWarningCanvas.gameObject.SetActive(true);
 
         if (_corridorWarningRoutine != null)
@@ -1601,9 +1614,9 @@ public class GameManager : MonoSingleton<GameManager>
             _animator.SetBool("gray", isGrayFatigueActive);
         }
 
-        if (isGrayFatigueActive && !_wasGrayFatigueActive && TTSManager.Instance != null)
+        if (isGrayFatigueActive && !_wasGrayFatigueActive)
         {
-            TTSManager.Instance.PlayTTS(LocalizationPaths.Tts("Special/SuddenDeath"));
+            ShowCorridorWarning("gray_fatigue_warning");
         }
 
         _wasGrayFatigueActive = isGrayFatigueActive;
@@ -1774,6 +1787,85 @@ public class GameManager : MonoSingleton<GameManager>
         SuppressNoOutForLowStress();
         UnlockAllTeleportAreasForExploration();
         DisableLowStressMsgAudio();
+        HideLowStressGameObjects();
+    }
+
+    private void HideLowStressGameObjects()
+    {
+        // Low-stress version: hide the countdown phone UI and any scene object that represents it.
+        HideCountingDownPhoneForLowStress();
+        // Remove the bed from the low-stress flow; day advance spawns at the work desk instead.
+        SetSceneObjectsActiveByNamePrefix("PlayerBed", false);
+        // Hide every CCTV "look at player" object.
+        SetSceneObjectsActiveByNamePrefix("CCTVLookAtPlayer", false);
+        // Show and play the background music object.
+        ShowAndPlayBgmForLowStress();
+    }
+
+    private void HideCountingDownPhoneForLowStress()
+    {
+        SetCountingDownPhoneVisible(false);
+        SetSceneObjectsActiveByNamePrefix("CountingDownPhone", false);
+    }
+
+    private static void SetSceneObjectsActiveByNamePrefix(string prefix, bool active)
+    {
+        foreach (GameObject go in FindSceneObjectsByNamePrefix(prefix))
+        {
+            if (go != null && go.activeSelf != active)
+            {
+                go.SetActive(active);
+            }
+        }
+    }
+
+    private static List<GameObject> FindSceneObjectsByNamePrefix(string prefix)
+    {
+        var result = new List<GameObject>();
+        if (string.IsNullOrEmpty(prefix))
+        {
+            return result;
+        }
+
+        foreach (GameObject go in Resources.FindObjectsOfTypeAll<GameObject>())
+        {
+            if (go == null || !go.scene.IsValid() || !go.scene.isLoaded)
+            {
+                continue;
+            }
+
+            if (string.Equals(go.name, prefix, StringComparison.Ordinal) ||
+                go.name.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                result.Add(go);
+            }
+        }
+
+        return result;
+    }
+
+    private static void ShowAndPlayBgmForLowStress()
+    {
+        foreach (GameObject go in FindSceneObjectsByNamePrefix("bgm"))
+        {
+            if (go == null)
+            {
+                continue;
+            }
+
+            if (!go.activeSelf)
+            {
+                go.SetActive(true);
+            }
+
+            foreach (AudioSource source in go.GetComponentsInChildren<AudioSource>(true))
+            {
+                if (source != null && source.clip != null && !source.isPlaying)
+                {
+                    source.Play();
+                }
+            }
+        }
     }
 
     private void TryUnlockTeleportAreaLock1AfterStartClicked()

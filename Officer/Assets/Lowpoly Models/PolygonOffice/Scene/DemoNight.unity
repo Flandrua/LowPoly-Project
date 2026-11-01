@@ -17588,18 +17588,6 @@ PrefabInstance:
       propertyPath: m_hasFontAssetChanged
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4402184392195742994, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4402184392195742994, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4402184392195742994, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
-      propertyPath: m_AnchorMin.x
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 4594649068635628305, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -17616,10 +17604,6 @@ PrefabInstance:
       propertyPath: outlineColor.r
       value: 0.67051476
       objectReference: {fileID: 0}
-    - target: {fileID: 6469528000971077337, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
-      propertyPath: bar
-      value: 
-      objectReference: {fileID: 232257857}
     - target: {fileID: 6469528000971077337, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
       propertyPath: day
       value: 
@@ -17728,17 +17712,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &232257857 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2446522869178478289, guid: a0143cb1314a97e479bd1ebca8848d46, type: 3}
-  m_PrefabInstance: {fileID: 232257854}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2a4db7a114972834c8e4117be1d82ba3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &232257858 stripped

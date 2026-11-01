@@ -54,6 +54,13 @@ public class EndingManager : MonoSingleton<EndingManager>
 
     public void TriggerWorkFailedEnding()
     {
+        // 低压版本不因探索/工作失败进入坏结局，统一走低压正常结局。
+        if (GameManager.Instance != null && GameManager.Instance.IsLowStressVersion)
+        {
+            Ending();
+            return;
+        }
+
         LockTeleportAreasForEnding();
         TeleportPlayerToEndingPanelFront();
         SetDeadBodyVisible(false);

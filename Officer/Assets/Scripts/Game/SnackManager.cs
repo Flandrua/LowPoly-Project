@@ -244,6 +244,12 @@ public class SnackManager : MonoSingleton<SnackManager>
         container.transform.localScale = Vector3.one;
         _curSnacks = match;
         _curSnacks.SetActive(true);
+        // Consume this snack from the candidate pool so the same snack is not
+        // randomly re-spawned on a later day (mirrors RandomSnack's RemoveAt).
+        if (_snacks != null)
+        {
+            _snacks.Remove(match);
+        }
         if (_col != null)
         {
             _col.enabled = true;

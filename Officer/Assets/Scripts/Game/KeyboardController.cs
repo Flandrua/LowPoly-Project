@@ -8,7 +8,14 @@ using UnityEngine.EventSystems;
 
 public class KeyboardController : MonoSingleton<KeyboardController>, IPointerClickHandler
 {
+    [Tooltip("当前实际生效的键盘敲击次数（由版本配置自动设置）。")]
     public int requireHit = 6;
+    [Header("Version Requirements")]
+    [Tooltip("低压版本键盘敲击次数。<=0 时回退到 requireHit。")]
+    [SerializeField] private int lowStressRequireHit = 6;
+    [Tooltip("高压版本键盘敲击次数。<=0 时回退到 requireHit / 场景值。")]
+    [SerializeField] private int highStressRequireHit = 0;
+
     private int actualHit = 0;
     private GameObject _workEffect;
     private Scrollbar _bar; // Interaction progress bar.
@@ -18,6 +25,38 @@ public class KeyboardController : MonoSingleton<KeyboardController>, IPointerCli
     private bool _tutorialGuideActive;
     public bool IsWorkInputCompleted => actualHit >= requireHit;
     public int ActualHit => actualHit;
+    public int LowStressRequireHit => lowStressRequireHit;
+    public int HighStressRequireHit => highStressRequireHit;
+
+    public void SetLowStressRequireHit(int count)
+    {
+        lowStressRequireHit = Mathf.Max(1, count);
+    }
+
+    public void SetHighStressRequireHit(int count)
+    {
+        highStressRequireHit = Mathf.Max(0, count);
+    }
+
+    public void SetRequireHit(int count)
+    {
+        requireHit = Mathf.Max(1, count);
+        ResetToDefault();
+    }
+
+    public void ApplyVersionRequirement(bool isLowStressVersion)
+    {
+        int target = isLowStressVersion
+            ? (lowStressRequireHit > 0 ? lowStressRequireHit : requireHit)
+            : (highStressRequireHit > 0 ? highStressRequireHit : requireHit);
+
+        if (target > 0)
+        {
+            requireHit = target;
+        }
+
+        ResetToDefault();
+    }
     public Animator GuideAnimator => guideAnimator;
     public event Action<int> ValidHit;
     [Header("Guide Intro")]
@@ -39,6 +78,7 @@ public class KeyboardController : MonoSingleton<KeyboardController>, IPointerCli
         _bar = transform.parent.Find("Work").Find("Canvas").Find("Scrollbar").GetComponent<Scrollbar>();
         _as = GetComponent<AudioSource>();
         ResolveGuideReferences();
+        ApplyVersionRequirement(GameManager.Instance != null && GameManager.Instance.IsLowStressVersion);
         SetGuideOutlineVisible(enableGuideIntro && !guideTriggered);
         EventManager.AddListener(EventCommon.NEXT_STAGE, ResetToDefault);
     }

@@ -53,3 +53,4 @@ snack_name_sausage,香肠,Sausage
 snack_desc_sausage,工作效率 +1,Work Efficiency +1
 snack_name_peper,辣椒,Pepper
 snack_desc_peper,工作效率 +1，当然很辣,"Work Efficiency +1,of course it is spicy"
+gray_fatigue_warning,感觉好累，身体已经超负荷运转好几天了。,"I feel so tired, my body has been running on overload for days."

@@ -34,6 +34,17 @@ public class PlayerSteamVRManager : MonoSingleton<PlayerSteamVRManager>
         _as = GetComponent<AudioSource>();
         initialPosition = playerGO.transform.position;
         initialRotation = playerGO.transform.rotation;
+
+        // Low-stress version: there is no bed/sleep flow, so the next day starts at the work desk.
+        if (GameManager.Instance != null && GameManager.Instance.IsLowStressVersion)
+        {
+            GameObject workArea = GameObject.Find("TeleportAreaWork");
+            if (workArea != null)
+            {
+                initialPosition = workArea.transform.position;
+                initialRotation = workArea.transform.rotation;
+            }
+        }
         EventManager.AddListener<SnackData>(EventCommon.PLAYER_FINISH_EATING, PlayerFinishEating);
         EventManager.AddListener<bool>(EventCommon.PLAYER_SNACK_HINT, SetSnackHintVisible);
         InitSnackHintZone();

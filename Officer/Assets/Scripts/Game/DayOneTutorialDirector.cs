@@ -562,10 +562,11 @@ public class DayOneTutorialDirector : MonoBehaviour
             return;
         }
 
-        // High-pressure: hide the keyboard and advance from afternoon to night.
-        // OnNextStage will then enter the night sleep tutorial.
-        SetKeyboardVisible(false);
+        // High-pressure: keep the keyboard visible at the start of the transition
+        // and hide it midway through the transition animation instead of immediately.
         EventManager.DispatchEvent(EventCommon.PREPARE_CHANGE_TIME, "tutorial");
+        TimeManager.Instance.AddTask(1f, false, () => SetKeyboardVisible(false), this);
+        return;
     }
 
     private void OnNextStage()
