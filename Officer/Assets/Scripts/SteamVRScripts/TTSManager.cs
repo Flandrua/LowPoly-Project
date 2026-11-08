@@ -43,6 +43,24 @@ public class TTSManager : MonoSingleton<TTSManager>
     // 音频播放队列
     private Queue<QueuedAudio> audioQueue = new Queue<QueuedAudio>();
     private bool isProcessingQueue = false; // 标记是否正在处理队列
+    private bool isUninterruptible;
+
+    // Other TTS requests wait in the queue until this clip and its completion action finish.
+    public void PlayUninterruptibleTTS(AudioClip clip, System.Action onComplete)
+    {
+        if (clip == null || audioSource == null)
+        {
+            onComplete?.Invoke();
+            return;
+        }
+
+        PlayTTS(clip, () =>
+        {
+            isUninterruptible = false;
+            onComplete?.Invoke();
+        });
+        isUninterruptible = true;
+    }
 
     private void Awake()
     {
@@ -91,6 +109,15 @@ public class TTSManager : MonoSingleton<TTSManager>
 
     public void PlayTTS(AudioClip audioClip, string category, System.Action onComplete = null)
     {
+        if (isUninterruptible)
+        {
+            if (audioClip != null)
+            {
+                audioQueue.Enqueue(new QueuedAudio(audioClip, category, onComplete));
+            }
+            return;
+        }
+
         if (audioClip == null)
         {
             Debug.LogWarning("TTSManager: audio clip is null.");
@@ -190,6 +217,10 @@ public class TTSManager : MonoSingleton<TTSManager>
     /// </summary>
     public void StopTTS()
     {
+        if (isUninterruptible)
+        {
+            return;
+        }
         StopCurrentPlayback();
         
         // 清空队列
@@ -516,6 +547,7 @@ public class TTSManager : MonoSingleton<TTSManager>
 
     private void OnDestroy()
     {
+        isUninterruptible = false;
         StopTTS();
     }
 }

@@ -136,6 +136,15 @@ public class GameManager : MonoSingleton<GameManager>
 
     private bool _isPlayerInCorridor;
     private bool _hasUnlockedTeleportAreaLock1FromStartButton;
+    [Header("Corridor Penalty")]
+    [Tooltip("高压版第三次及以后进入走廊扣除的工作进度。")]
+    [Min(0)] public int corridorWorkProgressPenalty = 10;
+    private bool _isCorridorPenaltyPlaying;
+    private PlayerSteamVRManager _corridorMovementLockOwner;
+    private readonly List<TeleportMarkerBase> _tutorialCorridorMarkers = new List<TeleportMarkerBase>();
+    private bool _tutorialCorridorGateInitialized;
+    private bool _tutorialCorridorGateActive;
+    private int _lastFreeVoiceDay;
     [Header("Corridor Warning UI")]
     [Tooltip("警告框相对屏幕中心的偏移，单位是参考分辨率(1920x1080)像素。X>0 向右，Y>0 向上。")]
     [SerializeField] private Vector2 corridorWarningAnchoredPosition = new Vector2(0f, 120f);
@@ -164,6 +173,7 @@ public class GameManager : MonoSingleton<GameManager>
     private Coroutine _corridorWarningRoutine;
     [SerializeField] private Text countingDownPhoneText;
     [SerializeField] private TextMeshProUGUI countingDownPhoneTextTmp;
+    [SerializeField] private GameObject countingDownPhoneRoot;
     private List<AudioSource> _cricketsSources = new List<AudioSource>();
     private bool _cricketsResolved;
     private bool _isTimeoutPenaltyActive;
@@ -208,6 +218,9 @@ public class GameManager : MonoSingleton<GameManager>
         ApplyPlayerRayLength();
         EnsureDayOneTutorialDirector();
         ApplyLanguageFonts();
+
+        ResolveCountingDownPhoneReference();
+        SetCountingDownPhoneVisible(false);
 
         if (LowStressVersion)
         {
@@ -416,6 +429,7 @@ public class GameManager : MonoSingleton<GameManager>
         ApplyLanguageFonts();
 
         Teleport.Player.AddListener(OnPlayerTeleportedToCorridor);
+        InitializeTutorialCorridorGate();
         EnsureSubMonitorStatusController();
         ResolveCricketsSources();
         UpdateCricketsAudio();
@@ -432,6 +446,7 @@ public class GameManager : MonoSingleton<GameManager>
         EventManager.RemoveListener<bool>(EventCommon.CHANGE_TIME, SendAnimatorPostSignal);
 
         Teleport.Player.RemoveListener(OnPlayerTeleportedToCorridor);
+        ReleaseCorridorPenaltyMovementLock();
 
         if (_corridorWarningRoutine != null)
         {
@@ -739,7 +754,7 @@ public class GameManager : MonoSingleton<GameManager>
     private void PrepareChangeTime(string type)
 
     {
-        if (_isStageAdvanceRequested)
+        if (_isStageAdvanceRequested || _isCorridorPenaltyPlaying)
         {
             return;
         }
@@ -773,6 +788,11 @@ public class GameManager : MonoSingleton<GameManager>
             DayOneTutorialDirector.Instance.ShouldSkipAfternoonAfterMorningWork)
         {
             _skipToNightOnNextChange = true;
+        }
+
+        if (LowStressVersion && curTimeStage == (int)TimeStage.Afternoon)
+        {
+            PlayLowStressEndOfDayTTS();
         }
 
         _isStageAdvanceRequested = true;
@@ -917,6 +937,7 @@ public class GameManager : MonoSingleton<GameManager>
                     bool timedOutYesterday = _hasTimedOutToday;
                     bool shouldShowSnackContainerNextDay = LowStressVersion || !timedOutYesterday;
                     DataCenter.Instance.GameData.PlayerData.days++;
+                    UpdateTutorialCorridorGate();
                     if (shouldShowSnackContainerNextDay)
                     {
                         SnackManager.Instance.SetContainerVisible(true);
@@ -1085,7 +1106,7 @@ public class GameManager : MonoSingleton<GameManager>
             return false;
         }
 
-        if (_isStageAdvanceRequested)
+        if (_isStageAdvanceRequested || _isCorridorPenaltyPlaying)
         {
             return false;
         }
@@ -1142,6 +1163,7 @@ public class GameManager : MonoSingleton<GameManager>
         SyncWorkProgressBinding();
         TryConsumeDebugDecreaseWorkProgress();
         TryUnlockTeleportAreaLock1AfterStartClicked();
+        UpdateTutorialCorridorGate();
     }
 
     private void SyncWorkProgressBinding()
@@ -1275,6 +1297,11 @@ public class GameManager : MonoSingleton<GameManager>
 
     private void SetCountingDownPhoneVisible(bool visible)
     {
+        if (countingDownPhoneRoot != null && countingDownPhoneRoot.activeSelf != visible)
+        {
+            countingDownPhoneRoot.SetActive(visible);
+        }
+
         if (countingDownPhoneText != null)
         {
             if (countingDownPhoneText.transform.parent != null)
@@ -1300,18 +1327,53 @@ public class GameManager : MonoSingleton<GameManager>
         }
     }
 
-
-
-    private void OnPlayerTeleportedToCorridor(TeleportMarkerBase marker)
+    private void ResolveCountingDownPhoneReference()
     {
-        if (marker == null)
+        if (countingDownPhoneRoot == null)
+        {
+            Transform phone = transform.Find("CountingDownPhone");
+            if (phone != null)
+            {
+                countingDownPhoneRoot = phone.gameObject;
+            }
+        }
+
+        if (countingDownPhoneRoot != null && countingDownPhoneText == null && countingDownPhoneTextTmp == null)
+        {
+            countingDownPhoneTextTmp = countingDownPhoneRoot.GetComponentInChildren<TextMeshProUGUI>(true);
+            countingDownPhoneText = countingDownPhoneRoot.GetComponentInChildren<Text>(true);
+        }
+    }
+
+    public void PlayLowStressEndOfDayTTS()
+    {
+        int day = GetCurrentDaySafe();
+        if (!LowStressVersion || _lastFreeVoiceDay == day)
         {
             return;
         }
 
-        string markerName = marker.name;
-        bool isCorridorMarker = !string.IsNullOrEmpty(markerName) &&
-                                (markerName.Contains("Lock1") || markerName.Contains("Corridor"));
+        string path = LocalizationPaths.Tts("Free");
+        AudioClip[] clips = Resources.LoadAll<AudioClip>(path);
+        if (clips.Length == 0)
+        {
+            Debug.LogWarning($"GameManager: No end-of-day TTS clips found in {path}.", this);
+            return;
+        }
+
+        _lastFreeVoiceDay = day;
+        TTSManager.Instance.PlayTTS(clips[UnityEngine.Random.Range(0, clips.Length)]);
+    }
+
+
+    private void OnPlayerTeleportedToCorridor(TeleportMarkerBase marker)
+    {
+        if (marker == null || IsEndingActive || IsTutorialCorridorRestricted)
+        {
+            return;
+        }
+
+        bool isCorridorMarker = IsCorridorMarker(marker);
 
         if (!isCorridorMarker)
         {
@@ -1331,16 +1393,57 @@ public class GameManager : MonoSingleton<GameManager>
 
         _isPlayerInCorridor = true;
         _corridorExplorationCount++;
-        if (_corridorExplorationCount == 2)
+        if (_corridorExplorationCount == 2 && !LowStressVersion)
         {
             ShowCorridorWarning();
         }
         else if (_corridorExplorationCount >= 3 && !LowStressVersion)
         {
-            if (EndingManager.Instance != null)
+            StartCorridorPenalty();
+        }
+    }
+
+    private void StartCorridorPenalty()
+    {
+        if (IsTutorialCorridorRestricted || _isCorridorPenaltyPlaying || _isStageAdvanceRequested)
+        {
+            return;
+        }
+
+        SetCurrentWorkProgress(DataCenter.Instance.GameData.PlayerData.workProgress - Mathf.Max(0, corridorWorkProgressPenalty));
+        AudioClip clip = Resources.Load<AudioClip>(LocalizationPaths.Msg("Boss/3rd Out"));
+        if (clip == null)
+        {
+            Debug.LogWarning("GameManager: Missing Boss/3rd Out audio.", this);
+            PrepareChangeTime("corridor");
+            return;
+        }
+
+        // Keep the stage timer running. A timeout records today's penalty immediately,
+        // but PrepareChangeTime cannot advance until this voice has finished.
+        _isCorridorPenaltyPlaying = true;
+        _corridorMovementLockOwner = FindObjectOfType<PlayerSteamVRManager>();
+        if (_corridorMovementLockOwner != null)
+        {
+            _corridorMovementLockOwner.SetCorridorPenaltyMovementLocked(true);
+        }
+        TTSManager.Instance.PlayUninterruptibleTTS(clip, () =>
+        {
+            _isCorridorPenaltyPlaying = false;
+            ReleaseCorridorPenaltyMovementLock();
+            if (this != null && !IsEndingActive)
             {
-                EndingManager.Instance.TriggerWorkFailedEnding();
+                PrepareChangeTime(_hasTimedOutThisStage ? "timeout" : "corridor");
             }
+        });
+    }
+
+    private void ReleaseCorridorPenaltyMovementLock()
+    {
+        if (_corridorMovementLockOwner != null)
+        {
+            _corridorMovementLockOwner.SetCorridorPenaltyMovementLocked(false);
+            _corridorMovementLockOwner = null;
         }
     }
 
@@ -1892,8 +1995,100 @@ public class GameManager : MonoSingleton<GameManager>
         }
 
         _hasUnlockedTeleportAreaLock1FromStartButton = true;
-        UnlockNamedTeleportAreaIfLocked(teleportAreaLock1Name);
+        if (!IsTutorialCorridorRestricted)
+        {
+            UnlockNamedTeleportAreaIfLocked(teleportAreaLock1Name);
+        }
         UnlockNamedTeleportAreaIfLocked(teleportAreaWorkName);
+    }
+
+    public bool IsTutorialCorridorRestricted => !LowStressVersion && GetCurrentDaySafe() <= 1;
+
+    private bool IsCorridorMarker(TeleportMarkerBase marker)
+    {
+        return marker != null &&
+               (string.Equals(marker.name, teleportAreaLock1Name, StringComparison.Ordinal) ||
+                marker.name.Contains("Lock1") || marker.name.Contains("Corridor"));
+    }
+
+    private void InitializeTutorialCorridorGate()
+    {
+        if (LowStressVersion)
+        {
+            return;
+        }
+
+        ResolveNoOutReference();
+        _tutorialCorridorMarkers.Clear();
+        foreach (TeleportMarkerBase marker in FindObjectsOfType<TeleportMarkerBase>(true))
+        {
+            if (IsCorridorMarker(marker) && marker.gameObject.scene == gameObject.scene)
+            {
+                _tutorialCorridorMarkers.Add(marker);
+            }
+        }
+
+        UpdateTutorialCorridorGate();
+    }
+
+    private void UpdateTutorialCorridorGate()
+    {
+        if (LowStressVersion)
+        {
+            return;
+        }
+
+        bool restricted = IsTutorialCorridorRestricted;
+        bool changed = !_tutorialCorridorGateInitialized || _tutorialCorridorGateActive != restricted;
+        if (changed)
+        {
+            _tutorialCorridorGateInitialized = true;
+            _tutorialCorridorGateActive = restricted;
+            _isPlayerInCorridor = false;
+            _corridorExplorationCount = 0;
+
+            if (noOutObject != null)
+            {
+                // Keep the tutorial sign visible without requiring gaze; the old gaze
+                // callbacks must not hide it while the player looks elsewhere.
+                CenterGazeCallback gaze = noOutObject.GetComponent<CenterGazeCallback>();
+                if (gaze != null)
+                {
+                    gaze.enabled = false;
+                    gaze.SetBoxColliderEnabled(false);
+                }
+                noOutObject.SetActive(restricted);
+                if (restricted)
+                {
+                    string message = LocalizationManager.GetText("tutorial_no_out");
+                    foreach (Text text in noOutObject.GetComponentsInChildren<Text>(true))
+                    {
+                        text.text = message;
+                    }
+                    foreach (TMP_Text text in noOutObject.GetComponentsInChildren<TMP_Text>(true))
+                    {
+                        text.text = message;
+                    }
+                    if (gaze != null)
+                    {
+                        gaze.SetAnimBoolTrue("Out");
+                    }
+                }
+            }
+        }
+
+        // Reassert the Day 1 lock after legacy Start-button UnityEvents unlock the area.
+        // Once Day 2 begins, release this gate only once so other gameplay locks still work.
+        if (restricted || changed)
+        {
+            foreach (TeleportMarkerBase marker in _tutorialCorridorMarkers)
+            {
+                if (marker != null && marker.locked != restricted)
+                {
+                    marker.SetLocked(restricted);
+                }
+            }
+        }
     }
 
     private void UnlockNamedTeleportAreaIfLocked(string areaName)

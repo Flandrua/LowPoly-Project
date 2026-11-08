@@ -3,7 +3,8 @@ work_progress,工作进度,Work Progress
 performance,表现评估,Performance
 day_format,{0}天 / {1}天 {2},Day:{0}/{1} {2}
 player_info,工作效率：{0}\n好感度：{1},Work Efficiency: {0}\nFavorability: {1}
-corridor_warning,如果我再不好好工作，领导可能会开除我。,"If I don't work harder, my boss might fire me."
+corridor_warning,如果我再这样闲逛，老板会生气。,"If I keep wandering around like this, my boss will get angry."
+tutorial_no_out,你必须完成教程才能出去,You must complete the tutorial before you can go outside.
 debug_title,调试,PM Debug
 debug_progress,"进度{0}, 好感 {1}","Progress{0}, Fav {1}"
 countdown_seconds,{0} 秒,{0} S

@@ -557,7 +557,7 @@ public class DayOneTutorialDirector : MonoBehaviour
         SetKeyboardGuide(false);
         if (IsLowStressVersion)
         {
-            PlayTutorialTTS(freeToGoTtsPath);
+            GameManager.Instance.PlayLowStressEndOfDayTTS();
             ScheduleLowStressAdvanceToNextDay();
             return;
         }

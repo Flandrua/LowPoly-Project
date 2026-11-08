@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Valve.VR.InteractionSystem;
@@ -18,6 +19,51 @@ public class PlayerSteamVRManager : MonoSingleton<PlayerSteamVRManager>
     private AudioSource _as;
     private Vector3 initialPosition;
     private Quaternion initialRotation;
+    private readonly List<Behaviour> _corridorPenaltyLocomotion = new List<Behaviour>();
+    private bool _corridorPenaltyMovementLocked;
+
+    public void SetCorridorPenaltyMovementLocked(bool locked)
+    {
+        if (_corridorPenaltyMovementLocked == locked)
+        {
+            return;
+        }
+
+        _corridorPenaltyMovementLocked = locked;
+        if (locked)
+        {
+            foreach (VRInputController controller in FindObjectsOfType<VRInputController>(true))
+            {
+                DisableLocomotionForCorridorPenalty(controller);
+            }
+            foreach (Teleport teleport in FindObjectsOfType<Teleport>(true))
+            {
+                DisableLocomotionForCorridorPenalty(teleport);
+            }
+            return;
+        }
+
+        foreach (Behaviour locomotion in _corridorPenaltyLocomotion)
+        {
+            if (locomotion != null)
+            {
+                locomotion.enabled = true;
+            }
+        }
+        _corridorPenaltyLocomotion.Clear();
+    }
+
+    private void DisableLocomotionForCorridorPenalty(Behaviour locomotion)
+    {
+        // The player manager survives in DontDestroyOnLoad, while locomotion can live
+        // in the gameplay scene. Include components from both loaded runtime scenes.
+        if (locomotion != null && locomotion.enabled &&
+            locomotion.gameObject.scene.IsValid() && locomotion.gameObject.scene.isLoaded)
+        {
+            _corridorPenaltyLocomotion.Add(locomotion);
+            locomotion.enabled = false;
+        }
+    }
     [SerializeField] private Color snackHintColor = new Color(0.68f, 0.87f, 1f, 0.1f);
     [SerializeField] private Material snackHintMaterialTemplate;
     private MeshRenderer _snackHintRenderer;
@@ -52,6 +98,7 @@ public class PlayerSteamVRManager : MonoSingleton<PlayerSteamVRManager>
 
     private void OnDestroy()
     {
+        SetCorridorPenaltyMovementLocked(false);
         EventManager.RemoveListener<SnackData>(EventCommon.PLAYER_FINISH_EATING, PlayerFinishEating);
         EventManager.RemoveListener<bool>(EventCommon.PLAYER_SNACK_HINT, SetSnackHintVisible);
         if (_snackHintMaterial != null)
