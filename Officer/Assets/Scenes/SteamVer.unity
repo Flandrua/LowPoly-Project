@@ -34794,7 +34794,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   countDown: 30
-  LowStressVersion: 1
+  LowStressVersion: 0
   DisableSuddenDeathEnding: 1
   LanguageSetting: 0
   ChineseFont: {fileID: 11400000, guid: 4d19189453e55974f9b5397bc6966c43, type: 2}

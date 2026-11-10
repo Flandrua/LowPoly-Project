@@ -754,6 +754,11 @@ public class GameManager : MonoSingleton<GameManager>
     private void PrepareChangeTime(string type)
 
     {
+        if (LowStressVersion && type == "timeout")
+        {
+            return;
+        }
+
         if (_isStageAdvanceRequested || _isCorridorPenaltyPlaying)
         {
             return;
@@ -918,7 +923,7 @@ public class GameManager : MonoSingleton<GameManager>
             if (!isDeathEnding)
             {
                 int finishedDay = GetCurrentDaySafe();
-                bool finishedDayTimedOut = finishedDay <= 1 ? true : _hasTimedOutToday;
+                bool finishedDayTimedOut = !LowStressVersion && (finishedDay <= 1 || _hasTimedOutToday);
                 DataCenter.Instance.RecordDayTimeoutStatus(finishedDay, finishedDayTimedOut);
 
                 if (DataCenter.Instance.GameData.PlayerData.days >= TotalDays)
@@ -934,7 +939,7 @@ public class GameManager : MonoSingleton<GameManager>
                 {
                     HandleDayOneGuideFallbackBeforeDayIncrement();
 
-                    bool timedOutYesterday = _hasTimedOutToday;
+                    bool timedOutYesterday = !LowStressVersion && _hasTimedOutToday;
                     bool shouldShowSnackContainerNextDay = LowStressVersion || !timedOutYesterday;
                     DataCenter.Instance.GameData.PlayerData.days++;
                     UpdateTutorialCorridorGate();
@@ -1237,7 +1242,8 @@ public class GameManager : MonoSingleton<GameManager>
 
     private bool ShouldRunStageCountDown()
     {
-        return !IsEndingActive &&
+        return !LowStressVersion &&
+               !IsEndingActive &&
                !IsTutorialDay &&
                DataCenter.Instance != null &&
                DataCenter.Instance.GameData != null &&
@@ -1573,7 +1579,7 @@ public class GameManager : MonoSingleton<GameManager>
 
     private void ResetStageCountDown()
     {
-        _remainingCountDown = Mathf.Max(0f, countDown);
+        _remainingCountDown = LowStressVersion ? 0f : Mathf.Max(0f, countDown);
         _hasTimedOutThisStage = false;
         _lastCountdownDisplaySeconds = int.MinValue;
     }
@@ -1803,6 +1809,11 @@ public class GameManager : MonoSingleton<GameManager>
 
     private void HandleTimeoutNextDayEffects()
     {
+        if (LowStressVersion)
+        {
+            return;
+        }
+
         // Called when entering the day after a real timeout. From now on the phone countdown
         // stays visible for every stage, synced to the actual stage timer.
         _isTimeoutPenaltyActive = true;

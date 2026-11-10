@@ -78,8 +78,11 @@ public class PlayerSteamVRManager : MonoSingleton<PlayerSteamVRManager>
     {
         _flame = GetComponentInChildren<ParticleSystem>();
         _as = GetComponent<AudioSource>();
-        initialPosition = playerGO.transform.position;
-        initialRotation = playerGO.transform.rotation;
+        Player player = Player.instance;
+        initialPosition = player != null ? player.feetPositionGuess : playerGO.transform.position;
+        initialRotation = player != null && player.hmdTransform != null
+            ? Quaternion.Euler(0f, player.hmdTransform.eulerAngles.y, 0f)
+            : playerGO.transform.rotation;
 
         // Low-stress version: there is no bed/sleep flow, so the next day starts at the work desk.
         if (GameManager.Instance != null && GameManager.Instance.IsLowStressVersion)
@@ -112,9 +115,35 @@ public class PlayerSteamVRManager : MonoSingleton<PlayerSteamVRManager>
         DataCenter.Instance.GetWorkEfficiency(-tempEfficiency);
         _flame.Stop();
         tempEfficiency = 0;
-        playerGO.transform.position = initialPosition;
-        playerGO.transform.rotation = initialRotation;
+        if (!TryTeleportTrackedPlayer(initialPosition, initialRotation))
+        {
+            Debug.LogWarning("PlayerSteamVRManager: Cannot reset player without a tracked SteamVR head and origin.", this);
+        }
         SetSnackHintVisible(false);
+    }
+
+    // Move the rig, never the tracked camera's local pose. The destination describes
+    // the floor below the HMD and the desired HMD yaw, including room-scale offsets.
+    public static bool TryTeleportTrackedPlayer(Vector3 destinationFeetPosition, Quaternion destinationFacing)
+    {
+        Player player = Player.instance;
+        if (player == null || player.trackingOriginTransform == null || player.hmdTransform == null)
+        {
+            return false;
+        }
+
+        Transform origin = player.trackingOriginTransform;
+        Transform head = player.hmdTransform;
+        if (!head.IsChildOf(origin))
+        {
+            return false;
+        }
+
+        float yawDelta = Mathf.DeltaAngle(head.eulerAngles.y, destinationFacing.eulerAngles.y);
+        origin.rotation = Quaternion.AngleAxis(yawDelta, Vector3.up) * origin.rotation;
+        // Recompute feet AFTER rotating: the head's horizontal offset rotates with the rig.
+        origin.position += destinationFeetPosition - player.feetPositionGuess;
+        return true;
     }
 
     public void OnHeightUp()

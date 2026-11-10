@@ -208,15 +208,7 @@ public class EndingManager : MonoSingleton<EndingManager>
             return;
         }
 
-        Transform trackingOrigin = Player.instance.trackingOriginTransform;
-        if (trackingOrigin == null)
-        {
-            return;
-        }
-
-        Vector3 feetOffset = trackingOrigin.position - Player.instance.feetPositionGuess;
-        trackingOrigin.position = startArea.transform.position + feetOffset;
-        trackingOrigin.rotation = Quaternion.Euler(0f, 180f, 0f);
+        PlayerSteamVRManager.TryTeleportTrackedPlayer(startArea.transform.position, Quaternion.Euler(0f, 180f, 0f));
     }
 
     private void LockTeleportAreasForEnding()
